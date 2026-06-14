@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { applyTheme } from "./hooks/useTheme";
+import "./fonts.ts";
 import "./global.css";
 
 const storedTheme = localStorage.getItem("tide:theme");

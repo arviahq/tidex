@@ -19,8 +19,6 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
-  ARG_CHANGED: "TIDE_ARG_CHANGED",
-  ACTION: "TIDE_ACTION",
 } as const;
 
 export interface Manifest {
@@ -39,7 +37,6 @@ export type PropSchema =
   | { type: "number"; required?: boolean }
   | { type: "union"; values: string[]; required?: boolean }
   | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
-  | { type: "callback"; updates?: string; required?: boolean }
   | { type: "unknown"; required?: boolean };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;

@@ -3,8 +3,8 @@
 .bb-splitter--panel {
   flex-shrink: 0;
   position: relative;
-  height: 7px;
-  margin: -3px 0;
+  height: 4px;
+  margin: -1px 0;
   z-index: 4;
   cursor: row-resize;
   touch-action: none;
@@ -27,13 +27,11 @@
 
 .bb-splitter--panel:hover .bb-splitter__line,
 .bb-splitter--panel[data-resizing="true"] .bb-splitter__line {
-  height: 2px;
-  background: color-mix(in srgb, var(--bb-primary) 70%, var(--bb-border));
+  background: var(--bb-border-strong);
 }
 
 .bb-splitter--panel[data-resizing="true"] .bb-splitter__line {
-  background: var(--bb-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--bb-primary) 20%, transparent);
+  background: var(--bb-muted);
 }
 
 .bb-splitter__handle {
@@ -44,16 +42,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  height: 16px;
-  padding: 0 8px;
-  border-radius: 8px;
+  min-width: 24px;
+  height: 10px;
+  padding: 0 4px;
+  border-radius: 4px;
   border: 1px solid var(--bb-border);
   background: var(--bb-surface);
   color: var(--bb-muted);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.05),
-    0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   pointer-events: none;
   opacity: 0;
   transition:
@@ -67,20 +63,17 @@
 .bb-splitter--panel:hover .bb-splitter__handle,
 .bb-splitter--panel[data-resizing="true"] .bb-splitter__handle {
   opacity: 1;
-  border-color: color-mix(in srgb, var(--bb-primary) 35%, var(--bb-border));
-  color: var(--bb-primary);
+  border-color: var(--bb-border-strong);
+  color: var(--bb-text);
 }
 
 .bb-splitter--panel[data-resizing="true"] .bb-splitter__handle {
-  border-color: color-mix(in srgb, var(--bb-primary) 50%, var(--bb-border));
-  box-shadow:
-    0 2px 8px color-mix(in srgb, var(--bb-primary) 18%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--bb-primary) 10%, transparent);
+  border-color: var(--bb-muted);
 }
 
 .bb-splitter__label {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-family: var(--bb-font);
+  font-size: 9px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -91,8 +84,8 @@
 .bb-splitter--sidebar {
   flex-shrink: 0;
   position: relative;
-  width: 7px;
-  margin: 0 -3px;
+  width: 4px;
+  margin: 0 -1px;
   z-index: 2;
   cursor: col-resize;
   touch-action: none;
@@ -110,20 +103,19 @@
 
 .bb-splitter--sidebar:hover .bb-splitter__line,
 .bb-splitter--sidebar[data-resizing="true"] .bb-splitter__line {
-  width: 2px;
   height: auto;
-  background: color-mix(in srgb, var(--bb-primary) 70%, var(--bb-border));
+  background: var(--bb-border-strong);
 }
 
 .bb-splitter--sidebar[data-resizing="true"] .bb-splitter__line {
-  background: var(--bb-primary);
+  background: var(--bb-muted);
 }
 
 .bb-splitter--sidebar .bb-splitter__handle {
-  width: 16px;
-  min-width: 16px;
-  height: 40px;
-  padding: 8px 0;
+  width: 10px;
+  min-width: 10px;
+  height: 24px;
+  padding: 4px 0;
 }
 
 .bb-splitter--sidebar .bb-splitter__handle svg {
@@ -133,8 +125,8 @@
 .bb-splitter--sidebar:hover .bb-splitter__handle,
 .bb-splitter--sidebar[data-resizing="true"] .bb-splitter__handle {
   opacity: 1;
-  border-color: color-mix(in srgb, var(--bb-primary) 35%, var(--bb-border));
-  color: var(--bb-primary);
+  border-color: var(--bb-border-strong);
+  color: var(--bb-text);
 }
 
 body.bb-is-resizing-panel {

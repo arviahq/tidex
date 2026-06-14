@@ -1,0 +1,102 @@
+.bb-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bb-tree__group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bb-tree__folder-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 10px;
+  padding-left: calc(10px + var(--bb-tree-depth, 0) * 12px);
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bb-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.bb-tree__folder-row:hover {
+  background: var(--bb-surface-muted);
+  color: var(--bb-text);
+}
+
+.bb-tree__folder-chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--bb-muted);
+  transition: transform 150ms ease;
+}
+
+.bb-tree__folder-icon {
+  flex-shrink: 0;
+  color: var(--bb-muted);
+}
+
+.bb-tree__folder-row:hover .bb-tree__folder-icon,
+.bb-tree__folder-row:hover .bb-tree__folder-chevron {
+  color: var(--bb-text);
+}
+
+.bb-tree__folder-row[data-expanded="true"] .bb-tree__folder-chevron {
+  transform: rotate(90deg);
+}
+
+.bb-tree__folder-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bb-tree__item-wrap {
+  padding: 0;
+}
+
+.bb-tree__item-wrap .bb-sidebar__item--tree {
+  width: 100%;
+  gap: 5px;
+  padding: 5px 10px;
+  padding-left: calc(27px + var(--bb-tree-depth, 0) * 12px);
+}
+
+.bb-tree__component-icon {
+  flex-shrink: 0;
+  color: var(--bb-muted);
+}
+
+.bb-sidebar__item--tree:hover .bb-tree__component-icon,
+.bb-sidebar__item--tree[data-active="true"] .bb-tree__component-icon {
+  color: var(--bb-text);
+}
+
+.bb-tree__item-wrap .bb-sidebar__item--tree .bb-sidebar__item-title,
+.bb-tree__item-wrap .bb-sidebar__item--tree[data-active="true"] .bb-sidebar__item-title {
+  font-size: 12px;
+  font-weight: 400;
+}

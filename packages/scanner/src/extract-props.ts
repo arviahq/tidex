@@ -1,12 +1,5 @@
 import { Node, Project, type InterfaceDeclaration, type Type, type TypeNode } from "ts-morph";
-import {
-  inferStateKeyFromCallback,
-  isCallbackProp,
-  shouldSkipProp,
-  type PropSchema,
-  type PropsMap,
-  type ComponentEntry,
-} from "@tide/core";
+import { shouldSkipProp, type PropSchema, type PropsMap, type ComponentEntry } from "@tide/core";
 import path from "node:path";
 import {
   discoverComponents,
@@ -52,63 +45,33 @@ function schemaFromType(type: Type, typeText: string): PropSchema {
   return { type: "unknown" };
 }
 
-function callbackSchema(name: string, propNames: string[]): PropSchema {
-  const updates = inferStateKeyFromCallback(name, propNames) ?? undefined;
-  return { type: "callback", ...(updates ? { updates } : {}) };
-}
-
 function schemaFromInterface(iface: InterfaceDeclaration, project: Project): PropSchema {
   const properties: Record<string, PropSchema> = {};
-  const memberNames: string[] = [];
-  for (const member of iface.getMembers()) {
-    if (!Node.isPropertySignature(member)) continue;
-    const name = member.getName();
-    if (name) memberNames.push(name);
-  }
   for (const member of iface.getMembers()) {
     if (!Node.isPropertySignature(member)) continue;
     const name = member.getName();
     const memberType = member.getTypeNode();
     if (!name || !memberType) continue;
     const typeText = memberType.getText();
-    if (isCallbackProp(name, typeText)) {
-      properties[name] = callbackSchema(name, memberNames);
-      continue;
-    }
     if (shouldSkipProp(name, typeText)) continue;
-    let schema = schemaFromTypeNode(memberType, project, memberNames);
+    let schema = schemaFromTypeNode(memberType, project);
     schema = { ...schema, required: !member.hasQuestionToken() ? true : false };
     properties[name] = schema;
   }
   return { type: "object", properties };
 }
 
-function schemaFromTypeNode(
-  typeNode: TypeNode,
-  project: Project,
-  siblingNames: string[] = [],
-): PropSchema {
+function schemaFromTypeNode(typeNode: TypeNode, project: Project): PropSchema {
   if (Node.isTypeLiteral(typeNode)) {
     const properties: Record<string, PropSchema> = {};
-    const memberNames: string[] = [];
-    for (const member of typeNode.getMembers()) {
-      if (!Node.isPropertySignature(member)) continue;
-      const name = member.getName();
-      if (name) memberNames.push(name);
-    }
-    const propNames = memberNames.length > 0 ? memberNames : siblingNames;
     for (const member of typeNode.getMembers()) {
       if (!Node.isPropertySignature(member)) continue;
       const name = member.getName();
       const memberType = member.getTypeNode();
       if (!name || !memberType) continue;
       const typeText = memberType.getText();
-      if (isCallbackProp(name, typeText)) {
-        properties[name] = callbackSchema(name, propNames);
-        continue;
-      }
       if (shouldSkipProp(name, typeText)) continue;
-      let schema = schemaFromTypeNode(memberType, project, propNames);
+      let schema = schemaFromTypeNode(memberType, project);
       schema = { ...schema, required: !member.hasQuestionToken() ? true : false };
       properties[name] = schema;
     }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { buildDefaultArgs, formatDisplayName } from "@tide/core";
 import type {
   ComponentEntry,
@@ -12,7 +13,7 @@ import { computeVariants } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
-import { ControlsPanel, type ActionLogEntry } from "./components/ControlsPanel";
+import { ControlsPanel } from "./components/ControlsPanel";
 import { VariantsPanel } from "./components/VariantsPanel";
 import { DocsPanel } from "./components/DocsPanel";
 import { TokensPanel } from "./components/TokensPanel";
@@ -22,6 +23,7 @@ import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
+import { SidebarTree } from "./components/SidebarTree";
 import {
   PREVIEW_URL,
   PREVIEW_MESSAGE,
@@ -57,18 +59,29 @@ const EMPTY_COMPONENTS: ComponentEntry[] = [];
 const EMPTY_PROPS_MAP: PropsMap = {};
 const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
 
-const MAX_ACTION_LOG = 20;
-
 export function App() {
+  const queryClient = useQueryClient();
   const { manifest, props, tokens } = useTideData();
+
+  // The dev server regenerates artifacts and signals a data change instead of
+  // full-reloading the manager (see packages/cli/src/dev.ts). Refetch in place
+  // so the selected story, control values, and preview handshake survive an edit.
+  useEffect(() => {
+    if (!import.meta.hot) return;
+    const refetch = () => {
+      void queryClient.invalidateQueries();
+    };
+    import.meta.hot.on("tide:data-changed", refetch);
+    return () => {
+      import.meta.hot?.off("tide:data-changed", refetch);
+    };
+  }, [queryClient]);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [foundationView, setFoundationView] = useState<FoundationView | null>(null);
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
-  const [actions, setActions] = useState<ActionLogEntry[]>([]);
-  const actionIdRef = useRef(0);
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
   const [testRunning, setTestRunning] = useState(false);
@@ -141,9 +154,25 @@ export function App() {
     }
   }, [previewTab, previewTabs]);
 
+  // Reset args to defaults when the *selected component* changes, but preserve
+  // the user's in-progress values when props are merely regenerated for the same
+  // component (e.g. after an edit): keep existing values for props that still
+  // exist, add defaults for newly-added props, and drop removed ones.
+  const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (selected && propsMap[selected]) {
-      setArgs(buildDefaultArgs(propsMap[selected]!));
+    if (!selected || !propsMap[selected]) return;
+    const defaults = buildDefaultArgs(propsMap[selected]!);
+    if (prevSelectedRef.current === selected) {
+      setArgs((prev) => {
+        const merged: Record<string, unknown> = {};
+        for (const key of Object.keys(defaults)) {
+          merged[key] = key in prev ? prev[key] : defaults[key];
+        }
+        return merged;
+      });
+    } else {
+      prevSelectedRef.current = selected;
+      setArgs(defaults);
     }
   }, [selected, propsMap]);
 
@@ -240,41 +269,7 @@ export function App() {
     setTestResults([]);
     setTestRunning(false);
     setVisualEntry(null);
-    setActions([]);
   }, [selected]);
-
-  // Preview interaction sync and action log.
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      if (previewTab !== "preview") return;
-
-      if (event.data?.type === PREVIEW_MESSAGE.ARG_CHANGED) {
-        const payload = event.data.payload as { key?: string; value?: unknown };
-        if (typeof payload?.key === "string") {
-          setArgs((prev) => ({ ...prev, [payload.key!]: payload.value }));
-        }
-      }
-
-      if (event.data?.type === PREVIEW_MESSAGE.ACTION) {
-        const payload = event.data.payload as { name?: string; args?: unknown[] };
-        if (typeof payload?.name === "string") {
-          actionIdRef.current += 1;
-          setActions((prev) =>
-            [
-              {
-                id: actionIdRef.current,
-                name: payload.name!,
-                args: Array.isArray(payload.args) ? payload.args : [],
-              },
-              ...prev,
-            ].slice(0, MAX_ACTION_LOG),
-          );
-        }
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [previewTab]);
 
   // Load visual baseline status and report entry when component changes.
   useEffect(() => {
@@ -455,79 +450,20 @@ export function App() {
             </label>
           </div>
 
-          <nav className="bb-sidebar__nav" aria-label="Sidebar">
-            <div className="bb-sidebar__section">
-              <span className="bb-sidebar__section-label">Foundation</span>
-            </div>
-
-            <ul className="bb-sidebar__list bb-sidebar__list--foundation">
-              {FOUNDATION_ITEMS.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="bb-sidebar__item"
-                    data-active={foundationView === item.id ? "true" : undefined}
-                    onClick={() => setFoundationView(item.id)}
-                  >
-                    <span
-                      className="bb-sidebar__item-icon bb-sidebar__item-icon--foundation"
-                      aria-hidden="true"
-                    >
-                      {item.id === "tokens" ? (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                          <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-                          <circle cx="11" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-                          <circle cx="8" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-                        </svg>
-                      ) : (
-                        item.label.charAt(0)
-                      )}
-                    </span>
-                    <span className="bb-sidebar__item-body">
-                      <span className="bb-sidebar__item-title">{item.label}</span>
-                      <span className="bb-sidebar__item-path">{item.description}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <div className="bb-sidebar__section bb-sidebar__section--components">
-              <span className="bb-sidebar__section-label">Components</span>
-              <span className="bb-sidebar__count">{filtered.length}</span>
-            </div>
-
-            {filtered.length === 0 ? (
-              <p className="bb-sidebar__empty">No components match your search.</p>
-            ) : (
-              <ul className="bb-sidebar__list">
-                {filtered.map((c) => (
-                  <li key={c.name}>
-                    <button
-                      type="button"
-                      className="bb-sidebar__item"
-                      data-active={!foundationView && selected === c.name ? "true" : undefined}
-                      onClick={() => {
-                        setFoundationView(null);
-                        setSelected(c.name);
-                        if (propsMap[c.name]) {
-                          setArgs(buildDefaultArgs(propsMap[c.name]!));
-                        }
-                      }}
-                    >
-                      <span className="bb-sidebar__item-icon" aria-hidden="true">
-                        {c.name.charAt(0)}
-                      </span>
-                      <span className="bb-sidebar__item-body">
-                        <span className="bb-sidebar__item-title">{formatDisplayName(c.name)}</span>
-                        <span className="bb-sidebar__item-path">{c.title}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </nav>
+          <SidebarTree
+            foundationItems={FOUNDATION_ITEMS}
+            foundationView={foundationView}
+            onFoundationSelect={setFoundationView}
+            components={filtered}
+            selected={selected}
+            propsMap={propsMap}
+            search={search}
+            onComponentSelect={(name, nextArgs) => {
+              setFoundationView(null);
+              setSelected(name);
+              setArgs(nextArgs);
+            }}
+          />
         </aside>
 
         <SidebarSplitter isResizing={sidebar.isResizing} onPointerDown={sidebar.onPointerDown} />
@@ -601,7 +537,6 @@ export function App() {
                       componentName={selected}
                       props={componentProps}
                       args={args}
-                      actions={actions}
                       onChange={(next) => {
                         setArgs(next);
                         sendArgs(next);

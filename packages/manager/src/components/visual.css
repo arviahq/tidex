@@ -7,13 +7,9 @@
 
 .bb-visual__header {
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--bb-border);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bb-primary) 8%, var(--bb-surface)) 0%,
-    var(--bb-surface) 55%
-  );
+  background: var(--bb-surface);
 }
 
 .bb-visual__title-row {
@@ -34,8 +30,7 @@
 .bb-visual__name {
   margin: 0;
   font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
   color: var(--bb-text);
 }
 
@@ -43,7 +38,7 @@
   margin: 0;
   font-size: 12px;
   color: var(--bb-muted);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--bb-font);
 }
 
 .bb-visual__actions {
@@ -84,10 +79,9 @@
 .bb-visual__btn--primary {
   background: var(--bb-primary);
   border-color: transparent;
-  color: #fff;
+  color: var(--bb-primary-contrast);
   min-width: 108px;
   text-align: center;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--bb-primary) 40%, transparent);
 }
 
 .bb-visual__btn--secondary {

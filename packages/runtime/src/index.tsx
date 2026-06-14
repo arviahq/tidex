@@ -1,13 +1,11 @@
 import React, { Component, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { CallbackMeta } from "@tide/core";
 
 export interface StoryModule {
   load: () => Promise<Record<string, unknown>>;
   exportName: string;
   isDefault: boolean;
   args: Record<string, unknown>;
-  callbacks?: Record<string, CallbackMeta>;
   title: string;
   path: string;
 }
@@ -83,8 +81,4 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
-  // Preview -> manager: user interaction updated a controlled prop.
-  ARG_CHANGED: "TIDE_ARG_CHANGED",
-  // Preview -> manager: action-only callback fired (e.g. onClick).
-  ACTION: "TIDE_ACTION",
 } as const;

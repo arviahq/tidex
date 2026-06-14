@@ -100,7 +100,12 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
     debounce = setTimeout(async () => {
       console.log("  [tide] Re-scanning components...");
       await generateArtifacts(config);
-      await managerServer?.ws.send({ type: "full-reload" });
+      // Tell the manager to refetch its data in place rather than full-reloading
+      // it — a reload would throw away the selected story, the user's control
+      // values, and the preview handshake state on every save. The preview still
+      // full-reloads so the edited component code re-enters its module graph; the
+      // manager re-syncs the preserved story + args once the preview re-announces.
+      managerServer?.ws.send({ type: "custom", event: "tide:data-changed" });
       await previewServer?.ws.send({ type: "full-reload" });
     }, 300);
   });

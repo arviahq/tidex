@@ -2,10 +2,10 @@
   margin: 0;
   padding: 14px 16px;
   border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--bb-code-bg);
+  border: 1px solid var(--bb-code-border);
   overflow: auto;
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--bb-font);
   font-size: 13px;
   line-height: 1.6;
   tab-size: 2;
@@ -15,7 +15,7 @@
   display: block;
   padding: 0;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--bb-code-text);
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;

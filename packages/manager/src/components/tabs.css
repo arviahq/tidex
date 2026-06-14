@@ -61,9 +61,10 @@
 }
 
 .bb-tabs__tab[data-active="true"] {
-  color: var(--bb-primary);
+  color: var(--bb-text);
+  font-weight: 600;
   background: transparent;
-  box-shadow: inset 0 -2px 0 var(--bb-primary);
+  box-shadow: inset 0 -2px 0 var(--bb-accent);
 }
 
 .bb-tabs__tab:focus-visible {

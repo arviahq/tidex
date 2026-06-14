@@ -1,20 +1,38 @@
 :root {
-  --bb-border: #e2e8f0;
-  --bb-background: #f8fafc;
+  --bb-font: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --bb-background: #fafafa;
   --bb-surface: #ffffff;
-  --bb-text: #0f172a;
-  --bb-muted: #64748b;
-  --bb-primary: #4f46e5;
+  --bb-surface-muted: #fafafa;
+  --bb-surface-active: #eaeaea;
+  --bb-border: #eaeaea;
+  --bb-border-strong: #e5e5e5;
+  --bb-accent: #0070f3;
+  --bb-text: #000000;
+  --bb-muted: #666666;
+  --bb-primary: #000000;
+  --bb-primary-contrast: #ffffff;
+  --bb-code-bg: #000000;
+  --bb-code-border: #262626;
+  --bb-code-text: #ededed;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bb-border: #334155;
-  --bb-background: #0f172a;
-  --bb-surface: #1e293b;
-  --bb-text: #f1f5f9;
-  --bb-muted: #94a3b8;
-  --bb-primary: #818cf8;
+  --bb-background: #000000;
+  --bb-surface: #0a0a0a;
+  --bb-surface-muted: #111111;
+  --bb-surface-active: #1a1a1a;
+  --bb-border: #262626;
+  --bb-border-strong: #333333;
+  --bb-accent: #0070f3;
+  --bb-text: #ededed;
+  --bb-muted: #888888;
+  --bb-primary: #ededed;
+  --bb-primary-contrast: #000000;
+  --bb-code-bg: #0a0a0a;
+  --bb-code-border: #262626;
+  --bb-code-text: #ededed;
   color-scheme: dark;
 }
 
@@ -24,14 +42,16 @@
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--bb-font);
   color: var(--bb-text);
   background: var(--bb-surface);
 }

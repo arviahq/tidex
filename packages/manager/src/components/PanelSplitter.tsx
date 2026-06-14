@@ -32,7 +32,7 @@ export function PanelSplitter({
         {isResizing ? (
           <span className="bb-splitter__label">{Math.round(size)}px</span>
         ) : (
-          <svg width="14" height="7" viewBox="0 0 20 10" fill="none">
+          <svg width="10" height="5" viewBox="0 0 20 10" fill="none">
             <path
               d="M4 3.5h12M4 6.5h12"
               stroke="currentColor"

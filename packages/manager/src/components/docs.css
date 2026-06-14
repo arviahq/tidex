@@ -9,13 +9,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--bb-border);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--bb-primary) 5%, var(--bb-surface)) 0%,
-    var(--bb-surface) 100%
-  );
+  background: var(--bb-surface);
 }
 
 .bb-docs__title-row {
@@ -29,8 +25,7 @@
 .bb-docs__name {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
   color: var(--bb-text);
 }
 
@@ -44,13 +39,12 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--bb-primary) 25%, var(--bb-border));
-  background: color-mix(in srgb, var(--bb-primary) 8%, var(--bb-surface));
+  border-radius: 6px;
+  border: 1px solid var(--bb-border);
+  background: var(--bb-surface-muted);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--bb-primary);
+  color: var(--bb-text);
 }
 
 .bb-docs__badge--muted {
@@ -94,7 +88,7 @@
 }
 
 .bb-docs__copy-line-value--mono {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--bb-font);
 }
 
 .bb-docs__section {
@@ -180,7 +174,7 @@
 }
 
 .bb-docs__prop-name {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--bb-font);
   font-size: 12px;
   font-weight: 600;
   color: var(--bb-text);
@@ -212,7 +206,7 @@
   width: fit-content;
   padding: 3px 8px;
   border-radius: 6px;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--bb-font);
   font-size: 11px;
   font-weight: 500;
   color: var(--bb-primary);
@@ -255,7 +249,7 @@
   align-items: center;
   padding: 3px 8px;
   border-radius: 6px;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--bb-font);
   font-size: 11px;
   font-weight: 500;
   color: var(--bb-text);
@@ -279,7 +273,7 @@
 }
 
 .bb-docs__default-value {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--bb-font);
   font-size: 11px;
   color: var(--bb-text);
   word-break: break-word;

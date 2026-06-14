@@ -10,7 +10,7 @@ export interface ControlDef {
 }
 
 export function propToControl(name: string, schema: PropSchema): ControlDef | null {
-  if (schema.type === "unknown" || schema.type === "callback") return null;
+  if (schema.type === "unknown") return null;
 
   switch (schema.type) {
     case "boolean":

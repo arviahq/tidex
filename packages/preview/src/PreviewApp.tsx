@@ -13,13 +13,28 @@ import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
-import { buildInteractiveArgs, useInteractiveArgs } from "./useInteractiveArgs";
 
-class PreviewErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+class PreviewErrorBoundary extends Component<
+  { children: ReactNode; resetKey?: unknown },
+  { error: Error | null; prevResetKey: unknown }
+> {
+  state = { error: null as Error | null, prevResetKey: undefined as unknown };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
+  }
+
+  // Clear a latched error when the render attempt changes (story switch, new
+  // args, or a hot-reload of fixed code) so a transient failure recovers on its
+  // own instead of sticking until a manual page refresh.
+  static getDerivedStateFromProps(
+    props: { resetKey?: unknown },
+    state: { error: Error | null; prevResetKey: unknown },
+  ) {
+    if (props.resetKey !== state.prevResetKey) {
+      return { error: null, prevResetKey: props.resetKey };
+    }
+    return null;
   }
 
   render() {
@@ -162,38 +177,17 @@ export function PreviewApp() {
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
 
-  const baseArgs = story ? { ...story.args, ...args } : args;
-
-  const postArgChanged = useCallback(
-    (key: string, value: unknown) => {
-      if (!isEmbedded() || compact) return;
-      window.parent.postMessage(
-        { type: PREVIEW_MESSAGE.ARG_CHANGED, payload: { key, value } },
-        "*",
-      );
-    },
-    [compact],
-  );
-
-  const postAction = useCallback(
-    (name: string, handlerArgs: unknown[]) => {
-      if (!isEmbedded() || compact) return;
-      window.parent.postMessage(
-        { type: PREVIEW_MESSAGE.ACTION, payload: { name, args: handlerArgs } },
-        "*",
-      );
-    },
-    [compact],
-  );
-
-  const interactiveArgs = useInteractiveArgs(baseArgs, story?.callbacks, {
-    onArgChanged: postArgChanged,
-    onAction: postAction,
-  });
-
   // True while a test run is driving the render, so the declarative
   // story/args effect below stands aside and doesn't fight over the root.
   const runningTestRef = useRef(false);
+
+  // Bumped on every render attempt so the error boundary's resetKey changes and
+  // a previously-latched error clears when fixed code/args re-render.
+  const renderNonceRef = useRef(0);
+
+  // Set once the manager has replied to our READY with a story (or test) so the
+  // re-announce loop below can stop.
+  const handshakeDoneRef = useRef(false);
 
   // Run an interaction test, fully self-contained: load + freshly mount the
   // requested story (clean state for re-runs), wait for it to settle, then
@@ -231,7 +225,7 @@ export function PreviewApp() {
           return;
         }
         // Mount the component fresh for a clean run.
-        const mergedArgs = buildInteractiveArgs({ ...entry.args, ...testArgs }, entry.callbacks);
+        const mergedArgs = { ...entry.args, ...testArgs };
         setArgs(mergedArgs);
         rootRef.current?.unmount();
         rootRef.current = createRoot(container);
@@ -243,7 +237,7 @@ export function PreviewApp() {
           throw new Error(`Could not resolve export "${entry.exportName}"`);
         }
         rootRef.current.render(
-          <PreviewErrorBoundary>
+          <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
             <Component {...mergedArgs} />
           </PreviewErrorBoundary>,
         );
@@ -301,6 +295,7 @@ export function PreviewApp() {
         }
       }
       if (event.data?.type === PREVIEW_MESSAGE.SELECT_STORY) {
+        handshakeDoneRef.current = true;
         const payload = event.data.payload as
           | string
           | { story: string; args?: Record<string, unknown> };
@@ -311,6 +306,7 @@ export function PreviewApp() {
         }
       }
       if (event.data?.type === PREVIEW_MESSAGE.RUN_TEST) {
+        handshakeDoneRef.current = true;
         const payload = event.data.payload as {
           story: string;
           steps: InteractionStep[];
@@ -355,12 +351,19 @@ export function PreviewApp() {
       return () => window.clearTimeout(timeout);
     }
 
-    // Embedded in manager — wait for postMessage from parent.
-    const timeout = window.setTimeout(() => {
-      setWaiting(false);
-      setError("Waiting for story from manager timed out. Try refreshing the page.");
-    }, 8000);
-    return () => window.clearTimeout(timeout);
+    // Embedded in manager — re-announce READY until the manager replies with a
+    // story. A single dropped READY (sent before the manager's listener is
+    // attached, or before its data has loaded) would otherwise dead-end into a
+    // timeout; repeating it lets the handshake self-heal without a manual
+    // refresh. The handler above stops the loop once a message arrives.
+    const interval = window.setInterval(() => {
+      if (handshakeDoneRef.current) {
+        window.clearInterval(interval);
+        return;
+      }
+      window.parent.postMessage({ type: PREVIEW_MESSAGE.READY }, "*");
+    }, 400);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -389,8 +392,8 @@ export function PreviewApp() {
         }
 
         rootRef.current?.render(
-          <PreviewErrorBoundary>
-            <Component {...interactiveArgs} />
+          <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
+            <Component {...{ ...story.args, ...args }} />
           </PreviewErrorBoundary>,
         );
       } catch (err) {
@@ -404,7 +407,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, interactiveArgs]);
+  }, [story, args]);
 
   useEffect(() => {
     return () => {

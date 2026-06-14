@@ -18,7 +18,7 @@ export function SidebarSplitter({ isResizing, onPointerDown }: SidebarSplitterPr
     >
       <div className="bb-splitter__line" aria-hidden="true" />
       <div className="bb-splitter__handle" aria-hidden="true">
-        <svg width="14" height="7" viewBox="0 0 20 10" fill="none">
+        <svg width="10" height="5" viewBox="0 0 20 10" fill="none">
           <path
             d="M4 3.5h12M4 6.5h12"
             stroke="currentColor"

@@ -46,11 +46,7 @@ export type PropSchema =
   | { type: "number"; required?: boolean }
   | { type: "union"; values: string[]; required?: boolean }
   | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
-  | { type: "callback"; updates?: string; required?: boolean }
   | { type: "unknown"; required?: boolean };
-
-/** Metadata for auto-wiring a callback prop in the interactive preview. */
-export type CallbackMeta = { updates?: string };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
 
@@ -224,7 +220,7 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
 export function buildDefaultArgs(props: Record<string, PropSchema>): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(props)) {
-    if (schema.type === "unknown" || schema.type === "callback") continue;
+    if (schema.type === "unknown") continue;
     args[name] = defaultArgsForProp(schema, name);
   }
   return args;
@@ -236,59 +232,18 @@ export const SKIP_PROP_PATTERNS = [
   /^style$/,
   /^ref$/,
   /^key$/,
+  /^on[A-Z]/,
   /ReactNode/,
   /ReactElement/,
   /ElementType/,
   /HTMLAttributes/,
+  /=>\s*/,
   /\.\.\./,
 ];
 
-export function isCallbackProp(name: string, typeText?: string): boolean {
-  if (/^on[A-Z]/.test(name)) return true;
-  if (typeText && /=>\s*/.test(typeText)) return true;
-  return false;
-}
-
-/** Infer the state prop a callback updates (e.g. onValueChange → value). */
-export function inferStateKeyFromCallback(
-  callbackName: string,
-  propNames: string[] = [],
-): string | null {
-  if (!callbackName.startsWith("on") || callbackName.length < 3) return null;
-  const rest = callbackName.slice(2);
-
-  if (rest.endsWith("Change")) {
-    const stem = rest.slice(0, -6);
-    if (stem.length === 0) {
-      if (propNames.includes("value")) return "value";
-      if (propNames.includes("checked")) return "checked";
-      return null;
-    }
-    const stateKey = stem.charAt(0).toLowerCase() + stem.slice(1);
-    return propNames.length === 0 || propNames.includes(stateKey) ? stateKey : null;
-  }
-
-  return null;
-}
-
-export function buildCallbacksFromProps(
-  props: Record<string, PropSchema>,
-): Record<string, CallbackMeta> {
-  const callbacks: Record<string, CallbackMeta> = {};
-  const propNames = Object.keys(props);
-  for (const [name, schema] of Object.entries(props)) {
-    if (schema.type !== "callback") continue;
-    const updates = schema.updates ?? inferStateKeyFromCallback(name, propNames) ?? undefined;
-    callbacks[name] = updates ? { updates } : {};
-  }
-  return callbacks;
-}
-
 export function shouldSkipProp(name: string, typeText?: string): boolean {
-  if (isCallbackProp(name, typeText)) return false;
   if (SKIP_PROP_PATTERNS.some((p) => p.test(name))) return true;
   if (typeText && SKIP_PROP_PATTERNS.some((p) => p.test(typeText))) return true;
-  if (typeText && /=>\s*/.test(typeText)) return true;
   return false;
 }
 
