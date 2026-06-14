@@ -55,7 +55,10 @@
   padding: 4px 8px;
   border-radius: 6px;
   color: var(--bb-muted);
-  transition: color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .bb-controls__segment:hover {
@@ -78,7 +81,9 @@
   font-size: 13px;
   padding: 6px 10px;
   outline: none;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .bb-controls__input:focus {

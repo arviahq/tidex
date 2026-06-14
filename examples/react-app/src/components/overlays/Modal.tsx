@@ -63,10 +63,22 @@ export function Modal({
           background: "linear-gradient(180deg, #ffffff 0%, #fafbff 100%)",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: ui.colors.text, letterSpacing: "-0.02em" }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 20,
+            fontWeight: 700,
+            color: ui.colors.text,
+            letterSpacing: "-0.02em",
+          }}
+        >
           {heading}
         </h2>
-        <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: ui.colors.textMuted }}>{body}</p>
+        <p
+          style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: ui.colors.textMuted }}
+        >
+          {body}
+        </p>
       </div>
       <div
         style={{

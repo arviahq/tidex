@@ -21,10 +21,7 @@ export function ControlsPanel({ componentName, props, args, onChange }: Controls
     [props],
   );
 
-  const code = useMemo(
-    () => generateJsxSnippet(componentName, args),
-    [componentName, args],
-  );
+  const code = useMemo(() => generateJsxSnippet(componentName, args), [componentName, args]);
 
   const update = (name: string, value: unknown) => {
     onChange({ ...args, [name]: value });
@@ -66,10 +63,7 @@ export function ControlsPanel({ componentName, props, args, onChange }: Controls
                   className="bb-controls__input bb-controls__input--number"
                   value={args[control.name] == null ? "" : String(args[control.name])}
                   onChange={(event) =>
-                    update(
-                      control.name,
-                      event.target.value === "" ? 0 : Number(event.target.value),
-                    )
+                    update(control.name, event.target.value === "" ? 0 : Number(event.target.value))
                   }
                 />
               ) : control.kind === "object" ? (

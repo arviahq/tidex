@@ -1,13 +1,18 @@
-import React, { Component, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import React, {
+  Component,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 
-class PreviewErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
+class PreviewErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
 
   static getDerivedStateFromError(error: Error) {
@@ -28,9 +33,7 @@ class PreviewErrorBoundary extends Component<
 }
 
 function loadStories(): Promise<Record<string, StoryModule>> {
-  return import("virtual:tide-stories").then(
-    (mod) => mod.stories as Record<string, StoryModule>,
-  );
+  return import("virtual:tide-stories").then((mod) => mod.stories as Record<string, StoryModule>);
 }
 
 function formatError(err: unknown): string {
@@ -109,10 +112,7 @@ function useScaleToFit(
       const h = el.offsetHeight;
       if (w === 0 || h === 0) return;
       sizeRef.current = { w, h };
-      window.parent.postMessage(
-        { type: PREVIEW_MESSAGE.CONTENT_SIZE, payload: { w, h } },
-        "*",
-      );
+      window.parent.postMessage({ type: PREVIEW_MESSAGE.CONTENT_SIZE, payload: { w, h } }, "*");
       recompute();
     };
 
@@ -303,9 +303,7 @@ export function PreviewApp() {
       <div className="bb-preview-error">
         <strong>Preview error</strong>
         <p>{error}</p>
-        {storyName && (
-          <p data-muted="true">Story: {storyName}</p>
-        )}
+        {storyName && <p data-muted="true">Story: {storyName}</p>}
       </div>
     );
   }

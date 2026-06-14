@@ -3,11 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 import { createServer, type ViteDevServer } from "vite";
-import {
-  applyPlugins,
-  tideVitePlugin,
-  getTideDir,
-} from "@tide/core";
+import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
 import { generateArtifacts } from "@tide/scanner";
 import { loadConfig } from "./config.js";
 
@@ -46,9 +42,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
     },
     define: {
       __TIDE_ROOT__: JSON.stringify(cwd),
-      __TIDE_PREVIEW_URL__: JSON.stringify(
-        `http://localhost:${config.previewPort ?? 6007}`,
-      ),
+      __TIDE_PREVIEW_URL__: JSON.stringify(`http://localhost:${config.previewPort ?? 6007}`),
     },
     plugins: [tideVitePlugin(sharedPluginOptions)],
   });
@@ -201,9 +195,7 @@ export async function runTest(cwd?: string): Promise<number> {
   await generateArtifacts(config);
   const { readManifest } = await import("./config.js");
   const manifest = readManifest(root);
-  const { runA11yTests, hasA11yViolations, formatA11ySummary } = await import(
-    "@tide/testing"
-  );
+  const { runA11yTests, hasA11yViolations, formatA11ySummary } = await import("@tide/testing");
 
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);

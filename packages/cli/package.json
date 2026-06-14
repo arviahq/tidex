@@ -1,10 +1,13 @@
 {
   "name": "tide",
   "version": "0.0.1",
-  "type": "module",
   "bin": {
     "tide": "./bin/tide.js"
   },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,7 +21,6 @@
       "import": "@tide/core"
     }
   },
-  "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",

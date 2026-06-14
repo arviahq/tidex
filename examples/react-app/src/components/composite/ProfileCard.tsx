@@ -51,7 +51,14 @@ export function ProfileCard({
             flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: 17, fontWeight: 700, color: ui.colors.text, letterSpacing: "-0.02em" }}>
+          <span
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: ui.colors.text,
+              letterSpacing: "-0.02em",
+            }}
+          >
             {displayName}
           </span>
           {verified ? <Badge tone="info">Verified</Badge> : null}

@@ -1,6 +1,9 @@
 {
   "name": "@tide/testing",
   "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,15 +15,14 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*",
-    "@axe-core/playwright": "^4.10.0"
+    "@axe-core/playwright": "^4.10.0",
+    "@tide/core": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

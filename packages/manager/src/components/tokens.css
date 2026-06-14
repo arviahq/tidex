@@ -65,11 +65,11 @@
   padding: 28px 20px;
   background:
     radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--bb-border) 70%, transparent) 1px,
-      transparent 0
-    )
-    0 0 / 14px 14px,
+        circle at 1px 1px,
+        color-mix(in srgb, var(--bb-border) 70%, transparent) 1px,
+        transparent 0
+      )
+      0 0 / 14px 14px,
     var(--bb-background);
   border-right: 1px solid var(--bb-border);
 }
@@ -201,7 +201,11 @@
   height: 100%;
   width: 28%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--bb-primary), color-mix(in srgb, var(--bb-primary) 70%, #6366f1));
+  background: linear-gradient(
+    90deg,
+    var(--bb-primary),
+    color-mix(in srgb, var(--bb-primary) 70%, #6366f1)
+  );
   animation-name: bb-tokens-motion-width;
   animation-duration: 200ms;
   animation-timing-function: ease-in-out;

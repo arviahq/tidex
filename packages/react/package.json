@@ -1,6 +1,9 @@
 {
   "name": "@tide/react",
   "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,7 +15,6 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -21,13 +23,13 @@
   "dependencies": {
     "@tide/core": "workspace:*"
   },
-  "peerDependencies": {
-    "react": ">=18"
-  },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
   }
 }

@@ -31,10 +31,7 @@ export function CodeBlock({ code, language = "tsx", className }: CodeBlockProps)
 
   return (
     <pre className={className ? `bb-code ${className}` : "bb-code"}>
-      <code
-        className={`hljs language-${language}`}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <code className={`hljs language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
     </pre>
   );
 }

@@ -64,9 +64,7 @@ export const TIDE_DIR = ".tide";
 export function formatDisplayName(name: string): string {
   if (!name) return name;
 
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
 }
 
 export function getTideDir(root: string): string {
@@ -212,10 +210,7 @@ export function shouldSkipProp(name: string, typeText?: string): boolean {
 import fs from "node:fs";
 import type { Plugin } from "vite";
 
-export function tideVitePlugin(options: {
-  root: string;
-  tideDir: string;
-}): Plugin {
+export function tideVitePlugin(options: { root: string; tideDir: string }): Plugin {
   const virtualStoriesId = "virtual:tide-stories";
   const resolvedVirtualStoriesId = "\0" + virtualStoriesId;
 

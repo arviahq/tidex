@@ -5,10 +5,11 @@ import fs from "node:fs";
 
 declare const __TIDE_ROOT__: string;
 
-export default defineConfig(({ mode }) => {
-  const userRoot = typeof __TIDE_ROOT__ !== "undefined" && __TIDE_ROOT__
-    ? __TIDE_ROOT__
-    : process.env.TIDE_ROOT ?? "";
+export default defineConfig(() => {
+  const userRoot =
+    typeof __TIDE_ROOT__ !== "undefined" && __TIDE_ROOT__
+      ? __TIDE_ROOT__
+      : (process.env.TIDE_ROOT ?? "");
 
   const alias: Record<string, string> = {};
   if (userRoot) {
@@ -29,7 +30,9 @@ export default defineConfig(({ mode }) => {
       port: 6007,
       cors: true,
       fs: {
-        allow: userRoot ? [path.resolve(__dirname, ".."), userRoot] : [path.resolve(__dirname, "..")],
+        allow: userRoot
+          ? [path.resolve(__dirname, ".."), userRoot]
+          : [path.resolve(__dirname, "..")],
       },
     },
     optimizeDeps: {

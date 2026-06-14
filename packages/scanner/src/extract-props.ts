@@ -1,16 +1,5 @@
-import {
-  Node,
-  Project,
-  type InterfaceDeclaration,
-  type Type,
-  type TypeNode,
-} from "ts-morph";
-import {
-  shouldSkipProp,
-  type PropSchema,
-  type PropsMap,
-  type ComponentEntry,
-} from "@tide/core";
+import { Node, Project, type InterfaceDeclaration, type Type, type TypeNode } from "ts-morph";
+import { shouldSkipProp, type PropSchema, type PropsMap, type ComponentEntry } from "@tide/core";
 import path from "node:path";
 import {
   discoverComponents,
@@ -93,7 +82,12 @@ function schemaFromTypeNode(typeNode: TypeNode, project: Project): PropSchema {
     const values: string[] = [];
     for (const t of typeNode.getTypeNodes()) {
       if (Node.isLiteralTypeNode(t) && Node.isStringLiteral(t.getLiteral())) {
-        values.push(t.getLiteral().getText().replace(/^['"]|['"]$/g, ""));
+        values.push(
+          t
+            .getLiteral()
+            .getText()
+            .replace(/^['"]|['"]$/g, ""),
+        );
       }
     }
     if (values.length > 0) {

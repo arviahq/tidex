@@ -8,9 +8,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __TIDE_ROOT__: JSON.stringify(process.env.TIDE_ROOT ?? ""),
-    __TIDE_PREVIEW_URL__: JSON.stringify(
-      process.env.TIDE_PREVIEW_URL ?? "http://localhost:6007",
-    ),
+    __TIDE_PREVIEW_URL__: JSON.stringify(process.env.TIDE_PREVIEW_URL ?? "http://localhost:6007"),
   },
   resolve: {
     alias: {

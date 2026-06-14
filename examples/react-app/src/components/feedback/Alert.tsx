@@ -61,7 +61,9 @@ export function Alert({ variant, title, message, dismissible = false }: AlertPro
       </span>
       <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: ui.colors.text }}>{heading}</div>
-        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.55, color: ui.colors.textMuted }}>{body}</div>
+        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.55, color: ui.colors.textMuted }}>
+          {body}
+        </div>
       </div>
       {dismissible ? (
         <button

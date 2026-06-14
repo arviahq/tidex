@@ -44,12 +44,14 @@ export function text(value: unknown, fallback: string): string {
 
 export function initials(name: unknown): string {
   const safe = text(name, "BB");
-  return safe
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "BB";
+  return (
+    safe
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "BB"
+  );
 }
 
 export function focusRing(color = ui.colors.primary): CSSProperties {

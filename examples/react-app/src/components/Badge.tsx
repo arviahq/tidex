@@ -28,7 +28,9 @@ export function Badge({ tone, outlined, children }: BadgeProps) {
         letterSpacing: "0.01em",
         background: outlined ? palette.soft : palette.bg,
         color: outlined ? palette.text : "#fff",
-        border: outlined ? `1px solid color-mix(in srgb, ${palette.text} 25%, ${ui.colors.border})` : "none",
+        border: outlined
+          ? `1px solid color-mix(in srgb, ${palette.text} 25%, ${ui.colors.border})`
+          : "none",
       }}
     >
       {children ?? tone}

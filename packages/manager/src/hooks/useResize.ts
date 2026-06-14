@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 interface UseResizeOptions {
   initial: number;
@@ -9,14 +15,7 @@ interface UseResizeOptions {
   bodyClass?: string;
 }
 
-export function useResize({
-  initial,
-  min,
-  max,
-  axis,
-  storageKey,
-  bodyClass,
-}: UseResizeOptions) {
+export function useResize({ initial, min, max, axis, storageKey, bodyClass }: UseResizeOptions) {
   const [size, setSize] = useState(() => {
     if (storageKey && typeof window !== "undefined") {
       const stored = Number(localStorage.getItem(storageKey));
@@ -35,10 +34,7 @@ export function useResize({
   const frame = useRef(0);
   const pendingSize = useRef<number | null>(null);
 
-  const getMax = useCallback(
-    () => (typeof max === "function" ? max() : max),
-    [max],
-  );
+  const getMax = useCallback(() => (typeof max === "function" ? max() : max), [max]);
 
   const clamp = useCallback(
     (value: number) => Math.min(getMax(), Math.max(min, value)),
@@ -96,10 +92,7 @@ export function useResize({
       if (!dragging.current) return;
       const current = axis === "horizontal" ? event.clientX : event.clientY;
       const delta = current - startPos.current;
-      const next =
-        axis === "horizontal"
-          ? startSize.current + delta
-          : startSize.current - delta;
+      const next = axis === "horizontal" ? startSize.current + delta : startSize.current - delta;
       scheduleSize(clamp(next));
     };
 
@@ -135,4 +128,3 @@ export function useResize({
 
   return { size, onPointerDown, isResizing, reset };
 }
-

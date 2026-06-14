@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildDefaultArgs, formatDisplayName } from "@tide/core";
+import type { ComponentEntry, PropSchema, PropsMap } from "@tide/core";
 import { computeVariants } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
@@ -33,6 +34,10 @@ const FOUNDATION_ITEMS: { id: FoundationView; label: string; description: string
 const PREVIEW_TAB_PREVIEW = { id: "preview" as const, label: "Preview" };
 const PREVIEW_TAB_VARIANTS = { id: "variants" as const, label: "Variants" };
 
+const EMPTY_COMPONENTS: ComponentEntry[] = [];
+const EMPTY_PROPS_MAP: PropsMap = {};
+const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
+
 export function App() {
   const { manifest, props, tokens } = useTideData();
   const [search, setSearch] = useState("");
@@ -62,8 +67,11 @@ export function App() {
     bodyClass: "bb-is-resizing-panel",
   });
 
-  const components = manifest.data?.components ?? [];
-  const propsMap = props.data ?? {};
+  const components = useMemo(
+    () => manifest.data?.components ?? EMPTY_COMPONENTS,
+    [manifest.data?.components],
+  );
+  const propsMap = useMemo(() => props.data ?? EMPTY_PROPS_MAP, [props.data]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -82,7 +90,10 @@ export function App() {
   }, [components, selected]);
 
   const selectedComponent = components.find((c) => c.name === selected);
-  const componentProps = selected ? propsMap[selected] ?? {} : {};
+  const componentProps = useMemo(() => {
+    if (!selected) return EMPTY_COMPONENT_PROPS;
+    return propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
+  }, [selected, propsMap]);
 
   const previewTabs = useMemo((): { id: PreviewTab; label: string }[] => {
     const tabs: { id: PreviewTab; label: string }[] = [PREVIEW_TAB_PREVIEW];
@@ -122,15 +133,12 @@ export function App() {
     });
   }, [previewTheme]);
 
-  const sendArgs = useCallback(
-    (nextArgs: Record<string, unknown>) => {
-      postToPreview(iframeRef.current, {
-        type: PREVIEW_MESSAGE.UPDATE_ARGS,
-        payload: nextArgs,
-      });
-    },
-    [],
-  );
+  const sendArgs = useCallback((nextArgs: Record<string, unknown>) => {
+    postToPreview(iframeRef.current, {
+      type: PREVIEW_MESSAGE.UPDATE_ARGS,
+      payload: nextArgs,
+    });
+  }, []);
 
   useEffect(() => {
     if (!selected) return;
@@ -164,7 +172,9 @@ export function App() {
   if (manifest.isError) {
     return (
       <div className="bb-layout__center">
-        <p>Failed to load manifest. Run <code>tide generate</code> first.</p>
+        <p>
+          Failed to load manifest. Run <code>tide generate</code> first.
+        </p>
       </div>
     );
   }
@@ -231,7 +241,10 @@ export function App() {
                     data-active={foundationView === item.id ? "true" : undefined}
                     onClick={() => setFoundationView(item.id)}
                   >
-                    <span className="bb-sidebar__item-icon bb-sidebar__item-icon--foundation" aria-hidden="true">
+                    <span
+                      className="bb-sidebar__item-icon bb-sidebar__item-icon--foundation"
+                      aria-hidden="true"
+                    >
                       {item.id === "tokens" ? (
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                           <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
@@ -289,10 +302,7 @@ export function App() {
           </nav>
         </aside>
 
-        <SidebarSplitter
-          isResizing={sidebar.isResizing}
-          onPointerDown={sidebar.onPointerDown}
-        />
+        <SidebarSplitter isResizing={sidebar.isResizing} onPointerDown={sidebar.onPointerDown} />
 
         <div className="bb-layout__main">
           <section className="bb-layout__preview-section">
@@ -355,12 +365,7 @@ export function App() {
 
               <footer className="bb-layout__panel" style={{ height: panel.size }}>
                 <nav className="bb-layout__tabs">
-                  <Tabs
-                    items={PANEL_TABS}
-                    value={tab}
-                    onChange={setTab}
-                    ariaLabel="Panel"
-                  />
+                  <Tabs items={PANEL_TABS} value={tab} onChange={setTab} ariaLabel="Panel" />
                 </nav>
                 <div className="bb-layout__panel-body">
                   {selected && selectedComponent && tab === "props" && (

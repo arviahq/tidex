@@ -50,7 +50,11 @@ export function Button({ variant, size, disabled, children }: ButtonProps) {
   };
 
   return (
-    <button type="button" style={{ ...base, ...(variants[variant] ?? variants.primary) }} disabled={disabled}>
+    <button
+      type="button"
+      style={{ ...base, ...(variants[variant] ?? variants.primary) }}
+      disabled={disabled}
+    >
       {children ?? "Button"}
     </button>
   );

@@ -8,12 +8,9 @@ interface TokensPanelProps {
 }
 
 export function TokensPanel({ tokens }: TokensPanelProps) {
-  const categories = useMemo(
-    () => (tokens ? Object.keys(tokens).sort() : []),
-    [tokens],
-  );
+  const categories = useMemo(() => (tokens ? Object.keys(tokens).sort() : []), [tokens]);
   const [active, setActive] = useState<string | null>(null);
-  const selected = active && categories.includes(active) ? active : categories[0] ?? null;
+  const selected = active && categories.includes(active) ? active : (categories[0] ?? null);
 
   const categoryTabs = useMemo<TabItem[]>(
     () => categories.map((category) => ({ id: category, label: formatCategoryLabel(category) })),
@@ -101,12 +98,7 @@ function ColorsView({ values }: { values: Record<string, unknown> }) {
           key={name}
           name={name}
           value={String(value)}
-          stage={
-            <div
-              className="bb-tokens__color-demo"
-              style={{ background: String(value) }}
-            />
-          }
+          stage={<div className="bb-tokens__color-demo" style={{ background: String(value) }} />}
         />
       ))}
     </div>
@@ -206,12 +198,7 @@ function RadiusView({ values }: { values: Record<string, unknown> }) {
           key={name}
           name={name}
           value={String(value)}
-          stage={
-            <div
-              className="bb-tokens__radius-demo"
-              style={{ borderRadius: String(value) }}
-            />
-          }
+          stage={<div className="bb-tokens__radius-demo" style={{ borderRadius: String(value) }} />}
         />
       ))}
     </div>
@@ -226,12 +213,7 @@ function BorderView({ values }: { values: Record<string, unknown> }) {
           key={name}
           name={name}
           value={String(value)}
-          stage={
-            <div
-              className="bb-tokens__border-demo"
-              style={{ borderWidth: String(value) }}
-            />
-          }
+          stage={<div className="bb-tokens__border-demo" style={{ borderWidth: String(value) }} />}
         />
       ))}
     </div>
@@ -286,10 +268,7 @@ function MotionView({ values }: { values: Record<string, unknown> }) {
 }
 
 function ZIndexView({ values }: { values: Record<string, unknown> }) {
-  const max = Math.max(
-    ...Object.values(values).map((value) => Number(value) || 0),
-    1,
-  );
+  const max = Math.max(...Object.values(values).map((value) => Number(value) || 0), 1);
 
   return (
     <div className="bb-tokens__token-list">
@@ -330,15 +309,7 @@ function isMotionDuration(value: string): boolean {
   return /^\d+(\.\d+)?(ms|s)$/i.test(value.trim());
 }
 
-function TokenRow({
-  name,
-  value,
-  stage,
-}: {
-  name: string;
-  value: string;
-  stage: ReactNode;
-}) {
+function TokenRow({ name, value, stage }: { name: string; value: string; stage: ReactNode }) {
   return (
     <article className="bb-tokens__token-item">
       <div className="bb-tokens__token-stage">{stage}</div>
@@ -377,13 +348,7 @@ function ShadowCard({ name, value }: { name: string; value: string }) {
   );
 }
 
-function GenericView({
-  category,
-  values,
-}: {
-  category: string;
-  values: Record<string, unknown>;
-}) {
+function GenericView({ category, values }: { category: string; values: Record<string, unknown> }) {
   const entries = flattenEntries(values);
 
   if (entries.length === 0) {
@@ -400,7 +365,8 @@ function GenericView({
   return (
     <div className="bb-tokens__generic">
       <p className="bb-tokens__generic-note">
-        No custom preview for <strong>{formatCategoryLabel(category)}</strong>. Values are shown as raw tokens.
+        No custom preview for <strong>{formatCategoryLabel(category)}</strong>. Values are shown as
+        raw tokens.
       </p>
       <div className="bb-tokens__token-list">
         {entries.map(({ path, value }) => (

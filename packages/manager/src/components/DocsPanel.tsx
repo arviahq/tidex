@@ -104,10 +104,7 @@ function PropRow({
       <div className="bb-docs__prop-main">
         <div className="bb-docs__prop-head">
           <span className="bb-docs__prop-name">{name}</span>
-          <span
-            className="bb-docs__prop-required"
-            data-required={required ? "true" : undefined}
-          >
+          <span className="bb-docs__prop-required" data-required={required ? "true" : undefined}>
             {required ? "required" : "optional"}
           </span>
         </div>
@@ -186,7 +183,13 @@ function CopyLine({ label, value, mono }: { label: string; value: string; mono?:
   return (
     <div className="bb-docs__copy-line">
       <span className="bb-docs__copy-line-label">{label}</span>
-      <code className={mono ? "bb-docs__copy-line-value bb-docs__copy-line-value--mono" : "bb-docs__copy-line-value"}>
+      <code
+        className={
+          mono
+            ? "bb-docs__copy-line-value bb-docs__copy-line-value--mono"
+            : "bb-docs__copy-line-value"
+        }
+      >
         {value}
       </code>
       <CopyButton value={value} compact />
@@ -220,9 +223,7 @@ function CopyButton({ value, compact }: { value: string; compact?: boolean }) {
 }
 
 function formatImportLine(component: ComponentEntry): string {
-  const path = component.path
-    .replace(/^src\//, "./")
-    .replace(/\.tsx?$/, "");
+  const path = component.path.replace(/^src\//, "./").replace(/\.tsx?$/, "");
 
   if (component.isDefault) {
     return `import ${component.exportName} from "${path}";`;

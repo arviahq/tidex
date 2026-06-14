@@ -7,7 +7,12 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --check .",
+    "format:fix": "oxfmt .",
+    "quality": "pnpm lint && pnpm format",
+    "quality:fix": "pnpm lint:fix && pnpm format:fix",
     "example:dev": "pnpm --filter react-app dev",
     "example:generate": "pnpm --filter react-app generate"
   },
@@ -15,13 +20,15 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "oxfmt": "^0.54.0",
+    "oxlint": "^1.69.0",
+    "tsup": "^8.3.5",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
-    "tsup": "^8.3.5",
     "vitest": "^2.1.8"
   },
-  "packageManager": "pnpm@9.1.2",
   "engines": {
     "node": ">=20"
-  }
+  },
+  "packageManager": "pnpm@9.1.2"
 }

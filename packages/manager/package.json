@@ -10,11 +10,11 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-router": "^1.91.0",
     "@tide/core": "workspace:*",
     "@tide/docs": "workspace:*",
     "@tide/react": "workspace:*",
-    "@tanstack/react-query": "^5.62.0",
-    "@tanstack/react-router": "^1.91.0",
     "highlight.js": "^11.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -1,18 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import {
-  defaultConfig,
-  getManifestPath,
-  type TideConfig,
-} from "@tide/core";
+import { defaultConfig, getManifestPath, type TideConfig } from "@tide/core";
 
 export async function loadConfig(cwd: string): Promise<TideConfig> {
-  const configFiles = [
-    "tide.config.ts",
-    "tide.config.js",
-    "tide.config.mjs",
-  ];
+  const configFiles = ["tide.config.ts", "tide.config.js", "tide.config.mjs"];
 
   for (const file of configFiles) {
     const configPath = path.join(cwd, file);

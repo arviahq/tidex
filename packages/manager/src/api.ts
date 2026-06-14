@@ -1,8 +1,7 @@
 declare const __TIDE_PREVIEW_URL__: string;
 
-export const PREVIEW_URL = typeof __TIDE_PREVIEW_URL__ !== "undefined"
-  ? __TIDE_PREVIEW_URL__
-  : "http://localhost:6007";
+export const PREVIEW_URL =
+  typeof __TIDE_PREVIEW_URL__ !== "undefined" ? __TIDE_PREVIEW_URL__ : "http://localhost:6007";
 
 export const PREVIEW_MESSAGE = {
   UPDATE_ARGS: "TIDE_UPDATE_ARGS",

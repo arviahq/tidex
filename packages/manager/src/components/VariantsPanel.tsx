@@ -74,12 +74,14 @@ export function VariantsPanel({ componentName, props, baseArgs, theme }: Variant
           return (
             <article key={label} className="bb-variants__tile">
               <header className="bb-variants__tile-head">
-                <span className="bb-variants__tile-index">
-                  Variant {index + 1}
-                </span>
+                <span className="bb-variants__tile-index">Variant {index + 1}</span>
                 <div className="bb-variants__pills">
                   {Object.entries(variantArgs).map(([prop, value]) => (
-                    <span key={prop} className="bb-variants__pill" title={`${prop}: ${String(value)}`}>
+                    <span
+                      key={prop}
+                      className="bb-variants__pill"
+                      title={`${prop}: ${String(value)}`}
+                    >
                       <span className="bb-variants__pill-key">{prop}</span>
                       <span aria-hidden="true">·</span>
                       {String(value)}

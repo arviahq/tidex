@@ -2,11 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-import {
-  getBaselinesDir,
-  getReportsDir,
-  type Manifest,
-} from "@tide/core";
+import { getBaselinesDir, getReportsDir, type Manifest } from "@tide/core";
 
 export interface VisualReportEntry {
   changed: boolean;

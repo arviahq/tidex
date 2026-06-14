@@ -1,12 +1,5 @@
 import path from "node:path";
-import {
-  Node,
-  Project,
-  SyntaxKind,
-  type SourceFile,
-  type Type,
-  type TypeNode,
-} from "ts-morph";
+import { Node, Project, SyntaxKind, type SourceFile, type Type, type TypeNode } from "ts-morph";
 import type { ComponentEntry } from "@tide/core";
 
 const PASCAL_CASE = /^[A-Z][a-zA-Z0-9]*$/;
@@ -16,9 +9,11 @@ export function isPascalCase(name: string): boolean {
 }
 
 function hasJsx(node: Node): boolean {
-  return node.getDescendantsOfKind(SyntaxKind.JsxElement).length > 0
-    || node.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement).length > 0
-    || node.getDescendantsOfKind(SyntaxKind.JsxFragment).length > 0;
+  return (
+    node.getDescendantsOfKind(SyntaxKind.JsxElement).length > 0 ||
+    node.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement).length > 0 ||
+    node.getDescendantsOfKind(SyntaxKind.JsxFragment).length > 0
+  );
 }
 
 function deriveTitle(filePath: string, componentName: string, root: string): string {
@@ -82,7 +77,8 @@ export function discoverComponents(root: string, files: string[]): ComponentEntr
       const decls = defaultExport.getDeclarations();
       for (const decl of decls) {
         if (Node.isFunctionDeclaration(decl) && hasJsx(decl)) {
-          const name = getComponentNameFromFunction(decl.getName(), absPath) ?? path.basename(absPath, ".tsx");
+          const name =
+            getComponentNameFromFunction(decl.getName(), absPath) ?? path.basename(absPath, ".tsx");
           const key = `${relPath}:${name}:default`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -127,11 +123,7 @@ export function discoverComponents(root: string, files: string[]): ComponentEntr
 }
 
 export function resolvePropsTypeName(componentName: string): string[] {
-  return [
-    `${componentName}Props`,
-    `Props`,
-    `I${componentName}Props`,
-  ];
+  return [`${componentName}Props`, `Props`, `I${componentName}Props`];
 }
 
 export function findPropsTypeNode(
@@ -160,7 +152,10 @@ export function findPropsInterface(sourceFile: SourceFile, componentName: string
   return undefined;
 }
 
-export function getComponentParameterType(sourceFile: SourceFile, componentName: string): TypeNode | undefined {
+export function getComponentParameterType(
+  sourceFile: SourceFile,
+  componentName: string,
+): TypeNode | undefined {
   const fn = sourceFile.getFunction(componentName);
   if (fn) {
     const param = fn.getParameters()[0];

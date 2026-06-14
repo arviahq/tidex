@@ -14,10 +14,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class PreviewErrorBoundary extends Component<
-  { children: ReactNode },
-  ErrorBoundaryState
-> {
+class PreviewErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   state: ErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error) {

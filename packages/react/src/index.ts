@@ -32,9 +32,7 @@ export function computeVariants(
   props: Record<string, PropSchema>,
   max = 12,
 ): Array<Record<string, unknown>> {
-  const unionProps = Object.entries(props).filter(
-    ([, s]) => s.type === "union",
-  );
+  const unionProps = Object.entries(props).filter(([, s]) => s.type === "union");
 
   if (unionProps.length === 0) return [];
 
@@ -67,10 +65,7 @@ export function formatVariantLabel(args: Record<string, unknown>): string {
     .join(" / ");
 }
 
-export function generateJsxSnippet(
-  componentName: string,
-  args: Record<string, unknown>,
-): string {
+export function generateJsxSnippet(componentName: string, args: Record<string, unknown>): string {
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(args)) {
     if (value === undefined || value === "" || value === false) continue;

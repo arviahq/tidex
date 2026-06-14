@@ -40,7 +40,9 @@
   align-items: center;
   justify-content: center;
   color: var(--bb-muted);
-  transition: color 200ms ease, opacity 200ms ease;
+  transition:
+    color 200ms ease,
+    opacity 200ms ease;
 }
 
 .bb-theme-toggle__track[data-theme="light"] .bb-theme-toggle__icon--sun,

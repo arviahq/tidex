@@ -1,20 +1,10 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import {
-  runBuild,
-  runGenerate,
-  runInit,
-  runTest,
-  runVisual,
-  startDevServer,
-} from "./dev.js";
+import { runBuild, runGenerate, runInit, runTest, runVisual, startDevServer } from "./dev.js";
 
 const program = new Command();
 
-program
-  .name("tide")
-  .description("Tide — zero-boilerplate component explorer")
-  .version("0.0.1");
+program.name("tide").description("Tide — zero-boilerplate component explorer").version("0.0.1");
 
 program
   .command("init")

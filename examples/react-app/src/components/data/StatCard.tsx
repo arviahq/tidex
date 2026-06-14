@@ -24,9 +24,7 @@ export function StatCard({ label, value, change, trend, emphasis = false }: Stat
         padding: "18px 20px",
         borderRadius: ui.radius.md,
         border: emphasis ? "1px solid #c7d2fe" : `1px solid ${ui.colors.border}`,
-        background: emphasis
-          ? "linear-gradient(180deg, #eef2ff 0%, #ffffff 72%)"
-          : ui.colors.bg,
+        background: emphasis ? "linear-gradient(180deg, #eef2ff 0%, #ffffff 72%)" : ui.colors.bg,
         boxShadow: emphasis ? "0 10px 30px rgba(79, 70, 229, 0.1)" : ui.shadow.sm,
         fontFamily: ui.font,
       }}
