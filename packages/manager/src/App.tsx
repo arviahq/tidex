@@ -19,6 +19,7 @@ import { DocsPanel } from "./components/DocsPanel";
 import { TokensPanel } from "./components/TokensPanel";
 import { TestsPanel } from "./components/TestsPanel";
 import { VisualPanel, type VisualPanelEntry } from "./components/VisualPanel";
+import { InteractionsPanel } from "./components/InteractionsPanel";
 import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -30,14 +31,17 @@ import {
   postToPreview,
   fetchTest,
   saveTest,
+  fetchInteractions,
+  saveInteractions,
   checkVisualBaseline,
   runVisualTest,
   updateVisualBaseline,
   fetchVisualReport,
+  type CallbackMap,
 } from "./api";
 import "./components/layout.css";
 
-type PanelTab = "props" | "docs" | "tests" | "visual";
+type PanelTab = "props" | "docs" | "tests" | "visual" | "interactions";
 type PreviewTab = "preview" | "variants";
 type FoundationView = "tokens";
 
@@ -46,6 +50,7 @@ const PANEL_TABS: { id: PanelTab; label: string }[] = [
   { id: "docs", label: "Docs" },
   { id: "tests", label: "Tests" },
   { id: "visual", label: "Visual" },
+  { id: "interactions", label: "Interactions" },
 ];
 
 const FOUNDATION_ITEMS: { id: FoundationView; label: string; description: string }[] = [
@@ -82,6 +87,7 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [callbacks, setCallbacks] = useState<CallbackMap>({});
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
   const [testRunning, setTestRunning] = useState(false);
@@ -179,10 +185,13 @@ export function App() {
   const previewReadyRef = useRef(false);
   const argsRef = useRef(args);
   argsRef.current = args;
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
   const pendingRunRef = useRef<{
     story: string;
     steps: InteractionStep[];
     args: Record<string, unknown>;
+    callbacks: CallbackMap;
   } | null>(null);
 
   // The iframe only exists on the Preview tab; treat it as not-ready elsewhere
@@ -196,7 +205,11 @@ export function App() {
     const defaults = propsMap[selected] ? buildDefaultArgs(propsMap[selected]!) : {};
     postToPreview(iframeRef.current, {
       type: PREVIEW_MESSAGE.SELECT_STORY,
-      payload: { story: selected, args: { ...defaults, ...argsRef.current } },
+      payload: {
+        story: selected,
+        args: { ...defaults, ...argsRef.current },
+        callbacks: callbacksRef.current,
+      },
     });
   }, [selected, propsMap]);
 
@@ -226,6 +239,17 @@ export function App() {
       syncPreviewTheme();
     }
   }, [previewTheme, syncPreviewTheme]);
+
+  // Push callback wiring to the preview whenever it loads or is edited, so the
+  // live preview re-wires without re-sending the whole story.
+  useEffect(() => {
+    if (previewReadyRef.current) {
+      postToPreview(iframeRef.current, {
+        type: PREVIEW_MESSAGE.SET_CALLBACKS,
+        payload: callbacks,
+      });
+    }
+  }, [callbacks]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -263,6 +287,21 @@ export function App() {
       cancelled = true;
     };
   }, [selected, tests]);
+
+  // Load saved callback wiring whenever the selected component changes.
+  useEffect(() => {
+    if (!selected) {
+      setCallbacks({});
+      return;
+    }
+    let cancelled = false;
+    void fetchInteractions(selected).then((loaded) => {
+      if (!cancelled) setCallbacks(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
 
   // Clear stale results when switching components.
   useEffect(() => {
@@ -325,7 +364,7 @@ export function App() {
     if (test.steps.length === 0) return;
     setTestResults([]);
     setTestRunning(true);
-    const payload = { story: selected, steps: test.steps, args };
+    const payload = { story: selected, steps: test.steps, args, callbacks };
     if (previewTab === "preview" && previewReadyRef.current) {
       postToPreview(iframeRef.current, { type: PREVIEW_MESSAGE.RUN_TEST, payload });
     } else {
@@ -334,7 +373,7 @@ export function App() {
       pendingRunRef.current = payload;
       if (previewTab !== "preview") setPreviewTab("preview");
     }
-  }, [selected, previewTab, tests, args]);
+  }, [selected, previewTab, tests, args, callbacks]);
 
   const handleSaveTest = useCallback(async () => {
     if (!selected) return;
@@ -570,6 +609,17 @@ export function App() {
                       onRun={handleRunVisual}
                       onUpdateBaseline={handleUpdateVisualBaseline}
                       imageVersion={visualImageVersion}
+                    />
+                  )}
+                  {selected && tab === "interactions" && (
+                    <InteractionsPanel
+                      componentName={selected}
+                      props={componentProps}
+                      callbacks={callbacks}
+                      onChange={(next) => {
+                        setCallbacks(next);
+                        void saveInteractions(selected, next);
+                      }}
                     />
                   )}
                 </div>

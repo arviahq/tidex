@@ -139,10 +139,12 @@ export default defineConfig({
   }
 
   const gitignorePath = path.join(root, ".gitignore");
-  const tideGitignoreBlock = `# Tide generated artifacts (commit baselines for visual regression)
+  const tideGitignoreBlock = `# Tide generated artifacts (commit baselines + interaction wiring)
 .tide/*
 !.tide/baselines/
 !.tide/baselines/**
+!.tide/interactions/
+!.tide/interactions/**
 `;
 
   if (fs.existsSync(gitignorePath)) {

@@ -1,4 +1,6 @@
-import type { InteractionTest } from "@tide/core";
+import type { InteractionTest, InteractionWiring } from "@tide/core";
+
+export type CallbackMap = Record<string, { updates?: string }>;
 
 declare const __TIDE_PREVIEW_URL__: string;
 
@@ -19,6 +21,8 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
+  // manager -> preview: explicit callback→state wiring for the current story.
+  SET_CALLBACKS: "TIDE_SET_CALLBACKS",
 } as const;
 
 export interface Manifest {
@@ -37,6 +41,7 @@ export type PropSchema =
   | { type: "number"; required?: boolean }
   | { type: "union"; values: string[]; required?: boolean }
   | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
+  | { type: "callback"; required?: boolean }
   | { type: "unknown"; required?: boolean };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
@@ -87,6 +92,27 @@ export async function saveTest(component: string, test: InteractionTest): Promis
     body: JSON.stringify({ component, test }),
   });
   if (!res.ok) throw new Error(`Failed to save test (${res.status})`);
+}
+
+export async function fetchInteractions(name: string): Promise<CallbackMap> {
+  try {
+    const res = await fetch(`/__tide/interactions/${name}.json`);
+    if (!res.ok) return {};
+    const wiring = (await res.json()) as InteractionWiring;
+    return wiring.callbacks ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveInteractions(component: string, callbacks: CallbackMap): Promise<void> {
+  const wiring: InteractionWiring = { component, callbacks };
+  const res = await fetch("/__tide/interactions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ component, wiring }),
+  });
+  if (!res.ok) throw new Error(`Failed to save interactions (${res.status})`);
 }
 
 export interface VisualReportEntry {

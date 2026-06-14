@@ -13,6 +13,7 @@ import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
+import { buildWiredArgs, useWiredArgs, type CallbackMap } from "./wireCallbacks";
 
 class PreviewErrorBoundary extends Component<
   { children: ReactNode; resetKey?: unknown },
@@ -171,11 +172,16 @@ export function PreviewApp() {
   const rootRef = useRef<Root | null>(null);
   const [story, setStory] = useState<StoryModule | null>(null);
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [callbacks, setCallbacks] = useState<CallbackMap>({});
   const [error, setError] = useState<string | null>(null);
   const [storyName, setStoryName] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(true);
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
+
+  // Args with explicit callback wiring applied; a mapped callback updates local
+  // state here and re-renders the live preview.
+  const wiredArgs = useWiredArgs(story ? { ...story.args, ...args } : args, callbacks);
 
   // True while a test run is driving the render, so the declarative
   // story/args effect below stands aside and doesn't fight over the root.
@@ -194,7 +200,12 @@ export function PreviewApp() {
   // drive the steps and stream each result back. Works even on a just-mounted
   // iframe where no story has been selected yet (e.g. switching from Variants).
   const runTestRun = useCallback(
-    async (name: string, steps: InteractionStep[], testArgs?: Record<string, unknown>) => {
+    async (
+      name: string,
+      steps: InteractionStep[],
+      testArgs?: Record<string, unknown>,
+      testCallbacks?: CallbackMap,
+    ) => {
       const post = (type: string, payload: unknown) =>
         window.parent.postMessage({ type, payload }, "*");
       const fail = (message?: string) => {
@@ -224,8 +235,10 @@ export function PreviewApp() {
           fail("Preview canvas not ready.");
           return;
         }
-        // Mount the component fresh for a clean run.
+        // Mount the component fresh for a clean run, with callback wiring so a
+        // test driving clicks observes the same state updates as the preview.
         const mergedArgs = { ...entry.args, ...testArgs };
+        const wired = buildWiredArgs(mergedArgs, testCallbacks);
         setArgs(mergedArgs);
         rootRef.current?.unmount();
         rootRef.current = createRoot(container);
@@ -238,7 +251,7 @@ export function PreviewApp() {
         }
         rootRef.current.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...mergedArgs} />
+            <Component {...wired} />
           </PreviewErrorBoundary>,
         );
         // Let React commit and effects settle before interacting.
@@ -294,14 +307,19 @@ export function PreviewApp() {
           applyPreviewTheme(theme);
         }
       }
+      if (event.data?.type === PREVIEW_MESSAGE.SET_CALLBACKS) {
+        setCallbacks((event.data.payload as CallbackMap) ?? {});
+      }
       if (event.data?.type === PREVIEW_MESSAGE.SELECT_STORY) {
         handshakeDoneRef.current = true;
         const payload = event.data.payload as
           | string
-          | { story: string; args?: Record<string, unknown> };
+          | { story: string; args?: Record<string, unknown>; callbacks?: CallbackMap };
         if (typeof payload === "string") {
+          setCallbacks({});
           void selectStory(payload);
         } else if (payload?.story) {
+          setCallbacks(payload.callbacks ?? {});
           void selectStory(payload.story, payload.args);
         }
       }
@@ -311,8 +329,9 @@ export function PreviewApp() {
           story: string;
           steps: InteractionStep[];
           args?: Record<string, unknown>;
+          callbacks?: CallbackMap;
         };
-        void runTestRun(payload.story, payload.steps ?? [], payload.args);
+        void runTestRun(payload.story, payload.steps ?? [], payload.args, payload.callbacks);
       }
     };
     window.addEventListener("message", handler);
@@ -393,7 +412,7 @@ export function PreviewApp() {
 
         rootRef.current?.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...{ ...story.args, ...args }} />
+            <Component {...wiredArgs} />
           </PreviewErrorBoundary>,
         );
       } catch (err) {
@@ -407,7 +426,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, args]);
+  }, [story, wiredArgs]);
 
   useEffect(() => {
     return () => {

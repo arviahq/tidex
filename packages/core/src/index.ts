@@ -46,9 +46,22 @@ export type PropSchema =
   | { type: "number"; required?: boolean }
   | { type: "union"; values: string[]; required?: boolean }
   | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
+  | { type: "callback"; required?: boolean }
   | { type: "unknown"; required?: boolean };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
+
+/**
+ * Persisted callback→state wiring for a component, authored in the manager's
+ * Interactions tab and stored at `.tide/interactions/<Component>.json`. A
+ * callback mapped with `updates` re-renders the preview with the new value; an
+ * empty `{}` means action-only (wired to a no-op). Wiring is fully explicit —
+ * nothing is inferred from callback names.
+ */
+export interface InteractionWiring {
+  component: string;
+  callbacks: Record<string, { updates?: string }>;
+}
 
 export interface StoryEntry {
   componentPath: string;
@@ -129,6 +142,14 @@ export function getTestsDir(root: string): string {
 
 export function getTestPath(root: string, component: string): string {
   return path.join(getTestsDir(root), `${component}.json`);
+}
+
+export function getInteractionsDir(root: string): string {
+  return path.join(getTideDir(root), "interactions");
+}
+
+export function getInteractionPath(root: string, component: string): string {
+  return path.join(getInteractionsDir(root), `${component}.json`);
 }
 
 export function defaultConfig(root: string): TideConfig {
@@ -220,7 +241,7 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
 export function buildDefaultArgs(props: Record<string, PropSchema>): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(props)) {
-    if (schema.type === "unknown") continue;
+    if (schema.type === "unknown" || schema.type === "callback") continue;
     args[name] = defaultArgsForProp(schema, name);
   }
   return args;
@@ -232,18 +253,27 @@ export const SKIP_PROP_PATTERNS = [
   /^style$/,
   /^ref$/,
   /^key$/,
-  /^on[A-Z]/,
   /ReactNode/,
   /ReactElement/,
   /ElementType/,
   /HTMLAttributes/,
-  /=>\s*/,
   /\.\.\./,
 ];
 
+// A prop is a callback (function) if its name looks like an event handler or
+// its type is a function. Callbacks aren't controllable props; they surface in
+// the Interactions tab where the author maps each to the state prop it updates.
+export function isCallbackProp(name: string, typeText?: string): boolean {
+  if (/^on[A-Z]/.test(name)) return true;
+  if (typeText && /=>\s*/.test(typeText)) return true;
+  return false;
+}
+
 export function shouldSkipProp(name: string, typeText?: string): boolean {
+  if (isCallbackProp(name, typeText)) return false;
   if (SKIP_PROP_PATTERNS.some((p) => p.test(name))) return true;
   if (typeText && SKIP_PROP_PATTERNS.some((p) => p.test(typeText))) return true;
+  if (typeText && /=>\s*/.test(typeText)) return true;
   return false;
 }
 
@@ -299,6 +329,37 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
               fs.writeFileSync(
                 getTestPath(options.root, component),
                 JSON.stringify(parsed.test ?? {}, null, 2),
+              );
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ ok: true }));
+            } catch (err) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ ok: false, error: String(err) }));
+            }
+          });
+          return;
+        }
+
+        // Save callback→state wiring to .tide/interactions/<Component>.json.
+        if (url === "/__tide/interactions" && req.method === "POST") {
+          let body = "";
+          req.on("data", (chunk) => {
+            body += chunk;
+          });
+          req.on("end", () => {
+            try {
+              const parsed = JSON.parse(body) as { component?: string; wiring?: unknown };
+              const component = parsed.component ?? "";
+              if (!/^[A-Za-z0-9_-]+$/.test(component)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ ok: false, error: "Invalid component name" }));
+                return;
+              }
+              fs.mkdirSync(getInteractionsDir(options.root), { recursive: true });
+              fs.writeFileSync(
+                getInteractionPath(options.root, component),
+                JSON.stringify(parsed.wiring ?? {}, null, 2),
               );
               res.statusCode = 200;
               res.setHeader("Content-Type", "application/json");

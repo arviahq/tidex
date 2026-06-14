@@ -1,5 +1,11 @@
 import { Node, Project, type InterfaceDeclaration, type Type, type TypeNode } from "ts-morph";
-import { shouldSkipProp, type PropSchema, type PropsMap, type ComponentEntry } from "@tide/core";
+import {
+  isCallbackProp,
+  shouldSkipProp,
+  type PropSchema,
+  type PropsMap,
+  type ComponentEntry,
+} from "@tide/core";
 import path from "node:path";
 import {
   discoverComponents,
@@ -53,6 +59,10 @@ function schemaFromInterface(iface: InterfaceDeclaration, project: Project): Pro
     const memberType = member.getTypeNode();
     if (!name || !memberType) continue;
     const typeText = memberType.getText();
+    if (isCallbackProp(name, typeText)) {
+      properties[name] = { type: "callback" };
+      continue;
+    }
     if (shouldSkipProp(name, typeText)) continue;
     let schema = schemaFromTypeNode(memberType, project);
     schema = { ...schema, required: !member.hasQuestionToken() ? true : false };
@@ -70,6 +80,10 @@ function schemaFromTypeNode(typeNode: TypeNode, project: Project): PropSchema {
       const memberType = member.getTypeNode();
       if (!name || !memberType) continue;
       const typeText = memberType.getText();
+      if (isCallbackProp(name, typeText)) {
+        properties[name] = { type: "callback" };
+        continue;
+      }
       if (shouldSkipProp(name, typeText)) continue;
       let schema = schemaFromTypeNode(memberType, project);
       schema = { ...schema, required: !member.hasQuestionToken() ? true : false };
