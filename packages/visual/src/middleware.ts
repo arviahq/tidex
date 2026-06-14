@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
+import { isValidComponentId } from "@tide/core";
 import { runSingleVisualTest } from "./engine.js";
 import { getReportsDir } from "@tide/core";
 
@@ -23,7 +24,7 @@ function readJsonBody(req: IncomingMessage): Promise<string> {
 }
 
 function isValidComponentName(name: string): boolean {
-  return /^[A-Za-z0-9_-]+$/.test(name);
+  return isValidComponentId(name);
 }
 
 function sendJson(res: ServerResponse, status: number, data: unknown) {

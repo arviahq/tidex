@@ -1,13 +1,33 @@
 import path from "node:path";
+import type { InlineConfig } from "vite";
 
 export interface TideConfig {
   root: string;
-  scan: { include: string[]; exclude?: string[] };
+  scan: {
+    include: string[];
+    exclude?: string[];
+    /** Folder segment used for sidebar grouping, e.g. `src/components` or `src/ui`. */
+    componentsDir?: string;
+  };
+  /** npm package name shown in generated import examples, e.g. `@myorg/ui`. */
+  packageName?: string;
+  /** Per-component default arg overrides, keyed by component id. */
+  defaults?: Record<string, Record<string, unknown>>;
   tokens?: string;
   plugins?: TidePlugin[];
   managerPort?: number;
   previewPort?: number;
   visual?: { threshold?: number };
+  /**
+   * Preview rendering options.
+   * - `wrapper`: path (relative to the project root) to a module whose default
+   *   export is a React component taking `children`; every rendered component is
+   *   wrapped in it (e.g. a theme/ChakraProvider/i18n provider).
+   * - `vite`: extra Vite config merged into the preview/visual/test servers.
+   *   Use it to add build plugins your components need (e.g. vanilla-extract,
+   *   svgr). Tide already provides React, so add only the extra plugins.
+   */
+  preview?: { wrapper?: string; vite?: InlineConfig };
 }
 
 /**
@@ -44,6 +64,8 @@ export interface TideContext {
 }
 
 export interface ComponentEntry {
+  /** Stable id for stories, props, tests, and baselines (e.g. `forms/Checkbox`). */
+  id: string;
   name: string;
   path: string;
   exportName: string;
@@ -51,18 +73,28 @@ export interface ComponentEntry {
   isDefault?: boolean;
 }
 
+/** Resolve the stable component id; falls back to `name` for older manifests. */
+export function getComponentId(entry: Pick<ComponentEntry, "id" | "name">): string {
+  return entry.id || entry.name;
+}
+
+export function isValidComponentId(id: string): boolean {
+  if (!id || id.includes("..")) return false;
+  return /^[A-Za-z0-9_./-]+$/.test(id);
+}
+
 export interface Manifest {
   components: ComponentEntry[];
 }
 
 export type PropSchema =
-  | { type: "boolean"; required?: boolean }
-  | { type: "string"; required?: boolean }
-  | { type: "number"; required?: boolean }
-  | { type: "union"; values: string[]; required?: boolean }
-  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
-  | { type: "callback"; required?: boolean }
-  | { type: "unknown"; required?: boolean };
+  | { type: "boolean"; required?: boolean; description?: string }
+  | { type: "string"; required?: boolean; description?: string }
+  | { type: "number"; required?: boolean; description?: string }
+  | { type: "union"; values: string[]; required?: boolean; description?: string }
+  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean; description?: string }
+  | { type: "callback"; required?: boolean; description?: string }
+  | { type: "unknown"; required?: boolean; description?: string };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
 
@@ -155,22 +187,34 @@ export function getTestsDir(root: string): string {
   return path.join(getTideDir(root), "tests");
 }
 
-export function getTestPath(root: string, component: string): string {
-  return path.join(getTestsDir(root), `${component}.json`);
+export function getTestPath(root: string, componentId: string): string {
+  return path.join(getTestsDir(root), `${componentId}.json`);
+}
+
+export function getConfigSnapshotPath(root: string): string {
+  return path.join(getTideDir(root), "config.json");
+}
+
+export function getScanReportPath(root: string): string {
+  return path.join(getTideDir(root), "scan-report.json");
 }
 
 export function getInteractionsDir(root: string): string {
   return path.join(getTideDir(root), "interactions");
 }
 
-export function getInteractionPath(root: string, component: string): string {
-  return path.join(getInteractionsDir(root), `${component}.json`);
+export function getInteractionPath(root: string, componentId: string): string {
+  return path.join(getInteractionsDir(root), `${componentId}.json`);
 }
 
 export function defaultConfig(root: string): TideConfig {
   return {
     root,
-    scan: { include: ["src/**/*.tsx"] },
+    scan: {
+      include: ["src/**/*.tsx"],
+      exclude: ["**/preview/**"],
+      componentsDir: "src/components",
+    },
     managerPort: 6006,
     previewPort: 6007,
   };
@@ -254,11 +298,19 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
   }
 }
 
-export function buildDefaultArgs(props: Record<string, PropSchema>): Record<string, unknown> {
+export function buildDefaultArgs(
+  props: Record<string, PropSchema>,
+  overrides?: Record<string, unknown>,
+): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(props)) {
     if (schema.type === "unknown" || schema.type === "callback") continue;
     args[name] = defaultArgsForProp(schema, name);
+  }
+  if (overrides) {
+    for (const [key, value] of Object.entries(overrides)) {
+      if (key in props) args[key] = value;
+    }
   }
   return args;
 }
@@ -336,12 +388,14 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
             try {
               const parsed = JSON.parse(body) as { component?: string; test?: unknown };
               const component = parsed.component ?? "";
-              if (!/^[A-Za-z0-9_-]+$/.test(component)) {
+              if (!isValidComponentId(component)) {
                 res.statusCode = 400;
-                res.end(JSON.stringify({ ok: false, error: "Invalid component name" }));
+                res.end(JSON.stringify({ ok: false, error: "Invalid component id" }));
                 return;
               }
-              fs.mkdirSync(getTestsDir(options.root), { recursive: true });
+              fs.mkdirSync(path.dirname(getTestPath(options.root, component)), {
+                recursive: true,
+              });
               fs.writeFileSync(
                 getTestPath(options.root, component),
                 JSON.stringify(parsed.test ?? {}, null, 2),
@@ -367,12 +421,14 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
             try {
               const parsed = JSON.parse(body) as { component?: string; wiring?: unknown };
               const component = parsed.component ?? "";
-              if (!/^[A-Za-z0-9_-]+$/.test(component)) {
+              if (!isValidComponentId(component)) {
                 res.statusCode = 400;
-                res.end(JSON.stringify({ ok: false, error: "Invalid component name" }));
+                res.end(JSON.stringify({ ok: false, error: "Invalid component id" }));
                 return;
               }
-              fs.mkdirSync(getInteractionsDir(options.root), { recursive: true });
+              fs.mkdirSync(path.dirname(getInteractionPath(options.root, component)), {
+                recursive: true,
+              });
               fs.writeFileSync(
                 getInteractionPath(options.root, component),
                 JSON.stringify(parsed.wiring ?? {}, null, 2),
@@ -391,19 +447,31 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
         // List components that have a saved interaction test.
         if (url === "/__tide/tests" && req.method === "GET") {
           const testsDir = getTestsDir(options.root);
-          const names = fs.existsSync(testsDir)
-            ? fs
-                .readdirSync(testsDir)
-                .filter((f) => f.endsWith(".json"))
-                .map((f) => f.replace(/\.json$/, ""))
-            : [];
+          const names: string[] = [];
+          const walk = (dir: string, prefix = "") => {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+              if (entry.isDirectory()) {
+                walk(path.join(dir, entry.name), rel);
+              } else if (entry.name.endsWith(".json")) {
+                names.push(rel.replace(/\.json$/, ""));
+              }
+            }
+          };
+          walk(testsDir);
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify(names));
           return;
         }
 
         // Otherwise serve a static artifact from the .tide directory.
-        const file = url.replace("/__tide/", "");
+        const file = decodeURIComponent(url.replace("/__tide/", ""));
+        if (file.includes("..")) {
+          res.statusCode = 400;
+          res.end();
+          return;
+        }
         const filePath = path.join(options.tideDir, file);
         if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
           if (file.endsWith(".png")) {

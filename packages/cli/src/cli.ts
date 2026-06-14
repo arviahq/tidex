@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { runBuild, runGenerate, runInit, runTest, runVisual, startDevServer } from "./dev.js";
+import { runDoctor } from "./doctor.js";
 
 const program = new Command();
 
@@ -23,8 +24,20 @@ program
 program
   .command("generate")
   .description("Scan components and generate artifacts")
+  .option("--verbose", "Print scan diagnostics")
+  .action(async (opts: { verbose?: boolean }) => {
+    await runGenerate(undefined, opts.verbose);
+  });
+
+program
+  .command("doctor")
+  .description("Validate Tide setup and scan health")
   .action(async () => {
-    await runGenerate();
+    const result = await runDoctor();
+    for (const message of result.messages) {
+      console.log(message);
+    }
+    process.exit(result.ok ? 0 : 1);
   });
 
 program

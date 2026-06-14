@@ -5,6 +5,7 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  type ComponentType,
   type ReactNode,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -53,6 +54,20 @@ class PreviewErrorBoundary extends Component<
 
 function loadStories(): Promise<Record<string, StoryModule>> {
   return import("virtual:tide-stories").then((mod) => mod.stories as Record<string, StoryModule>);
+}
+
+type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
+
+function loadPreviewWrapper(): Promise<PreviewWrapper> {
+  return import("virtual:tide-stories")
+    .then((mod) => mod.previewWrapper ?? null)
+    .catch(() => null);
+}
+
+// Wrap the rendered component in the user-configured provider/decorator (e.g. a
+// ChakraProvider/theme wrapper) when one is set; otherwise render it bare.
+function wrap(Wrapper: PreviewWrapper, child: ReactNode): ReactNode {
+  return Wrapper ? <Wrapper>{child}</Wrapper> : child;
 }
 
 function formatError(err: unknown): string {
@@ -195,6 +210,22 @@ export function PreviewApp() {
   // re-announce loop below can stop.
   const handshakeDoneRef = useRef(false);
 
+  // The configured global wrapper (providers/theme), loaded once from the
+  // generated module. `wrapperRef` mirrors it for the imperative test path.
+  const [Wrapper, setWrapper] = useState<PreviewWrapper>(null);
+  const wrapperRef = useRef<PreviewWrapper>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadPreviewWrapper().then((w) => {
+      if (cancelled) return;
+      wrapperRef.current = w;
+      setWrapper(() => w);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Run an interaction test, fully self-contained: load + freshly mount the
   // requested story (clean state for re-runs), wait for it to settle, then
   // drive the steps and stream each result back. Works even on a just-mounted
@@ -251,7 +282,7 @@ export function PreviewApp() {
         }
         rootRef.current.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...wired} />
+            {wrap(wrapperRef.current, <Component {...wired} />)}
           </PreviewErrorBoundary>,
         );
         // Let React commit and effects settle before interacting.
@@ -412,7 +443,7 @@ export function PreviewApp() {
 
         rootRef.current?.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...wiredArgs} />
+            {wrap(Wrapper, <Component {...wiredArgs} />)}
           </PreviewErrorBoundary>,
         );
       } catch (err) {
@@ -426,7 +457,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, wiredArgs]);
+  }, [story, wiredArgs, Wrapper]);
 
   useEffect(() => {
     return () => {

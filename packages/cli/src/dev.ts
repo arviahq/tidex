@@ -2,13 +2,34 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
-import { createServer, type ViteDevServer } from "vite";
+import { createServer, mergeConfig, type ViteDevServer, type PluginOption } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
 import { tideVisualPlugin } from "@tide/visual";
 import { generateArtifacts } from "@tide/scanner";
 import { loadConfig } from "./config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Walk up from the run directory to the nearest tsconfig.json so we honor the
+// user project's path aliases (e.g. `src/*`) even when tide is run from a
+// subdirectory like `src/`.
+function findProjectRoot(cwd: string): string {
+  let dir = cwd;
+  for (;;) {
+    if (fs.existsSync(path.join(dir, "tsconfig.json"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return cwd;
+    dir = parent;
+  }
+}
+
+// Resolve the user project's tsconfig `paths`/`baseUrl` for component imports.
+// Rooted at the project (not the preview app) so aliases like `src/i18n`
+// resolve. `loose` keeps unresolved specifiers from hard-failing the server.
+function userPathsPlugin(projectRoot: string): PluginOption {
+  return tsconfigPaths({ root: projectRoot, loose: true });
+}
 
 export interface DevServerOptions {
   cwd?: string;
@@ -19,6 +40,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   const config = await loadConfig(cwd);
   const pluginCtx = applyPlugins(config);
   const tideDir = getTideDir(cwd);
+  const projectRoot = findProjectRoot(cwd);
 
   await generateArtifacts(config);
   await pluginCtx.runGenerateHooks();
@@ -56,29 +78,34 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
     plugins: [tideVitePlugin(sharedPluginOptions), tideVisualPlugin(visualPluginOptions)],
   });
 
-  previewServer = await createServer({
-    root: previewRoot,
-    configFile: path.join(previewRoot, "vite.config.ts"),
-    server: {
-      port: config.previewPort ?? 6007,
-      strictPort: true,
-      cors: true,
-      fs: {
-        allow: [previewRoot, cwd, tideDir],
+  previewServer = await createServer(
+    mergeConfig(
+      {
+        root: previewRoot,
+        configFile: path.join(previewRoot, "vite.config.ts"),
+        server: {
+          port: config.previewPort ?? 6007,
+          strictPort: true,
+          cors: true,
+          fs: {
+            allow: [previewRoot, cwd, tideDir, projectRoot],
+          },
+        },
+        define: {
+          __TIDE_ROOT__: JSON.stringify(cwd),
+        },
+        plugins: [tideVitePlugin(sharedPluginOptions), userPathsPlugin(projectRoot)],
+        resolve: {
+          alias: {
+            "@user": cwd,
+            "virtual:tide-stories": path.join(tideDir, "stories.generated.ts"),
+          },
+          dedupe: ["react", "react-dom"],
+        },
       },
-    },
-    define: {
-      __TIDE_ROOT__: JSON.stringify(cwd),
-    },
-    plugins: [tideVitePlugin(sharedPluginOptions)],
-    resolve: {
-      alias: {
-        "@user": cwd,
-        "virtual:tide-stories": path.join(tideDir, "stories.generated.ts"),
-      },
-      dedupe: ["react", "react-dom"],
-    },
-  });
+      config.preview?.vite ?? {},
+    ),
+  );
 
   await managerServer.listen();
   await previewServer.listen();
@@ -90,7 +117,26 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   console.log(`  Tide Preview:  http://localhost:${previewPort}\n`);
 
   const watcher = chokidar.watch(
-    config.scan.include.map((p) => path.join(cwd, p)),
+    [
+      ...config.scan.include.map((p) => path.join(cwd, p)),
+      path.join(cwd, "tide.config.ts"),
+      path.join(cwd, "tide.config.js"),
+      path.join(cwd, "tide.config.mjs"),
+      ...(config.tokens
+        ? [
+            path.isAbsolute(config.tokens)
+              ? config.tokens
+              : path.join(cwd, config.tokens),
+          ]
+        : []),
+      ...(config.preview?.wrapper
+        ? [
+            path.isAbsolute(config.preview.wrapper)
+              ? config.preview.wrapper
+              : path.join(cwd, config.preview.wrapper),
+          ]
+        : []),
+    ],
     { ignoreInitial: true },
   );
 
@@ -99,7 +145,8 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
     if (debounce) clearTimeout(debounce);
     debounce = setTimeout(async () => {
       console.log("  [tide] Re-scanning components...");
-      await generateArtifacts(config);
+      const latestConfig = await loadConfig(cwd);
+      await generateArtifacts(latestConfig);
       // Tell the manager to refetch its data in place rather than full-reloading
       // it — a reload would throw away the selected story, the user's control
       // values, and the preview handshake state on every save. The preview still
@@ -111,14 +158,17 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   });
 }
 
-export async function runGenerate(cwd?: string): Promise<void> {
+export async function runGenerate(cwd?: string, verbose?: boolean): Promise<void> {
   const root = cwd ?? process.cwd();
   const config = await loadConfig(root);
-  const result = await generateArtifacts(config);
+  const result = await generateArtifacts(config, { verbose });
   console.log(`Generated ${result.manifest.components.length} components`);
   console.log(`  manifest: ${getTideDir(root)}/manifest.json`);
   console.log(`  props:    ${getTideDir(root)}/props.json`);
   console.log(`  stories:  ${result.storiesPath}`);
+  if (result.diagnostics.warnings.length > 0 && !verbose) {
+    console.log(`  warnings: ${result.diagnostics.warnings.length} (run \`tide generate --verbose\`)`);
+  }
 }
 
 export async function runInit(cwd?: string): Promise<void> {
@@ -131,11 +181,60 @@ export async function runInit(cwd?: string): Promise<void> {
       `import { defineConfig } from "@tide/core";
 
 export default defineConfig({
-  scan: { include: ["src/**/*.tsx"] },
+  scan: {
+    include: ["src/**/*.tsx"],
+    exclude: ["**/preview/**"],
+    componentsDir: "src/components",
+  },
+  tokens: "tokens.json",
+  preview: {
+    wrapper: "src/preview/TideWrapper.tsx",
+  },
 });
 `,
     );
     console.log("Created tide.config.ts");
+  }
+
+  const scaffoldFiles: Array<{ file: string; content: string }> = [
+    {
+      file: "src/preview/TideWrapper.tsx",
+      content: `import type { ReactNode } from "react";
+
+export default function TideWrapper({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+`,
+    },
+    {
+      file: "src/components/.gitkeep",
+      content: "",
+    },
+    {
+      file: "tokens.json",
+      content: `{
+  "colors": {
+    "primary": "#4f46e5",
+    "text": "#0f172a",
+    "bg": "#ffffff"
+  },
+  "spacing": {
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px"
+  }
+}
+`,
+    },
+  ];
+
+  for (const { file, content } of scaffoldFiles) {
+    const target = path.join(root, file);
+    if (!fs.existsSync(target)) {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, content);
+      console.log(`Created ${file}`);
+    }
   }
 
   const gitignorePath = path.join(root, ".gitignore");
@@ -169,6 +268,12 @@ export default defineConfig({
       console.log('Added "tide" script to package.json');
     }
   }
+
+  console.log("");
+  console.log("Next steps:");
+  console.log("  1. Add components under src/components/");
+  console.log("  2. Run tide generate && tide dev");
+  console.log("  See docs/design-systems.md for folder structure guidance.");
 }
 
 export async function runVisual(cwd?: string, update?: boolean): Promise<number> {
@@ -183,18 +288,23 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);
   const previewPort = config.previewPort ?? 6007;
-  const previewServer = await createServer({
-    root: previewRoot,
-    configFile: path.join(previewRoot, "vite.config.ts"),
-    server: { port: previewPort, strictPort: false },
-    define: { __TIDE_ROOT__: JSON.stringify(root) },
-    plugins: [
-      tideVitePlugin({
-        root,
-        tideDir,
-      }),
-    ],
-  });
+  const projectRoot = findProjectRoot(root);
+  const previewServer = await createServer(
+    mergeConfig(
+      {
+        root: previewRoot,
+        configFile: path.join(previewRoot, "vite.config.ts"),
+        server: {
+          port: previewPort,
+          strictPort: false,
+          fs: { allow: [previewRoot, root, projectRoot] },
+        },
+        define: { __TIDE_ROOT__: JSON.stringify(root) },
+        plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
+      },
+      config.preview?.vite ?? {},
+    ),
+  );
   await previewServer.listen();
   const port = previewServer.config.server.port;
 
@@ -233,13 +343,23 @@ export async function runTest(cwd?: string): Promise<number> {
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);
   const previewPort = config.previewPort ?? 6007;
-  const previewServer = await createServer({
-    root: previewRoot,
-    configFile: path.join(previewRoot, "vite.config.ts"),
-    server: { port: previewPort, strictPort: false },
-    define: { __TIDE_ROOT__: JSON.stringify(root) },
-    plugins: [tideVitePlugin({ root, tideDir })],
-  });
+  const projectRoot = findProjectRoot(root);
+  const previewServer = await createServer(
+    mergeConfig(
+      {
+        root: previewRoot,
+        configFile: path.join(previewRoot, "vite.config.ts"),
+        server: {
+          port: previewPort,
+          strictPort: false,
+          fs: { allow: [previewRoot, root, projectRoot] },
+        },
+        define: { __TIDE_ROOT__: JSON.stringify(root) },
+        plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
+      },
+      config.preview?.vite ?? {},
+    ),
+  );
   await previewServer.listen();
   const port = previewServer.config.server.port;
   const previewUrl = `http://localhost:${port}`;

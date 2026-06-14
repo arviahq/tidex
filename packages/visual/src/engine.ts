@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-import { getBaselinesDir, getReportsDir, type Manifest } from "@tide/core";
+import { getBaselinesDir, getReportsDir, getComponentId, type Manifest } from "@tide/core";
 import type { Browser, BrowserContext, Page } from "playwright";
 
 export interface VisualReportEntry {
@@ -72,16 +72,19 @@ async function launchVisualPage(): Promise<{
   return { browser, context, page };
 }
 
-function baselinePathFor(root: string, component: string): string {
-  return path.join(getBaselinesDir(root), `${component}.png`);
+function baselinePathFor(root: string, componentId: string): string {
+  fs.mkdirSync(path.dirname(path.join(getBaselinesDir(root), componentId)), { recursive: true });
+  return path.join(getBaselinesDir(root), `${componentId}.png`);
 }
 
-function currentPathFor(root: string, component: string): string {
-  return path.join(getReportsDir(root), `${component}-current.png`);
+function currentPathFor(root: string, componentId: string): string {
+  fs.mkdirSync(path.dirname(path.join(getReportsDir(root), componentId)), { recursive: true });
+  return path.join(getReportsDir(root), `${componentId}-current.png`);
 }
 
-function diffPathFor(root: string, component: string): string {
-  return path.join(getReportsDir(root), `${component}-diff.png`);
+function diffPathFor(root: string, componentId: string): string {
+  fs.mkdirSync(path.dirname(path.join(getReportsDir(root), componentId)), { recursive: true });
+  return path.join(getReportsDir(root), `${componentId}-diff.png`);
 }
 
 function writeSizeMismatchDiff(baseline: PNG, current: PNG, outPath: string): void {
@@ -224,16 +227,17 @@ export async function runVisualTests(options: VisualTestOptions): Promise<Visual
 
   try {
     for (const component of options.manifest.components) {
+      const componentId = getComponentId(component);
       const entry = await runVisualTestForComponent({
         page,
         root: options.root,
-        component: component.name,
+        component: componentId,
         previewUrl: options.previewUrl,
         update: options.update,
         threshold: options.threshold,
       });
       const { hasBaseline: _hasBaseline, ...reportEntry } = entry;
-      report[component.name] = reportEntry;
+      report[componentId] = reportEntry;
     }
   } finally {
     await context.close();

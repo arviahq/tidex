@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ComponentEntry } from "@tide/core";
-import { buildDefaultArgs, formatDisplayName } from "@tide/core";
+import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
 import type { PropsMap } from "@tide/core";
 import {
   buildComponentTree,
@@ -162,7 +162,7 @@ function TreeBranch({
             <button
               type="button"
               className="bb-sidebar__item bb-sidebar__item--tree"
-              data-active={!foundationView && selected === entry.name ? "true" : undefined}
+              data-active={!foundationView && selected === getComponentId(entry) ? "true" : undefined}
               onClick={() => onComponentSelect(entry)}
             >
               <ComponentIcon />
@@ -213,9 +213,10 @@ export function SidebarTree({
   };
 
   const handleComponentSelect = (entry: ComponentEntry) => {
-    const schema = propsMap[entry.name];
+    const componentId = getComponentId(entry);
+    const schema = propsMap[componentId];
     const args = schema ? buildDefaultArgs(schema) : {};
-    onComponentSelect(entry.name, args);
+    onComponentSelect(componentId, args);
   };
 
   return (

@@ -323,6 +323,29 @@
   min-height: 0;
 }
 
+.bb-layout__scan-warnings {
+  padding: 10px 16px;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.bb-layout__scan-warnings p {
+  margin: 0;
+}
+
+.bb-layout__scan-warnings p + p {
+  margin-top: 4px;
+}
+
+.bb-docs__prop-description {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--bb-text-muted, #64748b);
+  line-height: 1.4;
+}
+
 .bb-layout__preview-section {
   flex: 1;
   min-height: 120px;

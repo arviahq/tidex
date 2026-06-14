@@ -14,11 +14,21 @@ pnpm exec tide generate
 pnpm exec tide dev
 ```
 
+## Documentation
+
+- [Design system folder structure](./docs/design-systems.md) — layout conventions for component libraries
+- [Component authoring](./docs/component-authoring.md) — exports, props, and controls
+- [Configuration reference](./docs/config-reference.md) — every `tide.config.ts` option
+- [Monorepo guide](./docs/monorepo.md) — running Tide in a workspace package
+- [Troubleshooting](./docs/troubleshooting.md) — common issues and fixes
+
 ## CLI Commands
 
-- `tide init` — Initialize config and gitignore
+- `tide init` — Initialize config, scaffold folders, and gitignore
 - `tide dev` — Start manager (6006) + preview (6007)
 - `tide generate` — Scan components and generate artifacts
+- `tide generate --verbose` — Generate with scan diagnostics
+- `tide doctor` — Validate setup and scan health
 - `tide build` — Generate build artifacts
 - `tide test` — Run accessibility and interaction tests (requires Playwright)
 - `tide visual` — Run visual regression tests (requires Playwright)

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { buildDefaultArgs } from "@tide/core";
+import { buildDefaultArgs, formatDisplayName } from "@tide/core";
 import { computeVariants, formatVariantLabel } from "@tide/react";
 import type { PropSchema } from "../api";
 import { PREVIEW_URL, PREVIEW_MESSAGE } from "../api";
@@ -7,13 +7,20 @@ import type { Theme } from "../hooks/useTheme";
 import "./variants.css";
 
 interface VariantsPanelProps {
+  storyId: string;
   componentName: string;
   props: Record<string, PropSchema>;
   baseArgs: Record<string, unknown>;
   theme: Theme;
 }
 
-export function VariantsPanel({ componentName, props, baseArgs, theme }: VariantsPanelProps) {
+export function VariantsPanel({
+  storyId,
+  componentName,
+  props,
+  baseArgs,
+  theme,
+}: VariantsPanelProps) {
   const variants = computeVariants(props, 12);
 
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
@@ -22,7 +29,7 @@ export function VariantsPanel({ componentName, props, baseArgs, theme }: Variant
   useEffect(() => {
     sizesRef.current = new Map();
     iframeRefs.current = [];
-  }, [componentName]);
+  }, [storyId]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -59,11 +66,12 @@ export function VariantsPanel({ componentName, props, baseArgs, theme }: Variant
 
   return (
     <div className="bb-variants-viewport">
+      <h3 className="bb-variants__heading">{formatDisplayName(componentName)} variants</h3>
       <div className="bb-variants">
         {variants.map((variantArgs, index) => {
           const args = { ...buildDefaultArgs(props), ...baseArgs, ...variantArgs };
           const params = new URLSearchParams({
-            story: componentName,
+            story: storyId,
             args: JSON.stringify(args),
             theme,
             compact: "1",

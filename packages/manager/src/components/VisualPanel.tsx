@@ -13,6 +13,7 @@ export interface VisualPanelEntry {
 }
 
 interface VisualPanelProps {
+  storyId: string;
   componentName: string;
   args: Record<string, unknown>;
   theme: "light" | "dark";
@@ -29,15 +30,21 @@ interface VisualPanelProps {
 const CLI_COMMANDS = `tide visual           # compare against baselines
 tide visual --update  # refresh baselines`;
 
-function imageUrl(path: string, version: number): string {
-  return `/__tide/${path}?v=${version}`;
+function imageUrl(relativePath: string, version: number): string {
+  const encoded = relativePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `/__tide/${encoded}?v=${version}`;
 }
 
 function LiveCurrentPreview({
+  storyId,
   componentName,
   args,
   theme,
 }: {
+  storyId: string;
   componentName: string;
   args: Record<string, unknown>;
   theme: "light" | "dark";
@@ -46,13 +53,13 @@ function LiveCurrentPreview({
   const readyRef = useRef(false);
 
   const iframeSrc = useMemo(
-    () => buildVisualPreviewUrl(componentName, args, theme),
-    [componentName, args, theme],
+    () => buildVisualPreviewUrl(storyId, args, theme),
+    [storyId, args, theme],
   );
 
   useEffect(() => {
     readyRef.current = false;
-  }, [componentName, iframeSrc]);
+  }, [storyId, iframeSrc]);
 
   useEffect(() => {
     if (!readyRef.current) return;
@@ -74,7 +81,7 @@ function LiveCurrentPreview({
     <div className="bb-visual__frame-slot bb-visual__frame-slot--live">
       <iframe
         ref={iframeRef}
-        key={componentName}
+        key={storyId}
         className="bb-visual__live-frame"
         src={iframeSrc}
         title={`${componentName} live preview`}
@@ -95,6 +102,7 @@ function LiveCurrentPreview({
 }
 
 export function VisualPanel({
+  storyId,
   componentName,
   args,
   theme,
@@ -107,8 +115,8 @@ export function VisualPanel({
   onUpdateBaseline,
   imageVersion,
 }: VisualPanelProps) {
-  const baselinePath = `baselines/${componentName}.png`;
-  const diffPath = `reports/${componentName}-diff.png`;
+  const baselinePath = `baselines/${storyId}.png`;
+  const diffPath = `reports/${storyId}-diff.png`;
 
   let status: { kind: "info" | "pass" | "fail" | "warn"; text: string } | null = null;
   if (running) status = { kind: "info", text: "Capturing…" };
@@ -131,7 +139,7 @@ export function VisualPanel({
           <div className="bb-visual__title-block">
             <h2 className="bb-visual__name">{formatDisplayName(componentName)}</h2>
             <p className="bb-visual__subtitle">
-              Visual baseline · .tide/baselines/{componentName}.png · {theme} theme
+              Visual baseline · .tide/baselines/{storyId}.png · {theme} theme
             </p>
           </div>
           <div className="bb-visual__actions">
@@ -195,7 +203,12 @@ export function VisualPanel({
 
           <figure className="bb-visual__frame">
             <figcaption className="bb-visual__frame-label">Current · live</figcaption>
-            <LiveCurrentPreview componentName={componentName} args={args} theme={theme} />
+            <LiveCurrentPreview
+              storyId={storyId}
+              componentName={componentName}
+              args={args}
+              theme={theme}
+            />
           </figure>
 
           <figure className="bb-visual__frame">

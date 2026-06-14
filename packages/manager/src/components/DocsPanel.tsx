@@ -1,4 +1,4 @@
-import { formatDisplayName } from "@tide/core";
+import { formatDisplayName, type ComponentEntry } from "@tide/core";
 import { generateComponentDoc } from "@tide/docs";
 import { generateJsxSnippet } from "@tide/react";
 import { useState } from "react";
@@ -6,24 +6,17 @@ import type { PropSchema } from "../api";
 import { CodeBlock } from "./CodeBlock";
 import "./docs.css";
 
-interface ComponentEntry {
-  name: string;
-  path: string;
-  exportName: string;
-  title: string;
-  isDefault?: boolean;
-}
-
 interface DocsPanelProps {
   component: ComponentEntry;
   props: Record<string, PropSchema>;
   args: Record<string, unknown>;
+  packageName?: string;
 }
 
-export function DocsPanel({ component, props, args }: DocsPanelProps) {
+export function DocsPanel({ component, props, args, packageName }: DocsPanelProps) {
   const doc = generateComponentDoc(component, props, args);
   const code = generateJsxSnippet(component.name, args);
-  const importLine = formatImportLine(component);
+  const importLine = formatImportLine(component, packageName);
   const propEntries = doc.props;
 
   return (
@@ -61,6 +54,7 @@ export function DocsPanel({ component, props, args }: DocsPanelProps) {
                 schema={props[prop.name]}
                 required={prop.required}
                 defaultValue={args[prop.name]}
+                description={prop.description}
               />
             ))}
           </div>
@@ -93,11 +87,13 @@ function PropRow({
   schema,
   required,
   defaultValue,
+  description,
 }: {
   name: string;
   schema?: PropSchema;
   required: boolean;
   defaultValue: unknown;
+  description?: string;
 }) {
   return (
     <article className="bb-docs__prop">
@@ -108,6 +104,7 @@ function PropRow({
             {required ? "required" : "optional"}
           </span>
         </div>
+        {description ? <p className="bb-docs__prop-description">{description}</p> : null}
         <PropType schema={schema} fallback="unknown" />
       </div>
       <div className="bb-docs__prop-default">
@@ -222,7 +219,14 @@ function CopyButton({ value, compact }: { value: string; compact?: boolean }) {
   );
 }
 
-function formatImportLine(component: ComponentEntry): string {
+function formatImportLine(component: ComponentEntry, packageName?: string): string {
+  if (packageName) {
+    if (component.isDefault) {
+      return `import ${component.name} from "${packageName}";`;
+    }
+    return `import { ${component.exportName} } from "${packageName}";`;
+  }
+
   const path = component.path.replace(/^src\//, "./").replace(/\.tsx?$/, "");
 
   if (component.isDefault) {

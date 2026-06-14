@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getReportsDir, type Manifest } from "@tide/core";
+import { getReportsDir, getComponentId, type Manifest } from "@tide/core";
 
 export {
   runInteractionTests,
@@ -43,13 +43,14 @@ export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport
   const report: A11yReport = {};
 
   for (const component of options.manifest.components) {
-    const url = `${options.previewUrl}?story=${encodeURIComponent(component.name)}`;
+    const componentId = getComponentId(component);
+    const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}`;
     await page.goto(url, { waitUntil: "networkidle" });
     await page.waitForTimeout(300);
 
     const results = await new AxeBuilder({ page }).analyze();
 
-    report[component.name] = {
+    report[componentId] = {
       violations: results.violations.map((v) => ({
         id: v.id,
         impact: v.impact,

@@ -2,22 +2,22 @@ import { describe, expect, it } from "vitest";
 import type { ComponentEntry } from "@tide/core";
 import { buildComponentTree, collectFolderIds, getComponentFolderSegments } from "./componentTree";
 
-function entry(name: string, path: string, title: string): ComponentEntry {
-  return { name, path, exportName: name, title };
+function entry(name: string, path: string, title: string, id?: string): ComponentEntry {
+  return { id: id ?? name, name, path, exportName: name, title };
 }
 
 describe("getComponentFolderSegments", () => {
-  it("returns segments after components directory", () => {
+  it("returns segments from component id", () => {
     expect(
       getComponentFolderSegments(
-        entry("Modal", "src/components/overlays/Modal.tsx", "Components/Overlays/Modal"),
+        entry("Modal", "src/components/overlays/Modal.tsx", "Overlays/Modal", "overlays/Modal"),
       ),
     ).toEqual(["overlays"]);
   });
 
   it("returns empty array for root-level components", () => {
     expect(
-      getComponentFolderSegments(entry("Button", "src/components/Button.tsx", "Components/Button")),
+      getComponentFolderSegments(entry("Button", "src/components/Button.tsx", "Button", "Button")),
     ).toEqual([]);
   });
 });
@@ -25,9 +25,9 @@ describe("getComponentFolderSegments", () => {
 describe("buildComponentTree", () => {
   it("groups components by folder and sorts entries", () => {
     const tree = buildComponentTree([
-      entry("Button", "src/components/Button.tsx", "Components/Button"),
-      entry("Modal", "src/components/overlays/Modal.tsx", "Components/Overlays/Modal"),
-      entry("Alert", "src/components/feedback/Alert.tsx", "Components/Feedback/Alert"),
+      entry("Button", "src/components/Button.tsx", "Button", "Button"),
+      entry("Modal", "src/components/overlays/Modal.tsx", "Overlays/Modal", "overlays/Modal"),
+      entry("Alert", "src/components/feedback/Alert.tsx", "Feedback/Alert", "feedback/Alert"),
     ]);
 
     expect(tree).toHaveLength(3);
@@ -50,7 +50,7 @@ describe("buildComponentTree", () => {
 
   it("collects folder ids for expand state", () => {
     const tree = buildComponentTree([
-      entry("Modal", "src/components/overlays/Modal.tsx", "Components/Overlays/Modal"),
+      entry("Modal", "src/components/overlays/Modal.tsx", "Overlays/Modal", "overlays/Modal"),
     ]);
     expect(collectFolderIds(tree)).toEqual(["overlays"]);
   });

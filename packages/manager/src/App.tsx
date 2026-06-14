@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { buildDefaultArgs, formatDisplayName } from "@tide/core";
+import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
 import type {
   ComponentEntry,
   InteractionStep,
@@ -66,7 +66,7 @@ const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
 
 export function App() {
   const queryClient = useQueryClient();
-  const { manifest, props, tokens } = useTideData();
+  const { manifest, props, tokens, config, scanReport } = useTideData();
 
   // The dev server regenerates artifacts and signals a data change instead of
   // full-reloading the manager (see packages/cli/src/dev.ts). Refetch in place
@@ -129,6 +129,7 @@ export function App() {
     return components.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
+        getComponentId(c).toLowerCase().includes(q) ||
         formatDisplayName(c.name).toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q),
     );
@@ -136,11 +137,12 @@ export function App() {
 
   useEffect(() => {
     if (!selected && components.length > 0) {
-      setSelected(components[0]!.name);
+      setSelected(getComponentId(components[0]!));
     }
   }, [components, selected]);
 
-  const selectedComponent = components.find((c) => c.name === selected);
+  const selectedComponent = components.find((c) => getComponentId(c) === selected);
+  const defaultOverrides = selected ? config.data?.defaults?.[selected] : undefined;
   const componentProps = useMemo(() => {
     if (!selected) return EMPTY_COMPONENT_PROPS;
     return propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
@@ -167,7 +169,7 @@ export function App() {
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selected || !propsMap[selected]) return;
-    const defaults = buildDefaultArgs(propsMap[selected]!);
+    const defaults = buildDefaultArgs(propsMap[selected]!, defaultOverrides);
     if (prevSelectedRef.current === selected) {
       setArgs((prev) => {
         const merged: Record<string, unknown> = {};
@@ -180,7 +182,7 @@ export function App() {
       prevSelectedRef.current = selected;
       setArgs(defaults);
     }
-  }, [selected, propsMap]);
+  }, [selected, propsMap, defaultOverrides]);
 
   const previewReadyRef = useRef(false);
   const argsRef = useRef(args);
@@ -497,9 +499,9 @@ export function App() {
             selected={selected}
             propsMap={propsMap}
             search={search}
-            onComponentSelect={(name, nextArgs) => {
+            onComponentSelect={(id, nextArgs) => {
               setFoundationView(null);
-              setSelected(name);
+              setSelected(id);
               setArgs(nextArgs);
             }}
           />
@@ -508,6 +510,13 @@ export function App() {
         <SidebarSplitter isResizing={sidebar.isResizing} onPointerDown={sidebar.onPointerDown} />
 
         <div className="bb-layout__main">
+          {scanReport.data?.warnings?.length ? (
+            <div className="bb-layout__scan-warnings" role="status">
+              {scanReport.data.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          ) : null}
           <section className="bb-layout__preview-section">
             {foundationView === null ? (
               <nav className="bb-layout__preview-tabs">
@@ -546,9 +555,10 @@ export function App() {
                     syncPreviewTheme();
                   }}
                 />
-              ) : selected ? (
+              ) : selected && selectedComponent ? (
                 <VariantsPanel
-                  componentName={selected}
+                  storyId={selected}
+                  componentName={selectedComponent.name}
                   props={componentProps}
                   baseArgs={args}
                   theme={previewTheme}
@@ -573,7 +583,7 @@ export function App() {
                 <div className="bb-layout__panel-body">
                   {selected && selectedComponent && tab === "props" && (
                     <ControlsPanel
-                      componentName={selected}
+                      componentName={selectedComponent.name}
                       props={componentProps}
                       args={args}
                       onChange={(next) => {
@@ -583,11 +593,16 @@ export function App() {
                     />
                   )}
                   {selected && selectedComponent && tab === "docs" && (
-                    <DocsPanel component={selectedComponent} props={componentProps} args={args} />
+                    <DocsPanel
+                      component={selectedComponent}
+                      props={componentProps}
+                      args={args}
+                      packageName={config.data?.packageName ?? undefined}
+                    />
                   )}
-                  {selected && tab === "tests" && (
+                  {selected && selectedComponent && tab === "tests" && (
                     <TestsPanel
-                      componentName={selected}
+                      componentName={selectedComponent.name}
                       test={currentTest}
                       results={testResults}
                       running={testRunning}
@@ -596,9 +611,10 @@ export function App() {
                       onSave={handleSaveTest}
                     />
                   )}
-                  {selected && tab === "visual" && (
+                  {selected && selectedComponent && tab === "visual" && (
                     <VisualPanel
-                      componentName={selected}
+                      storyId={selected}
+                      componentName={selectedComponent.name}
                       args={args}
                       theme={previewTheme}
                       hasBaseline={visualHasBaseline}
@@ -611,9 +627,9 @@ export function App() {
                       imageVersion={visualImageVersion}
                     />
                   )}
-                  {selected && tab === "interactions" && (
+                  {selected && selectedComponent && tab === "interactions" && (
                     <InteractionsPanel
-                      componentName={selected}
+                      componentName={selectedComponent.name}
                       props={componentProps}
                       callbacks={callbacks}
                       onChange={(next) => {
