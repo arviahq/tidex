@@ -2,7 +2,7 @@
 
 .bb-controls {
   border: 1px solid var(--bb-border);
-  border-radius: 12px;
+  border-radius: var(--bb-radius-lg);
   overflow: hidden;
   background: var(--bb-surface);
 }
@@ -41,7 +41,7 @@
   padding: 2px;
   background: var(--bb-background);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-radius-md);
 }
 
 .bb-controls__segment {
@@ -68,13 +68,13 @@
 .bb-controls__segment[data-active="true"] {
   background: var(--bb-surface);
   color: var(--bb-text);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--bb-shadow-sm);
 }
 
 .bb-controls__input {
   appearance: none;
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-radius-md);
   background: var(--bb-surface);
   color: var(--bb-text);
   font: inherit;
@@ -146,7 +146,7 @@
   height: var(--sw-thumb);
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition: transform 120ms ease;
 }
 

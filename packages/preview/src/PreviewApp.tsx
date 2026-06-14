@@ -129,7 +129,9 @@ function useScaleToFit(
     const bounds = boundsRef.current;
     const refW = bounds ? Math.max(bounds.w, w) : w;
     const refH = bounds ? Math.max(bounds.h, h) : h;
-    setScale(Math.min(avail.w / refW, avail.h / refH));
+    // Shrink large components to fit, but never enlarge a small one — upscaling
+    // turned tiny badges into giant blurry blobs in the variant gallery.
+    setScale(Math.min(1, avail.w / refW, avail.h / refH));
   }, [ref]);
 
   // Measure natural size and report it to the manager.

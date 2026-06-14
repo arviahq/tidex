@@ -25,6 +25,7 @@ import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
 import { SidebarTree } from "./components/SidebarTree";
+import { CommandPalette } from "./components/CommandPalette";
 import {
   PREVIEW_URL,
   PREVIEW_MESSAGE,
@@ -64,6 +65,27 @@ const EMPTY_COMPONENTS: ComponentEntry[] = [];
 const EMPTY_PROPS_MAP: PropsMap = {};
 const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
 
+function TideLogo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M1.5 5.75c1.3-1.6 2.6-1.6 3.9 0s2.6 1.6 3.9 0 2.6-1.6 3.9 0"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M1.5 10.25c1.3-1.6 2.6-1.6 3.9 0s2.6 1.6 3.9 0 2.6-1.6 3.9 0"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function App() {
   const queryClient = useQueryClient();
   const { manifest, props, tokens, config, scanReport } = useTideData();
@@ -84,6 +106,7 @@ export function App() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [foundationView, setFoundationView] = useState<FoundationView | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
@@ -140,6 +163,43 @@ export function App() {
       setSelected(getComponentId(components[0]!));
     }
   }, [components, selected]);
+
+  // Toggle the command palette with ⌘K / Ctrl-K from anywhere.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const selectComponentById = useCallback(
+    (id: string) => {
+      const schema = propsMap[id];
+      setFoundationView(null);
+      setSelected(id);
+      setArgs(schema ? buildDefaultArgs(schema) : {});
+    },
+    [propsMap],
+  );
+
+  const paletteComponents = useMemo(
+    () =>
+      components.map((c) => ({
+        id: getComponentId(c),
+        label: formatDisplayName(c.name),
+        sublabel: c.path,
+      })),
+    [components],
+  );
+
+  const paletteFoundation = useMemo(
+    () => FOUNDATION_ITEMS.map((item) => ({ id: item.id, label: item.label, sublabel: item.description })),
+    [],
+  );
 
   const selectedComponent = components.find((c) => getComponentId(c) === selected);
   const defaultOverrides = selected ? config.data?.defaults?.[selected] : undefined;
@@ -430,15 +490,29 @@ export function App() {
   }, [selected, args, previewTheme]);
 
   if (manifest.isLoading) {
-    return <div className="bb-layout__center">Loading Tide...</div>;
+    return (
+      <div className="bb-layout__center">
+        <div className="bb-splash">
+          <span className="bb-splash__logo bb-splash__logo--pulse" aria-hidden="true">
+            <TideLogo />
+          </span>
+          <p className="bb-splash__title">Loading your design system…</p>
+        </div>
+      </div>
+    );
   }
 
   if (manifest.isError) {
     return (
       <div className="bb-layout__center">
-        <p>
-          Failed to load manifest. Run <code>tide generate</code> first.
-        </p>
+        <div className="bb-splash">
+          <span className="bb-splash__logo bb-splash__logo--error" aria-hidden="true">
+            <TideLogo />
+          </span>
+          <h1 className="bb-splash__heading">Couldn’t load your design system</h1>
+          <p className="bb-splash__text">No manifest was found. Generate one to get started:</p>
+          <code className="bb-splash__code">tide generate</code>
+        </div>
       </div>
     );
   }
@@ -446,19 +520,57 @@ export function App() {
   return (
     <div className="bb-layout">
       <header className="bb-layout__header">
-        <ThemeToggle />
+        <div className="bb-appbar__left">
+          <div className="bb-brand">
+            <span className="bb-brand__logo" aria-hidden="true">
+              <TideLogo />
+            </span>
+            <span className="bb-brand__name">Tide</span>
+            <span className="bb-brand__tag">Design</span>
+          </div>
+          <span className="bb-appbar__divider" aria-hidden="true" />
+          <nav className="bb-breadcrumb" aria-label="Breadcrumb">
+            {foundationView ? (
+              <>
+                <span className="bb-breadcrumb__crumb">Foundation</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">/</span>
+                <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
+                  {FOUNDATION_ITEMS.find((item) => item.id === foundationView)?.label}
+                </span>
+              </>
+            ) : selectedComponent ? (
+              <>
+                <span className="bb-breadcrumb__crumb">Components</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">/</span>
+                <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
+                  {formatDisplayName(selectedComponent.name)}
+                </span>
+              </>
+            ) : (
+              <span className="bb-breadcrumb__crumb">Components</span>
+            )}
+          </nav>
+        </div>
+        <div className="bb-appbar__right">
+          <button
+            type="button"
+            className="bb-appbar__search-trigger"
+            onClick={() => setPaletteOpen(true)}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M11.5 11.5 14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="bb-appbar__search-text">Search</span>
+            <kbd className="bb-appbar__kbd">⌘K</kbd>
+          </button>
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="bb-layout__workspace">
         <aside className="bb-sidebar" style={{ width: sidebar.size }}>
           <div className="bb-sidebar__header">
-            <div className="bb-sidebar__brand">
-              <span className="bb-sidebar__logo" aria-hidden="true">
-                B
-              </span>
-              <span className="bb-sidebar__title">Tide</span>
-            </div>
-
             <label className="bb-sidebar__search">
               <svg
                 className="bb-sidebar__search-icon"
@@ -644,6 +756,16 @@ export function App() {
           )}
         </div>
       </div>
+
+      {paletteOpen && (
+        <CommandPalette
+          onClose={() => setPaletteOpen(false)}
+          components={paletteComponents}
+          foundation={paletteFoundation}
+          onSelectComponent={selectComponentById}
+          onSelectFoundation={setFoundationView}
+        />
+      )}
     </div>
   );
 }

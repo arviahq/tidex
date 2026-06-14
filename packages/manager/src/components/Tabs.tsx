@@ -22,8 +22,10 @@ export function Tabs<T extends string>({
   className,
 }: TabsProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
   const [scrollEdges, setScrollEdges] = useState({ left: false, right: false });
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false });
 
   const updateScrollEdges = () => {
     const el = scrollRef.current;
@@ -36,13 +38,27 @@ export function Tabs<T extends string>({
     });
   };
 
+  // Slide a pill behind the active tab — measured from its position in the list.
+  const measureIndicator = () => {
+    const active = activeRef.current;
+    if (!active) {
+      setIndicator((i) => ({ ...i, ready: false }));
+      return;
+    }
+    setIndicator({ left: active.offsetLeft, width: active.offsetWidth, ready: true });
+  };
+
   useLayoutEffect(() => {
     updateScrollEdges();
     const el = scrollRef.current;
     if (!el) return;
 
-    const observer = new ResizeObserver(updateScrollEdges);
+    const observer = new ResizeObserver(() => {
+      updateScrollEdges();
+      measureIndicator();
+    });
     observer.observe(el);
+    if (listRef.current) observer.observe(listRef.current);
     el.addEventListener("scroll", updateScrollEdges, { passive: true });
 
     return () => {
@@ -54,6 +70,7 @@ export function Tabs<T extends string>({
   useLayoutEffect(() => {
     scrollActiveTabIntoView(scrollRef, activeRef);
     updateScrollEdges();
+    measureIndicator();
   }, [value, items.length]);
 
   return (
@@ -63,7 +80,13 @@ export function Tabs<T extends string>({
       data-scroll-right={scrollEdges.right ? "true" : undefined}
     >
       <div ref={scrollRef} className="bb-tabs__scroll">
-        <div className="bb-tabs__list" role="tablist" aria-label={ariaLabel}>
+        <div ref={listRef} className="bb-tabs__list" role="tablist" aria-label={ariaLabel}>
+          <span
+            className="bb-tabs__indicator"
+            aria-hidden="true"
+            data-ready={indicator.ready ? "true" : undefined}
+            style={{ transform: `translateX(${indicator.left}px)`, width: `${indicator.width}px` }}
+          />
           {items.map((item) => (
             <button
               key={item.id}

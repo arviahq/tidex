@@ -1,0 +1,47 @@
+.bb-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 9px;
+  border-radius: var(--bb-radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid var(--bb-border);
+}
+
+.bb-status svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.bb-status--wrap {
+  white-space: normal;
+  max-width: min(420px, 100%);
+  text-align: left;
+  line-height: 1.35;
+}
+
+.bb-status[data-kind="info"] {
+  color: var(--bb-muted);
+  background: var(--bb-surface-muted);
+}
+
+.bb-status[data-kind="pass"] {
+  color: var(--bb-success);
+  background: color-mix(in srgb, var(--bb-success) 9%, var(--bb-surface));
+  border-color: color-mix(in srgb, var(--bb-success) 26%, var(--bb-border));
+}
+
+.bb-status[data-kind="fail"] {
+  color: var(--bb-danger);
+  background: color-mix(in srgb, var(--bb-danger) 9%, var(--bb-surface));
+  border-color: color-mix(in srgb, var(--bb-danger) 26%, var(--bb-border));
+}
+
+.bb-status[data-kind="warn"] {
+  color: var(--bb-warning);
+  background: color-mix(in srgb, var(--bb-warning) 10%, var(--bb-surface));
+  border-color: color-mix(in srgb, var(--bb-warning) 28%, var(--bb-border));
+}

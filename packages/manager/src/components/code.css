@@ -24,49 +24,49 @@
 
 .hljs-comment,
 .hljs-quote {
-  color: #64748b;
+  color: var(--bb-hl-comment);
   font-style: italic;
 }
 
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-built_in {
-  color: #c4b5fd;
+  color: var(--bb-hl-keyword);
 }
 
 .hljs-string,
 .hljs-attr,
 .hljs-symbol,
 .hljs-bullet {
-  color: #86efac;
+  color: var(--bb-hl-string);
 }
 
 .hljs-number,
 .hljs-literal {
-  color: #fdba74;
+  color: var(--bb-hl-number);
 }
 
 .hljs-title,
 .hljs-section,
 .hljs-name,
 .hljs-type {
-  color: #7dd3fc;
+  color: var(--bb-hl-title);
 }
 
 .hljs-tag {
-  color: #f472b6;
+  color: var(--bb-hl-tag);
 }
 
 .hljs-attribute {
-  color: #a5b4fc;
+  color: var(--bb-hl-attr);
 }
 
 .hljs-punctuation {
-  color: #94a3b8;
+  color: var(--bb-hl-punct);
 }
 
 .hljs-meta {
-  color: #94a3b8;
+  color: var(--bb-hl-punct);
 }
 
 .hljs-emphasis {

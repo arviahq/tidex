@@ -138,7 +138,9 @@ function TreeBranch({
                 onClick={() => onToggleFolder(node.id)}
               >
                 <ChevronIcon />
-                <FolderIcon />
+                <span className="bb-tree__chip">
+                  <FolderIcon />
+                </span>
                 <span className="bb-tree__folder-label">{node.label}</span>
               </button>
               {isExpanded && node.children.length > 0 ? (
@@ -165,7 +167,9 @@ function TreeBranch({
               data-active={!foundationView && selected === getComponentId(entry) ? "true" : undefined}
               onClick={() => onComponentSelect(entry)}
             >
-              <ComponentIcon />
+              <span className="bb-tree__chip">
+                <ComponentIcon />
+              </span>
               <span className="bb-sidebar__item-title">{formatDisplayName(entry.name)}</span>
             </button>
           </li>

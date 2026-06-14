@@ -188,7 +188,8 @@ export function buildVisualPreviewUrl(
 
 export async function fetchVisualReport(): Promise<VisualReport> {
   try {
-    const res = await fetch("/__tide/visual/report.json");
+    // never serve a stale report — it drives which images the panel shows.
+    const res = await fetch("/__tide/visual/report.json", { cache: "no-store" });
     if (!res.ok) return {};
     return res.json();
   } catch {
@@ -198,7 +199,10 @@ export async function fetchVisualReport(): Promise<VisualReport> {
 
 export async function checkVisualBaseline(componentId: string): Promise<boolean> {
   try {
-    const res = await fetch(tideArtifactPath("baselines", componentId, "png"), { method: "HEAD" });
+    const res = await fetch(tideArtifactPath("baselines", componentId, "png"), {
+      method: "HEAD",
+      cache: "no-store",
+    });
     return res.ok;
   } catch {
     return false;

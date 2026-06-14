@@ -1,38 +1,113 @@
 :root {
-  --bb-font: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Typography — sans for UI chrome, mono for code & token values.
+     IBM Plex matches the Avanteam product brand; stack mirrors arvia-ui. */
+  --bb-font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica, Arial, sans-serif;
+  --bb-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Back-compat alias: legacy `var(--bb-font)` keeps meaning mono (code/values). */
+  --bb-font: var(--bb-font-mono);
 
-  --bb-background: #fafafa;
+  --bb-background: #f4f4f5;
   --bb-surface: #ffffff;
   --bb-surface-muted: #fafafa;
-  --bb-surface-active: #eaeaea;
-  --bb-border: #eaeaea;
-  --bb-border-strong: #e5e5e5;
-  --bb-accent: #0070f3;
-  --bb-text: #000000;
-  --bb-muted: #666666;
-  --bb-primary: #000000;
+  --bb-surface-active: #ededee;
+  --bb-border: #e4e4e7;
+  --bb-border-strong: #d4d4d8;
+
+  /* Tide brand — indigo accent. Drives logo, accents, focus, primary. */
+  --bb-brand: #4f46e5;
+  --bb-brand-strong: #4338ca;
+  --bb-brand-from: #4f46e5;
+  --bb-brand-to: #6366f1;
+  --bb-gradient-brand: linear-gradient(135deg, var(--bb-brand-from), var(--bb-brand-to));
+  --bb-accent: var(--bb-brand);
+  --bb-accent-muted: #6366f1;
+  --bb-accent-contrast: #ffffff;
+
+  --bb-text: #0a0a0b;
+  --bb-text-muted: #52525b;
+  --bb-muted: #52525b;
+  --bb-subtle: #a1a1aa;
+  --bb-primary: #4f46e5;
   --bb-primary-contrast: #ffffff;
-  --bb-code-bg: #000000;
-  --bb-code-border: #262626;
-  --bb-code-text: #ededed;
+  --bb-code-bg: #f6f8fa;
+  --bb-code-border: #d0d7de;
+  --bb-code-text: #24292e;
+
+  /* Syntax highlighting — GitHub light. */
+  --bb-hl-comment: #6e7781;
+  --bb-hl-keyword: #cf222e;
+  --bb-hl-string: #0a3069;
+  --bb-hl-number: #0550ae;
+  --bb-hl-title: #8250df;
+  --bb-hl-tag: #116329;
+  --bb-hl-attr: #0550ae;
+  --bb-hl-punct: #6e7781;
+
+  /* Semantic feedback colors. */
+  --bb-success: #2f9e44;
+  --bb-danger: #e5484d;
+  --bb-danger-strong: #d33a3f;
+  --bb-warning: #b45309;
+  --bb-warning-surface: #fffbeb;
+  --bb-warning-border: #fde68a;
+
+  /* Radius scale. */
+  --bb-radius-sm: 5px;
+  --bb-radius-md: 7px;
+  --bb-radius-lg: 9px;
+
+  /* Elevation. */
+  --bb-shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.06);
+  --bb-shadow-md: 0 4px 16px rgba(10, 10, 10, 0.08);
+
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bb-background: #000000;
-  --bb-surface: #0a0a0a;
-  --bb-surface-muted: #111111;
-  --bb-surface-active: #1a1a1a;
-  --bb-border: #262626;
-  --bb-border-strong: #333333;
-  --bb-accent: #0070f3;
-  --bb-text: #ededed;
-  --bb-muted: #888888;
-  --bb-primary: #ededed;
-  --bb-primary-contrast: #000000;
-  --bb-code-bg: #0a0a0a;
-  --bb-code-border: #262626;
-  --bb-code-text: #ededed;
+  --bb-background: #09090b;
+  --bb-surface: #111113;
+  --bb-surface-muted: #18181b;
+  --bb-surface-active: #232327;
+  --bb-border: #27272a;
+  --bb-border-strong: #3f3f46;
+
+  --bb-brand: #635bff;
+  --bb-brand-strong: #5249e6;
+  --bb-brand-from: #635bff;
+  --bb-brand-to: #8b85ff;
+  --bb-accent: var(--bb-brand);
+  --bb-accent-muted: #8b85ff;
+  --bb-accent-contrast: #ffffff;
+
+  --bb-text: #fafafa;
+  --bb-text-muted: #a1a1aa;
+  --bb-muted: #a1a1aa;
+  --bb-subtle: #71717a;
+  --bb-primary: #635bff;
+  --bb-primary-contrast: #ffffff;
+  --bb-code-bg: #0d1117;
+  --bb-code-border: #30363d;
+  --bb-code-text: #e6edf3;
+
+  /* Syntax highlighting — GitHub dark. */
+  --bb-hl-comment: #8b949e;
+  --bb-hl-keyword: #ff7b72;
+  --bb-hl-string: #a5d6ff;
+  --bb-hl-number: #79c0ff;
+  --bb-hl-title: #d2a8ff;
+  --bb-hl-tag: #7ee787;
+  --bb-hl-attr: #79c0ff;
+  --bb-hl-punct: #8b949e;
+
+  /* success / danger / warning inherit the light values (palette leaves them
+     unchanged in dark); only the warning banner surface needs a dark variant. */
+  --bb-warning-surface: #1a1206;
+  --bb-warning-border: #3a280c;
+
+  --bb-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --bb-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+
   color-scheme: dark;
 }
 
@@ -51,7 +126,12 @@ textarea {
 
 body {
   margin: 0;
-  font-family: var(--bb-font);
+  font-family: var(--bb-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--bb-text);
   background: var(--bb-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }

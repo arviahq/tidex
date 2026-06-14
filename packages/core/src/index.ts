@@ -474,6 +474,10 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
         }
         const filePath = path.join(options.tideDir, file);
         if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          // Artifacts (baselines, current/diff captures, generated JSON) are
+          // rewritten in place during a dev session — never let the browser
+          // serve a stale copy.
+          res.setHeader("Cache-Control", "no-store");
           if (file.endsWith(".png")) {
             res.setHeader("Content-Type", "image/png");
             if (req.method === "HEAD") {

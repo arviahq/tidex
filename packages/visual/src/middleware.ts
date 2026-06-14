@@ -46,6 +46,7 @@ export function tideVisualPlugin(options: TideVisualPluginOptions): Plugin {
 
         if (url === "/__tide/visual/report.json" && req.method === "GET") {
           const reportPath = path.join(getReportsDir(options.root), "visual.json");
+          res.setHeader("Cache-Control", "no-store");
           if (!fs.existsSync(reportPath)) {
             sendJson(res, 200, {});
             return;

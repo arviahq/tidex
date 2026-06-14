@@ -8,6 +8,10 @@ import {
   type StepTarget,
 } from "@tide/core";
 import { CodeBlock } from "./CodeBlock";
+import { IconButton } from "./IconButton";
+import { StatusBadge } from "./StatusBadge";
+import { Spinner } from "./Spinner";
+import { RunIcon, SaveIcon } from "./panel-icons";
 import "./tests.css";
 
 interface TestsPanelProps {
@@ -70,7 +74,7 @@ export function TestsPanel({
   const firstFail = results.find((r) => !r.ok);
   let status: { kind: "info" | "pass" | "fail"; text: string } | null = null;
   if (saveState === "saving") status = { kind: "info", text: "Saving…" };
-  else if (saveState === "saved") status = { kind: "pass", text: "Saved ✓" };
+  else if (saveState === "saved") status = { kind: "pass", text: "Saved" };
   else if (saveState === "error") status = { kind: "fail", text: "Save failed" };
   else if (running) status = { kind: "info", text: `Running… ${results.length}/${steps.length}` };
   else if (results.length > 0)
@@ -101,27 +105,22 @@ export function TestsPanel({
             </p>
           </div>
           <div className="bb-tests__actions">
-            <button
-              type="button"
-              className="bb-tests__btn bb-tests__btn--primary"
+            <IconButton
+              label={running ? "Running…" : "Run test"}
+              variant="primary"
               onClick={onRun}
               disabled={running || steps.length === 0}
             >
-              {running ? "Running…" : "Run"}
-            </button>
-            <button
-              type="button"
-              className="bb-tests__btn bb-tests__btn--secondary"
+              {running ? <Spinner /> : <RunIcon />}
+            </IconButton>
+            <IconButton
+              label="Save test"
               onClick={handleSave}
               disabled={running || saveState === "saving"}
             >
-              Save
-            </button>
-            {status && (
-              <span className="bb-tests__pill" data-kind={status.kind} role="status">
-                {status.text}
-              </span>
-            )}
+              <SaveIcon />
+            </IconButton>
+            {status && <StatusBadge kind={status.kind}>{status.text}</StatusBadge>}
           </div>
         </div>
       </header>
