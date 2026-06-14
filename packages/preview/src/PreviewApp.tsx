@@ -9,8 +9,10 @@ import React, {
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
+import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
+import { runSteps } from "./runSteps";
 
 class PreviewErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -159,6 +161,79 @@ export function PreviewApp() {
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
 
+  // True while a test run is driving the render, so the declarative
+  // story/args effect below stands aside and doesn't fight over the root.
+  const runningTestRef = useRef(false);
+
+  // Run an interaction test, fully self-contained: load + freshly mount the
+  // requested story (clean state for re-runs), wait for it to settle, then
+  // drive the steps and stream each result back. Works even on a just-mounted
+  // iframe where no story has been selected yet (e.g. switching from Variants).
+  const runTestRun = useCallback(
+    async (name: string, steps: InteractionStep[], testArgs?: Record<string, unknown>) => {
+      const post = (type: string, payload: unknown) =>
+        window.parent.postMessage({ type, payload }, "*");
+      const fail = (message?: string) => {
+        if (message) post(PREVIEW_MESSAGE.TEST_STEP, { index: -1, ok: false, message });
+        post(PREVIEW_MESSAGE.TEST_DONE, { ok: false });
+      };
+      runningTestRef.current = true;
+      try {
+        const stories = await loadStories();
+        const entry = stories[name];
+        if (!entry) {
+          fail(`Story "${name}" not found. Run \`tide generate\`.`);
+          return;
+        }
+        // Surface the story so the canvas container mounts.
+        setError(null);
+        setWaiting(false);
+        setStoryName(name);
+        setStory(entry);
+        // Wait for the container element to appear in the DOM.
+        let container: HTMLDivElement | null = null;
+        for (let i = 0; i < 60 && !container; i++) {
+          await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+          container = containerRef.current;
+        }
+        if (!container) {
+          fail("Preview canvas not ready.");
+          return;
+        }
+        // Mount the component fresh for a clean run.
+        const mergedArgs = { ...entry.args, ...testArgs };
+        setArgs(mergedArgs);
+        rootRef.current?.unmount();
+        rootRef.current = createRoot(container);
+        const mod = await entry.load();
+        const Component = entry.isDefault
+          ? (mod.default as React.ComponentType<Record<string, unknown>>)
+          : (mod[entry.exportName] as React.ComponentType<Record<string, unknown>>);
+        if (!Component) {
+          throw new Error(`Could not resolve export "${entry.exportName}"`);
+        }
+        rootRef.current.render(
+          <PreviewErrorBoundary>
+            <Component {...mergedArgs} />
+          </PreviewErrorBoundary>,
+        );
+        // Let React commit and effects settle before interacting.
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))),
+        );
+        const ok = await runSteps(container, steps, (result) =>
+          post(PREVIEW_MESSAGE.TEST_STEP, result),
+        );
+        post(PREVIEW_MESSAGE.TEST_DONE, { ok });
+      } catch (err) {
+        fail(formatError(err));
+      } finally {
+        runningTestRef.current = false;
+      }
+    },
+    [],
+  );
+
   const selectStory = async (name: string, nextArgs?: Record<string, unknown>) => {
     try {
       const stories = await loadStories();
@@ -205,11 +280,19 @@ export function PreviewApp() {
           void selectStory(payload.story, payload.args);
         }
       }
+      if (event.data?.type === PREVIEW_MESSAGE.RUN_TEST) {
+        const payload = event.data.payload as {
+          story: string;
+          steps: InteractionStep[];
+          args?: Record<string, unknown>;
+        };
+        void runTestRun(payload.story, payload.steps ?? [], payload.args);
+      }
     };
     window.addEventListener("message", handler);
     window.parent.postMessage({ type: PREVIEW_MESSAGE.READY }, "*");
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [runTestRun]);
 
   // Load from URL when opened directly or in variant tiles.
   useEffect(() => {
@@ -253,6 +336,8 @@ export function PreviewApp() {
   useEffect(() => {
     const container = containerRef.current;
     if (!story || !container) return;
+    // A test run drives its own render; don't fight over the root.
+    if (runningTestRef.current) return;
 
     if (!rootRef.current) {
       rootRef.current = createRoot(container);

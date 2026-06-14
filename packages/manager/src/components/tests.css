@@ -1,0 +1,197 @@
+.bb-tests {
+  font-size: 14px;
+}
+
+.bb-tests__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.bb-tests__spacer {
+  flex: 1;
+}
+
+.bb-tests__btn {
+  appearance: none;
+  border: 1px solid var(--bb-border);
+  border-radius: 8px;
+  background: var(--bb-surface);
+  color: var(--bb-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.bb-tests__btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bb-primary) 45%, var(--bb-border));
+}
+
+.bb-tests__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bb-tests__btn--primary {
+  background: var(--bb-primary);
+  border-color: var(--bb-primary);
+  color: #fff;
+  /* Hold a constant width so the "Run" → "Running…" label swap doesn't
+     resize the button and shift the toolbar. */
+  min-width: 92px;
+  text-align: center;
+}
+
+.bb-tests__statusline {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bb-tests__statusline[data-kind="info"] {
+  color: var(--bb-muted);
+}
+
+.bb-tests__statusline[data-kind="pass"] {
+  color: #16a34a;
+}
+
+.bb-tests__statusline[data-kind="fail"] {
+  color: #dc2626;
+}
+
+.bb-tests__btn--ghost {
+  background: transparent;
+}
+
+.bb-tests__empty {
+  color: var(--bb-muted);
+  padding: 12px 0;
+}
+
+.bb-tests__list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 1px solid var(--bb-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bb-surface);
+}
+
+.bb-tests__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-tests__row:last-child {
+  border-bottom: none;
+}
+
+.bb-tests__row[data-status="fail"] {
+  background: color-mix(in srgb, #dc2626 6%, transparent);
+}
+
+.bb-tests__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bb-muted);
+  background: var(--bb-background);
+  flex-shrink: 0;
+}
+
+.bb-tests__status[data-status="pass"] {
+  color: #fff;
+  background: #16a34a;
+}
+
+.bb-tests__status[data-status="fail"] {
+  color: #fff;
+  background: #dc2626;
+}
+
+.bb-tests__select,
+.bb-tests__input {
+  appearance: none;
+  border: 1px solid var(--bb-border);
+  border-radius: 8px;
+  background: var(--bb-surface);
+  color: var(--bb-text);
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  outline: none;
+}
+
+.bb-tests__input {
+  min-width: 0;
+  flex: 1 1 120px;
+  max-width: 220px;
+}
+
+.bb-tests__input--ms {
+  flex: 0 0 80px;
+  max-width: 80px;
+}
+
+.bb-tests__select:focus,
+.bb-tests__input:focus {
+  border-color: color-mix(in srgb, var(--bb-primary) 45%, var(--bb-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bb-primary) 12%, transparent);
+}
+
+.bb-tests__ms {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--bb-muted);
+  font-size: 12px;
+}
+
+.bb-tests__remove {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--bb-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  margin-left: auto;
+}
+
+.bb-tests__remove:hover {
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+}
+
+.bb-tests__message {
+  flex-basis: 100%;
+  margin: 4px 0 0 28px;
+  color: #dc2626;
+  font-size: 12px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.bb-tests__hint {
+  color: var(--bb-muted);
+  font-size: 13px;
+  margin: 0 0 8px;
+}

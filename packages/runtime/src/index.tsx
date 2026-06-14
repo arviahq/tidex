@@ -76,4 +76,9 @@ export const PREVIEW_MESSAGE = {
   // which replies with the shared fit bounds so every tile uses one scale factor.
   CONTENT_SIZE: "TIDE_CONTENT_SIZE",
   SET_FIT_BOUNDS: "TIDE_SET_FIT_BOUNDS",
+  // Interaction tests: manager -> preview to run a list of steps; preview -> manager
+  // with the result of each step (live) and a final done signal.
+  RUN_TEST: "TIDE_RUN_TEST",
+  TEST_STEP: "TIDE_TEST_STEP",
+  TEST_DONE: "TIDE_TEST_DONE",
 } as const;

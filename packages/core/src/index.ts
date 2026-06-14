@@ -59,6 +59,37 @@ export interface StoryEntry {
 
 export type StoriesMap = Record<string, StoryEntry>;
 
+/** How an interaction step locates an element inside the rendered component. */
+export interface StepTarget {
+  by: "role" | "text" | "testid" | "css";
+  value: string;
+  /** Accessible name, used to disambiguate `role` queries. */
+  name?: string;
+}
+
+export type AssertMatcher = "exists" | "absent" | "text" | "value" | "checked" | "disabled";
+
+/** A single no-code interaction step authored in the Tests panel. */
+export type InteractionStep =
+  | { type: "click"; target: StepTarget }
+  | { type: "type"; target: StepTarget; value: string }
+  | { type: "wait"; ms: number }
+  | { type: "assert"; target: StepTarget; matcher: AssertMatcher; expected?: string | boolean };
+
+export interface InteractionTest {
+  component: string;
+  /** Props to mount the component with; defaults to the story's default args. */
+  args?: Record<string, unknown>;
+  steps: InteractionStep[];
+}
+
+/** Outcome of running one {@link InteractionStep}. */
+export interface StepResult {
+  index: number;
+  ok: boolean;
+  message?: string;
+}
+
 export const TIDE_DIR = ".tide";
 
 export function formatDisplayName(name: string): string {
@@ -89,6 +120,14 @@ export function getReportsDir(root: string): string {
 
 export function getBaselinesDir(root: string): string {
   return path.join(getTideDir(root), "baselines");
+}
+
+export function getTestsDir(root: string): string {
+  return path.join(getTideDir(root), "tests");
+}
+
+export function getTestPath(root: string, component: string): string {
+  return path.join(getTestsDir(root), `${component}.json`);
 }
 
 export function defaultConfig(root: string): TideConfig {
@@ -229,16 +268,66 @@ export function tideVitePlugin(options: { root: string; tideDir: string }): Plug
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const url = req.url ?? "";
-        if (url.startsWith("/__tide/")) {
-          const file = url.replace("/__tide/", "");
-          const filePath = path.join(options.tideDir, file);
-          if (fs.existsSync(filePath)) {
-            res.setHeader("Content-Type", "application/json");
-            res.end(fs.readFileSync(filePath, "utf-8"));
-            return;
-          }
+        const url = (req.url ?? "").split("?")[0] ?? "";
+        if (!url.startsWith("/__tide/")) {
+          next();
+          return;
         }
+
+        // Save an interaction test to .tide/tests/<Component>.json.
+        if (url === "/__tide/tests" && req.method === "POST") {
+          let body = "";
+          req.on("data", (chunk) => {
+            body += chunk;
+          });
+          req.on("end", () => {
+            try {
+              const parsed = JSON.parse(body) as { component?: string; test?: unknown };
+              const component = parsed.component ?? "";
+              if (!/^[A-Za-z0-9_-]+$/.test(component)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ ok: false, error: "Invalid component name" }));
+                return;
+              }
+              fs.mkdirSync(getTestsDir(options.root), { recursive: true });
+              fs.writeFileSync(
+                getTestPath(options.root, component),
+                JSON.stringify(parsed.test ?? {}, null, 2),
+              );
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ ok: true }));
+            } catch (err) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ ok: false, error: String(err) }));
+            }
+          });
+          return;
+        }
+
+        // List components that have a saved interaction test.
+        if (url === "/__tide/tests" && req.method === "GET") {
+          const testsDir = getTestsDir(options.root);
+          const names = fs.existsSync(testsDir)
+            ? fs
+                .readdirSync(testsDir)
+                .filter((f) => f.endsWith(".json"))
+                .map((f) => f.replace(/\.json$/, ""))
+            : [];
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(names));
+          return;
+        }
+
+        // Otherwise serve a static JSON artifact from the .tide directory.
+        const file = url.replace("/__tide/", "");
+        const filePath = path.join(options.tideDir, file);
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          res.setHeader("Content-Type", "application/json");
+          res.end(fs.readFileSync(filePath, "utf-8"));
+          return;
+        }
+
         next();
       });
     },

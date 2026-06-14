@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildDefaultArgs, formatDisplayName } from "@tide/core";
-import type { ComponentEntry, PropSchema, PropsMap } from "@tide/core";
+import type {
+  ComponentEntry,
+  InteractionStep,
+  InteractionTest,
+  PropSchema,
+  PropsMap,
+  StepResult,
+} from "@tide/core";
 import { computeVariants } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
@@ -14,7 +21,7 @@ import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
-import { PREVIEW_URL, PREVIEW_MESSAGE, postToPreview } from "./api";
+import { PREVIEW_URL, PREVIEW_MESSAGE, postToPreview, fetchTest, saveTest } from "./api";
 import "./components/layout.css";
 
 type PanelTab = "props" | "docs" | "tests";
@@ -46,6 +53,9 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [tests, setTests] = useState<Record<string, InteractionTest>>({});
+  const [testResults, setTestResults] = useState<StepResult[]>([]);
+  const [testRunning, setTestRunning] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { theme: previewTheme, toggle: togglePreviewTheme } = usePreviewTheme();
 
@@ -116,6 +126,17 @@ export function App() {
   }, [selected, propsMap]);
 
   const previewReadyRef = useRef(false);
+  const pendingRunRef = useRef<{
+    story: string;
+    steps: InteractionStep[];
+    args: Record<string, unknown>;
+  } | null>(null);
+
+  // The iframe only exists on the Preview tab; treat it as not-ready elsewhere
+  // so a queued test run waits for a fresh READY after switching back.
+  useEffect(() => {
+    if (previewTab !== "preview") previewReadyRef.current = false;
+  }, [previewTab]);
 
   const syncPreview = useCallback(() => {
     if (!selected || !iframeRef.current?.contentWindow) return;
@@ -159,11 +180,95 @@ export function App() {
         previewReadyRef.current = true;
         syncPreview();
         syncPreviewTheme();
+        // A test run was queued while the iframe was unmounted (e.g. on the
+        // Variants tab) — fire it now that the preview is ready.
+        if (pendingRunRef.current) {
+          postToPreview(iframeRef.current, {
+            type: PREVIEW_MESSAGE.RUN_TEST,
+            payload: pendingRunRef.current,
+          });
+          pendingRunRef.current = null;
+        }
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, [syncPreview, syncPreviewTheme]);
+
+  // Load a saved interaction test the first time a component is selected.
+  useEffect(() => {
+    if (!selected || tests[selected]) return;
+    const name = selected;
+    let cancelled = false;
+    void fetchTest(name).then((loaded) => {
+      if (cancelled) return;
+      setTests((prev) =>
+        prev[name] ? prev : { ...prev, [name]: loaded ?? { component: name, steps: [] } },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, tests]);
+
+  // Clear stale results when switching components.
+  useEffect(() => {
+    setTestResults([]);
+    setTestRunning(false);
+  }, [selected]);
+
+  // Collect live step results streamed back from the preview.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === PREVIEW_MESSAGE.TEST_STEP) {
+        setTestResults((prev) => [...prev, event.data.payload as StepResult]);
+      }
+      if (event.data?.type === PREVIEW_MESSAGE.TEST_DONE) {
+        setTestRunning(false);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  const currentTest: InteractionTest = selected
+    ? (tests[selected] ?? { component: selected, steps: [] })
+    : { component: "", steps: [] };
+
+  const updateTest = useCallback(
+    (next: InteractionTest) => {
+      if (!selected) return;
+      setTests((prev) => ({ ...prev, [selected]: next }));
+      setTestResults([]);
+    },
+    [selected],
+  );
+
+  const runTest = useCallback(() => {
+    if (!selected) return;
+    const test = tests[selected] ?? { component: selected, steps: [] };
+    if (test.steps.length === 0) return;
+    setTestResults([]);
+    setTestRunning(true);
+    const payload = { story: selected, steps: test.steps, args };
+    if (previewTab === "preview" && previewReadyRef.current) {
+      postToPreview(iframeRef.current, { type: PREVIEW_MESSAGE.RUN_TEST, payload });
+    } else {
+      // Iframe isn't mounted/ready (e.g. on the Variants tab) — switch to the
+      // Preview pane and run once it signals READY.
+      pendingRunRef.current = payload;
+      if (previewTab !== "preview") setPreviewTab("preview");
+    }
+  }, [selected, previewTab, tests, args]);
+
+  const handleSaveTest = useCallback(async () => {
+    if (!selected) return;
+    const base = tests[selected] ?? { component: selected, steps: [] };
+    const toSave: InteractionTest = { ...base, component: selected, args };
+    setTests((prev) => ({ ...prev, [selected]: toSave }));
+    // Let errors propagate so the panel can surface a "Save failed" state.
+    await saveTest(selected, toSave);
+  }, [selected, tests, args]);
 
   if (manifest.isLoading) {
     return <div className="bb-layout__center">Loading Tide...</div>;
@@ -382,7 +487,17 @@ export function App() {
                   {selected && selectedComponent && tab === "docs" && (
                     <DocsPanel component={selectedComponent} props={componentProps} args={args} />
                   )}
-                  {selected && tab === "tests" && <TestsPanel componentName={selected} />}
+                  {selected && tab === "tests" && (
+                    <TestsPanel
+                      componentName={selected}
+                      test={currentTest}
+                      results={testResults}
+                      running={testRunning}
+                      onChange={updateTest}
+                      onRun={runTest}
+                      onSave={handleSaveTest}
+                    />
+                  )}
                 </div>
               </footer>
             </>

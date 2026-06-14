@@ -195,7 +195,14 @@ export async function runTest(cwd?: string): Promise<number> {
   await generateArtifacts(config);
   const { readManifest } = await import("./config.js");
   const manifest = readManifest(root);
-  const { runA11yTests, hasA11yViolations, formatA11ySummary } = await import("@tide/testing");
+  const {
+    runA11yTests,
+    hasA11yViolations,
+    formatA11ySummary,
+    runInteractionTests,
+    hasInteractionFailures,
+    formatInteractionSummary,
+  } = await import("@tide/testing");
 
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);
@@ -208,15 +215,30 @@ export async function runTest(cwd?: string): Promise<number> {
   });
   await previewServer.listen();
   const port = previewServer.config.server.port;
+  const previewUrl = `http://localhost:${port}`;
 
+  // Run each suite independently so a failure in one doesn't mask the other.
+  let failed = false;
   try {
-    const report = await runA11yTests({
-      root,
-      previewUrl: `http://localhost:${port}`,
-      manifest,
-    });
-    console.log(formatA11ySummary(report));
-    return hasA11yViolations(report) ? 1 : 0;
+    try {
+      const a11yReport = await runA11yTests({ root, previewUrl, manifest });
+      console.log(formatA11ySummary(a11yReport));
+      if (hasA11yViolations(a11yReport)) failed = true;
+    } catch (err) {
+      console.error("Accessibility tests failed to run:", err instanceof Error ? err.message : err);
+      failed = true;
+    }
+
+    try {
+      const interactionReport = await runInteractionTests({ root, previewUrl, manifest });
+      console.log(formatInteractionSummary(interactionReport));
+      if (hasInteractionFailures(interactionReport)) failed = true;
+    } catch (err) {
+      console.error("Interaction tests failed to run:", err instanceof Error ? err.message : err);
+      failed = true;
+    }
+
+    return failed ? 1 : 0;
   } finally {
     await previewServer.close();
   }

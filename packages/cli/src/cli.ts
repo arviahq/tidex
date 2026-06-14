@@ -45,7 +45,7 @@ program
 
 program
   .command("test")
-  .description("Run accessibility tests")
+  .description("Run accessibility and interaction tests")
   .action(async () => {
     const code = await runTest();
     process.exit(code);

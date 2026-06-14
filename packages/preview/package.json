@@ -10,6 +10,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/user-event": "^14.5.2",
     "@tide/core": "workspace:*",
     "@tide/runtime": "workspace:*",
     "react": "^19.0.0",

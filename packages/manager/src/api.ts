@@ -1,3 +1,5 @@
+import type { InteractionTest } from "@tide/core";
+
 declare const __TIDE_PREVIEW_URL__: string;
 
 export const PREVIEW_URL =
@@ -12,6 +14,11 @@ export const PREVIEW_MESSAGE = {
   // which replies with the shared fit bounds so every tile uses one scale factor.
   CONTENT_SIZE: "TIDE_CONTENT_SIZE",
   SET_FIT_BOUNDS: "TIDE_SET_FIT_BOUNDS",
+  // Interaction tests: manager -> preview to run a list of steps; preview -> manager
+  // with the result of each step (live) and a final done signal.
+  RUN_TEST: "TIDE_RUN_TEST",
+  TEST_STEP: "TIDE_TEST_STEP",
+  TEST_DONE: "TIDE_TEST_DONE",
 } as const;
 
 export interface Manifest {
@@ -61,4 +68,23 @@ export function postToPreview(
   message: { type: string; payload?: unknown },
 ) {
   iframe?.contentWindow?.postMessage(message, "*");
+}
+
+export async function fetchTest(name: string): Promise<InteractionTest | null> {
+  try {
+    const res = await fetch(`/__tide/tests/${name}.json`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function saveTest(component: string, test: InteractionTest): Promise<void> {
+  const res = await fetch("/__tide/tests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ component, test }),
+  });
+  if (!res.ok) throw new Error(`Failed to save test (${res.status})`);
 }

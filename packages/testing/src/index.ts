@@ -2,6 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { getReportsDir, type Manifest } from "@tide/core";
 
+export {
+  runInteractionTests,
+  hasInteractionFailures,
+  formatInteractionSummary,
+  type InteractionReport,
+  type InteractionReportEntry,
+  type InteractionTestOptions,
+} from "./interactions.js";
+
 export interface A11yViolation {
   id: string;
   impact: string | null | undefined;
