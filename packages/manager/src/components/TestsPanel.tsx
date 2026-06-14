@@ -67,8 +67,6 @@ export function TestsPanel({
     saveTimer.current = setTimeout(() => setSaveState("idle"), 2500);
   };
 
-  // A single status line for the toolbar: a transient save state takes
-  // precedence, otherwise the live/finished run result.
   const firstFail = results.find((r) => !r.ok);
   let status: { kind: "info" | "pass" | "fail"; text: string } | null = null;
   if (saveState === "saving") status = { kind: "info", text: "Saving…" };
@@ -94,178 +92,242 @@ export function TestsPanel({
 
   return (
     <div className="bb-tests">
-      <div className="bb-tests__toolbar">
-        <button
-          type="button"
-          className="bb-tests__btn bb-tests__btn--primary"
-          onClick={onRun}
-          disabled={running || steps.length === 0}
-        >
-          {running ? "Running…" : "Run"}
-        </button>
-        <button
-          type="button"
-          className="bb-tests__btn"
-          onClick={handleSave}
-          disabled={running || saveState === "saving"}
-        >
-          Save
-        </button>
-        {status && (
-          <span className="bb-tests__statusline" data-kind={status.kind} role="status">
-            {status.text}
-          </span>
-        )}
-        <span className="bb-tests__spacer" />
-        <button type="button" className="bb-tests__btn bb-tests__btn--ghost" onClick={addStep}>
-          + Add step
-        </button>
-      </div>
+      <header className="bb-tests__header">
+        <div className="bb-tests__title-row">
+          <div className="bb-tests__title-block">
+            <h2 className="bb-tests__name">{formatDisplayName(componentName)}</h2>
+            <p className="bb-tests__subtitle">
+              Interaction test · saved to .tide/tests/{componentName}.json
+            </p>
+          </div>
+          <div className="bb-tests__actions">
+            <button
+              type="button"
+              className="bb-tests__btn bb-tests__btn--primary"
+              onClick={onRun}
+              disabled={running || steps.length === 0}
+            >
+              {running ? "Running…" : "Run"}
+            </button>
+            <button
+              type="button"
+              className="bb-tests__btn bb-tests__btn--secondary"
+              onClick={handleSave}
+              disabled={running || saveState === "saving"}
+            >
+              Save
+            </button>
+            {status && (
+              <span className="bb-tests__pill" data-kind={status.kind} role="status">
+                {status.text}
+              </span>
+            )}
+          </div>
+        </div>
+      </header>
 
-      {steps.length === 0 ? (
-        <p className="bb-tests__empty">
-          No steps yet. Add steps to interact with{" "}
-          <strong>{formatDisplayName(componentName)}</strong> and assert on the result.
-        </p>
-      ) : (
-        <ol className="bb-tests__list">
-          {steps.map((step, index) => {
-            const result = results.find((r) => r.index === index);
-            const status = result ? (result.ok ? "pass" : "fail") : undefined;
-            return (
-              <li key={index} className="bb-tests__row" data-status={status}>
-                <span className="bb-tests__status" data-status={status} aria-hidden="true">
-                  {result ? (result.ok ? "✓" : "✗") : index + 1}
-                </span>
+      <section className="bb-tests__section">
+        <div className="bb-tests__section-head">
+          <div className="bb-tests__section-head-left">
+            <h3 className="bb-tests__section-title">Steps</h3>
+            {steps.length > 0 && <span className="bb-tests__section-count">{steps.length}</span>}
+          </div>
+          <button type="button" className="bb-tests__btn bb-tests__btn--add" onClick={addStep}>
+            + Add step
+          </button>
+        </div>
 
-                <select
-                  className="bb-tests__select"
-                  value={step.type}
-                  onChange={(e) =>
-                    updateStep(index, defaultStep(e.target.value as InteractionStep["type"]))
-                  }
+        {steps.length === 0 ? (
+          <div className="bb-tests__empty">
+            <p className="bb-tests__empty-text">
+              No steps yet. Add steps to interact with{" "}
+              <strong>{formatDisplayName(componentName)}</strong> and assert on the result.
+            </p>
+            <button type="button" className="bb-tests__btn bb-tests__btn--dashed" onClick={addStep}>
+              + Add step
+            </button>
+          </div>
+        ) : (
+          <ol className="bb-tests__list">
+            {steps.map((step, index) => {
+              const result = results.find((r) => r.index === index);
+              const stepStatus = result ? (result.ok ? "pass" : "fail") : undefined;
+              const isRunningStep = running && results.length === index;
+              return (
+                <li
+                  key={index}
+                  className="bb-tests__row"
+                  data-status={stepStatus}
+                  data-running={isRunningStep ? "true" : undefined}
                 >
-                  {STEP_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                  <span className="bb-tests__status" data-status={stepStatus} aria-hidden="true">
+                    {result ? (result.ok ? "✓" : "✗") : index + 1}
+                  </span>
 
-                {step.type === "wait" ? (
-                  <label className="bb-tests__ms">
-                    <input
-                      type="number"
-                      className="bb-tests__input bb-tests__input--ms"
-                      value={step.ms}
-                      onChange={(e) =>
-                        updateStep(index, { ...step, ms: Number(e.target.value) || 0 })
-                      }
-                    />
-                    ms
-                  </label>
-                ) : (
-                  <>
+                  <div className="bb-tests__pipeline">
                     <select
-                      className="bb-tests__select"
-                      value={step.target.by}
-                      onChange={(e) => setTarget(index, { by: e.target.value as StepTarget["by"] })}
+                      className="bb-tests__select bb-tests__select--type"
+                      data-kind={step.type}
+                      value={step.type}
+                      onChange={(e) =>
+                        updateStep(index, defaultStep(e.target.value as InteractionStep["type"]))
+                      }
                     >
-                      {TARGET_BYS.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
+                      {STEP_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
                         </option>
                       ))}
                     </select>
-                    <input
-                      className="bb-tests__input"
-                      placeholder="value"
-                      value={step.target.value}
-                      onChange={(e) => setTarget(index, { value: e.target.value })}
-                    />
-                    {step.target.by === "role" && (
-                      <input
-                        className="bb-tests__input"
-                        placeholder="name (optional)"
-                        value={step.target.name ?? ""}
-                        onChange={(e) => setTarget(index, { name: e.target.value || undefined })}
-                      />
-                    )}
-                    {step.type === "type" && (
-                      <input
-                        className="bb-tests__input"
-                        placeholder="text to type"
-                        value={step.value}
-                        onChange={(e) => updateStep(index, { ...step, value: e.target.value })}
-                      />
-                    )}
-                    {step.type === "assert" && (
-                      <>
-                        <select
-                          className="bb-tests__select"
-                          value={step.matcher}
-                          onChange={(e) =>
-                            updateStep(index, {
-                              ...step,
-                              matcher: e.target.value as AssertMatcher,
-                            })
-                          }
-                        >
-                          {MATCHERS.map((m) => (
-                            <option key={m} value={m}>
-                              {m}
-                            </option>
-                          ))}
-                        </select>
-                        {(step.matcher === "text" || step.matcher === "value") && (
+
+                    {step.type === "wait" ? (
+                      <div className="bb-tests__segment">
+                        <label className="bb-tests__ms">
                           <input
-                            className="bb-tests__input"
-                            placeholder="expected"
-                            value={String(step.expected ?? "")}
+                            type="number"
+                            className="bb-tests__input bb-tests__input--ms"
+                            value={step.ms}
                             onChange={(e) =>
-                              updateStep(index, { ...step, expected: e.target.value })
+                              updateStep(index, { ...step, ms: Number(e.target.value) || 0 })
                             }
                           />
-                        )}
-                        {(step.matcher === "checked" || step.matcher === "disabled") && (
+                          ms
+                        </label>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="bb-tests__arrow" aria-hidden="true">
+                          →
+                        </span>
+                        <div className="bb-tests__segment">
                           <select
-                            className="bb-tests__select"
-                            value={String(step.expected ?? true)}
+                            className="bb-tests__select bb-tests__select--by"
+                            data-kind={step.target.by}
+                            value={step.target.by}
                             onChange={(e) =>
-                              updateStep(index, { ...step, expected: e.target.value === "true" })
+                              setTarget(index, { by: e.target.value as StepTarget["by"] })
                             }
                           >
-                            <option value="true">true</option>
-                            <option value="false">false</option>
+                            {TARGET_BYS.map((b) => (
+                              <option key={b} value={b}>
+                                {b}
+                              </option>
+                            ))}
                           </select>
+                          <input
+                            className="bb-tests__input"
+                            placeholder="value"
+                            value={step.target.value}
+                            onChange={(e) => setTarget(index, { value: e.target.value })}
+                          />
+                          {step.target.by === "role" && (
+                            <input
+                              className="bb-tests__input"
+                              placeholder="name (optional)"
+                              value={step.target.name ?? ""}
+                              onChange={(e) =>
+                                setTarget(index, { name: e.target.value || undefined })
+                              }
+                            />
+                          )}
+                        </div>
+                        {step.type === "type" && (
+                          <>
+                            <span className="bb-tests__arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <div className="bb-tests__segment">
+                              <input
+                                className="bb-tests__input bb-tests__input--wide"
+                                placeholder="text to type"
+                                value={step.value}
+                                onChange={(e) =>
+                                  updateStep(index, { ...step, value: e.target.value })
+                                }
+                              />
+                            </div>
+                          </>
+                        )}
+                        {step.type === "assert" && (
+                          <>
+                            <span className="bb-tests__arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <div className="bb-tests__segment">
+                              <select
+                                className="bb-tests__select bb-tests__select--matcher"
+                                data-kind={step.matcher}
+                                value={step.matcher}
+                                onChange={(e) =>
+                                  updateStep(index, {
+                                    ...step,
+                                    matcher: e.target.value as AssertMatcher,
+                                  })
+                                }
+                              >
+                                {MATCHERS.map((m) => (
+                                  <option key={m} value={m}>
+                                    {m}
+                                  </option>
+                                ))}
+                              </select>
+                              {(step.matcher === "text" || step.matcher === "value") && (
+                                <input
+                                  className="bb-tests__input"
+                                  placeholder="expected"
+                                  value={String(step.expected ?? "")}
+                                  onChange={(e) =>
+                                    updateStep(index, { ...step, expected: e.target.value })
+                                  }
+                                />
+                              )}
+                              {(step.matcher === "checked" || step.matcher === "disabled") && (
+                                <select
+                                  className="bb-tests__select bb-tests__select--matcher"
+                                  data-kind={String(step.expected ?? true)}
+                                  value={String(step.expected ?? true)}
+                                  onChange={(e) =>
+                                    updateStep(index, {
+                                      ...step,
+                                      expected: e.target.value === "true",
+                                    })
+                                  }
+                                >
+                                  <option value="true">true</option>
+                                  <option value="false">false</option>
+                                </select>
+                              )}
+                            </div>
+                          </>
                         )}
                       </>
                     )}
-                  </>
-                )}
+                  </div>
 
-                <button
-                  type="button"
-                  className="bb-tests__remove"
-                  aria-label="Remove step"
-                  onClick={() => removeStep(index)}
-                >
-                  ✕
-                </button>
+                  <button
+                    type="button"
+                    className="bb-tests__remove"
+                    aria-label="Remove step"
+                    onClick={() => removeStep(index)}
+                  >
+                    ✕
+                  </button>
 
-                {result && !result.ok && result.message && (
-                  <p className="bb-tests__message">{result.message}</p>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      )}
+                  {result && !result.ok && result.message && (
+                    <p className="bb-tests__message">{result.message}</p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </section>
 
-      <p className="bb-tests__hint">
-        Tests are saved to <code>.tide/tests/{componentName}.json</code> and run headlessly:
-      </p>
-      <CodeBlock code={CLI_COMMANDS} language="bash" />
+      <section className="bb-tests__cli">
+        <span className="bb-tests__cli-label">CLI</span>
+        <p className="bb-tests__hint">Run headlessly in CI or locally:</p>
+        <CodeBlock code={CLI_COMMANDS} language="bash" />
+      </section>
     </div>
   );
 }
