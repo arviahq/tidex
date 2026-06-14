@@ -1,0 +1,42 @@
+{
+  "name": "tide",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "tide": "./bin/tide.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./core": {
+      "import": "@tide/core"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tide/core": "workspace:*",
+    "@tide/docs": "workspace:*",
+    "@tide/scanner": "workspace:*",
+    "@tide/testing": "workspace:*",
+    "@tide/visual": "workspace:*",
+    "chokidar": "^4.0.0",
+    "commander": "^12.1.0",
+    "vite": "^6.0.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.0"
+  }
+}

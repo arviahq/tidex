@@ -1,0 +1,160 @@
+/* Panel splitter — sits on the boundary between preview and controls */
+
+.bb-splitter--panel {
+  flex-shrink: 0;
+  position: relative;
+  height: 7px;
+  margin: -3px 0;
+  z-index: 4;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.bb-splitter__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: var(--bb-border);
+  pointer-events: none;
+  transition:
+    height 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.bb-splitter--panel:hover .bb-splitter__line,
+.bb-splitter--panel[data-resizing="true"] .bb-splitter__line {
+  height: 2px;
+  background: color-mix(in srgb, var(--bb-primary) 70%, var(--bb-border));
+}
+
+.bb-splitter--panel[data-resizing="true"] .bb-splitter__line {
+  background: var(--bb-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--bb-primary) 20%, transparent);
+}
+
+.bb-splitter__handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 16px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--bb-border);
+  background: var(--bb-surface);
+  color: var(--bb-muted);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(15, 23, 42, 0.04);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.bb-splitter--panel:hover .bb-splitter__handle,
+.bb-splitter--panel[data-resizing="true"] .bb-splitter__handle {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--bb-primary) 35%, var(--bb-border));
+  color: var(--bb-primary);
+}
+
+.bb-splitter--panel[data-resizing="true"] .bb-splitter__handle {
+  border-color: color-mix(in srgb, var(--bb-primary) 50%, var(--bb-border));
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--bb-primary) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--bb-primary) 10%, transparent);
+}
+
+.bb-splitter__label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Sidebar splitter */
+
+.bb-splitter--sidebar {
+  flex-shrink: 0;
+  position: relative;
+  width: 7px;
+  margin: 0 -3px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.bb-splitter--sidebar .bb-splitter__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.bb-splitter--sidebar:hover .bb-splitter__line,
+.bb-splitter--sidebar[data-resizing="true"] .bb-splitter__line {
+  width: 2px;
+  height: auto;
+  background: color-mix(in srgb, var(--bb-primary) 70%, var(--bb-border));
+}
+
+.bb-splitter--sidebar[data-resizing="true"] .bb-splitter__line {
+  background: var(--bb-primary);
+}
+
+.bb-splitter--sidebar .bb-splitter__handle {
+  width: 16px;
+  min-width: 16px;
+  height: 40px;
+  padding: 8px 0;
+}
+
+.bb-splitter--sidebar .bb-splitter__handle svg {
+  transform: rotate(90deg);
+}
+
+.bb-splitter--sidebar:hover .bb-splitter__handle,
+.bb-splitter--sidebar[data-resizing="true"] .bb-splitter__handle {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--bb-primary) 35%, var(--bb-border));
+  color: var(--bb-primary);
+}
+
+body.bb-is-resizing-panel {
+  cursor: row-resize !important;
+  user-select: none;
+}
+
+body.bb-is-resizing-panel * {
+  cursor: row-resize !important;
+}
+
+body.bb-is-resizing-sidebar {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+body.bb-is-resizing-sidebar * {
+  cursor: col-resize !important;
+}
+
+body.bb-is-resizing-panel iframe {
+  pointer-events: none;
+}

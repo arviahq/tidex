@@ -1,0 +1,78 @@
+.bb-code {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  overflow: auto;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.bb-code code.hljs {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #64748b;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in {
+  color: #c4b5fd;
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet {
+  color: #86efac;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #fdba74;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-type {
+  color: #7dd3fc;
+}
+
+.hljs-tag {
+  color: #f472b6;
+}
+
+.hljs-attribute {
+  color: #a5b4fc;
+}
+
+.hljs-punctuation {
+  color: #94a3b8;
+}
+
+.hljs-meta {
+  color: #94a3b8;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 700;
+}

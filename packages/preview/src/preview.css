@@ -1,0 +1,119 @@
+:root {
+  --preview-bg: #ffffff;
+  --preview-text: #64748b;
+  --preview-error: #dc2626;
+  --preview-error-muted: #64748b;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --preview-bg: #0f172a;
+  --preview-text: #94a3b8;
+  --preview-error: #f87171;
+  --preview-error-muted: #94a3b8;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--preview-bg);
+  color: var(--preview-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+html.preview-compact {
+  height: 100%;
+  overflow: hidden;
+}
+
+html.preview-compact body {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+html.preview-compact #root {
+  height: 100%;
+  min-height: 100%;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* The canvas is scaled with a CSS transform (visual only), so an oversized
+     component's layout box can exceed this container. Clip it instead of
+     spawning scrollbars — scrollbars would shrink the measured available area
+     and corrupt the scale. The transform shrinks the content to fit, so
+     nothing visible is actually clipped. */
+  overflow: hidden;
+}
+
+html.preview-compact .bb-preview-canvas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+}
+
+.bb-preview-error {
+  max-width: 480px;
+  padding: 16px;
+  color: var(--preview-error);
+}
+
+.bb-preview-error strong {
+  display: block;
+  font-size: 15px;
+}
+
+.bb-preview-error p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bb-preview-error p[data-muted="true"] {
+  color: var(--preview-error-muted);
+  font-size: 12px;
+}
+
+.bb-preview-loading {
+  color: var(--preview-text);
+  font-size: 14px;
+}
+
+.bb-preview-boundary {
+  padding: 16px;
+  color: var(--preview-error);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.bb-preview-boundary h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.bb-preview-boundary pre {
+  margin: 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+}

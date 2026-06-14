@@ -1,0 +1,112 @@
+.bb-tabs {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+
+.bb-tabs__scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--bb-border) 80%, transparent) transparent;
+}
+
+.bb-tabs__scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.bb-tabs__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bb-tabs__scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bb-border) 90%, var(--bb-muted));
+}
+
+.bb-tabs__list {
+  display: inline-flex;
+  gap: 2px;
+  width: max-content;
+  max-width: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bb-tabs__tab {
+  position: relative;
+  flex: none;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--bb-muted);
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    box-shadow 150ms ease;
+  white-space: nowrap;
+}
+
+.bb-tabs__tab:hover:not([data-active="true"]) {
+  color: var(--bb-text);
+}
+
+.bb-tabs__tab[data-active="true"] {
+  color: var(--bb-primary);
+  background: transparent;
+  box-shadow: inset 0 -2px 0 var(--bb-primary);
+}
+
+.bb-tabs__tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--bb-primary) 50%, transparent);
+  outline-offset: 2px;
+}
+
+.bb-tabs::before,
+.bb-tabs::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.bb-tabs::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bb-background) 15%, transparent);
+}
+
+.bb-tabs::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bb-background) 15%, transparent);
+}
+
+.bb-tabs[data-scroll-left="true"]::before {
+  opacity: 1;
+}
+
+.bb-tabs[data-scroll-right="true"]::after {
+  opacity: 1;
+}
+
+.bb-tabs--compact .bb-tabs__tab {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.bb-tabs--fill {
+  flex: 1;
+}

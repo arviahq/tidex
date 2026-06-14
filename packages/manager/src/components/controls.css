@@ -1,0 +1,160 @@
+/* Matches arvia-ui website Controls panel styling */
+
+.bb-controls {
+  border: 1px solid var(--bb-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bb-surface);
+}
+
+.bb-controls__row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-controls__row:last-child {
+  border-bottom: none;
+}
+
+.bb-controls__name {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bb-text);
+}
+
+.bb-controls__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bb-controls__segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bb-background);
+  border: 1px solid var(--bb-border);
+  border-radius: 8px;
+}
+
+.bb-controls__segment {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--bb-muted);
+  transition: color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.bb-controls__segment:hover {
+  color: var(--bb-text);
+}
+
+.bb-controls__segment[data-active="true"] {
+  background: var(--bb-surface);
+  color: var(--bb-primary);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.bb-controls__input {
+  appearance: none;
+  border: 1px solid var(--bb-border);
+  border-radius: 8px;
+  background: var(--bb-surface);
+  color: var(--bb-text);
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.bb-controls__input:focus {
+  border-color: color-mix(in srgb, var(--bb-primary) 45%, var(--bb-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bb-primary) 12%, transparent);
+}
+
+.bb-controls__input--text {
+  max-width: 260px;
+  width: 100%;
+}
+
+.bb-controls__input--number {
+  max-width: 120px;
+}
+
+.bb-controls__textarea {
+  width: 100%;
+  max-width: 320px;
+  min-height: 72px;
+  resize: vertical;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.bb-controls__switch {
+  --sw-w: 40px;
+  --sw-h: 24px;
+  --sw-thumb: 20px;
+  --sw-pad: 2px;
+  appearance: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: var(--sw-w);
+  height: var(--sw-h);
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background-color 120ms ease;
+}
+
+.bb-controls__switch:focus-visible {
+  outline: 2px solid var(--bb-primary);
+  outline-offset: 2px;
+}
+
+.bb-controls__switch[data-state="checked"] {
+  background: var(--bb-primary);
+}
+
+.bb-controls__switch-thumb {
+  position: absolute;
+  left: var(--sw-pad);
+  top: var(--sw-pad);
+  width: var(--sw-thumb);
+  height: var(--sw-thumb);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition: transform 120ms ease;
+}
+
+.bb-controls__switch[data-state="checked"] .bb-controls__switch-thumb {
+  transform: translateX(calc(var(--sw-w) - var(--sw-thumb) - var(--sw-pad) * 2));
+}
+
+.bb-controls__empty {
+  color: var(--bb-muted);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.bb-controls__code {
+  margin: 16px 0 0;
+}
