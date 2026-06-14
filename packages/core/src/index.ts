@@ -2,13 +2,28 @@ import path from "node:path";
 
 export interface TideConfig {
   root: string;
-  scan: { include: string[] };
+  scan: { include: string[]; exclude?: string[] };
   tokens?: string;
   plugins?: TidePlugin[];
   managerPort?: number;
   previewPort?: number;
   visual?: { threshold?: number };
 }
+
+/**
+ * Globs always excluded from component discovery, on top of any user
+ * `scan.exclude`. Keeps Storybook stories and test files from being scanned as
+ * components (e.g. CSF2 `export const Primary = () => <Button/>` would
+ * otherwise be picked up as a component named "Primary").
+ */
+export const DEFAULT_SCAN_EXCLUDE = [
+  "**/node_modules/**",
+  "**/*.stories.*",
+  "**/*.story.*",
+  "**/*.test.*",
+  "**/*.spec.*",
+  "**/*.d.ts",
+];
 
 export interface TidePlugin {
   name: string;
@@ -163,7 +178,8 @@ export function defaultConfig(root: string): TideConfig {
 
 export function defineConfig(config: Partial<TideConfig> & { root?: string }): TideConfig {
   const root = config.root ?? process.cwd();
-  return { ...defaultConfig(root), ...config, root };
+  const base = defaultConfig(root);
+  return { ...base, ...config, root, scan: { ...base.scan, ...config.scan } };
 }
 
 export interface PluginContext extends TideContext {}

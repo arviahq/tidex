@@ -7,6 +7,7 @@ import {
   getManifestPath,
   getPropsPath,
   getStoriesPath,
+  DEFAULT_SCAN_EXCLUDE,
   type TideConfig,
   type Manifest,
   type PropsMap,
@@ -25,7 +26,10 @@ export async function generateArtifacts(config: TideConfig): Promise<GenerateRes
   const tideDir = getTideDir(root);
   fs.mkdirSync(tideDir, { recursive: true });
 
-  const files = await fg(scan.include, { cwd: root, absolute: false });
+  // Always exclude stories/tests/declarations (so Storybook stories aren't
+  // scanned as components), plus any user-provided `scan.exclude`.
+  const ignore = [...DEFAULT_SCAN_EXCLUDE, ...(scan.exclude ?? [])];
+  const files = await fg(scan.include, { cwd: root, absolute: false, ignore });
   const components = discoverComponents(root, files);
   const props = extractProps(root, components);
   const manifest: Manifest = { components };
