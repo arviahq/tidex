@@ -7,6 +7,7 @@ export type ModalProps = {
   description?: string;
   confirmLabel?: string;
   destructive?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 const widths = { sm: 380, md: 480, lg: 560 };
@@ -18,6 +19,7 @@ export function Modal({
   description,
   confirmLabel,
   destructive = false,
+  onOpenChange,
 }: ModalProps) {
   const heading = text(title, "Confirm action");
   const body = text(description, "Review the details below before continuing.");
@@ -92,6 +94,7 @@ export function Modal({
       >
         <button
           type="button"
+          onClick={() => onOpenChange?.(false)}
           style={{
             padding: "9px 14px",
             borderRadius: ui.radius.sm,
@@ -109,6 +112,7 @@ export function Modal({
         </button>
         <button
           type="button"
+          onClick={() => onOpenChange?.(false)}
           style={{
             padding: "9px 16px",
             borderRadius: ui.radius.sm,

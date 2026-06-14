@@ -19,6 +19,8 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
+  ARG_CHANGED: "TIDE_ARG_CHANGED",
+  ACTION: "TIDE_ACTION",
 } as const;
 
 export interface Manifest {
@@ -37,6 +39,7 @@ export type PropSchema =
   | { type: "number"; required?: boolean }
   | { type: "union"; values: string[]; required?: boolean }
   | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
+  | { type: "callback"; updates?: string; required?: boolean }
   | { type: "unknown"; required?: boolean };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
@@ -87,4 +90,123 @@ export async function saveTest(component: string, test: InteractionTest): Promis
     body: JSON.stringify({ component, test }),
   });
   if (!res.ok) throw new Error(`Failed to save test (${res.status})`);
+}
+
+export interface VisualReportEntry {
+  changed: boolean;
+  pixelsChanged: number;
+  diffPath?: string;
+  currentPath?: string;
+  sizeMismatch?: boolean;
+}
+
+export type VisualReport = Record<string, VisualReportEntry>;
+
+export interface VisualTestResponse {
+  ok: boolean;
+  entry?: VisualReportEntry;
+  hasBaseline?: boolean;
+  error?: string;
+}
+
+export function buildVisualPreviewUrl(
+  component: string,
+  args: Record<string, unknown>,
+  theme: "light" | "dark",
+): string {
+  const params = new URLSearchParams();
+  params.set("story", component);
+  params.set("visual", "1");
+  params.set("theme", theme);
+  if (Object.keys(args).length > 0) {
+    params.set("args", JSON.stringify(args));
+  }
+  return `${PREVIEW_URL}?${params.toString()}`;
+}
+
+export async function fetchVisualReport(): Promise<VisualReport> {
+  try {
+    const res = await fetch("/__tide/visual/report.json");
+    if (!res.ok) return {};
+    return res.json();
+  } catch {
+    return {};
+  }
+}
+
+export async function checkVisualBaseline(component: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/__tide/baselines/${component}.png`, { method: "HEAD" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function postVisual(
+  path: "/__tide/visual/run" | "/__tide/visual/update",
+  component: string,
+  args: Record<string, unknown>,
+  theme: "light" | "dark",
+): Promise<VisualTestResponse> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ component, args, theme }),
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error — is tide dev running?",
+    };
+  }
+
+  const text = await res.text();
+  let data: VisualTestResponse = { ok: false };
+
+  if (text) {
+    try {
+      data = JSON.parse(text) as VisualTestResponse;
+    } catch {
+      data = {
+        ok: false,
+        error: text.slice(0, 200) || `Visual test failed (${res.status})`,
+      };
+    }
+  } else if (!res.ok) {
+    data = {
+      ok: false,
+      error:
+        res.status === 404
+          ? "Visual API not found — restart tide dev to load the latest version"
+          : `Visual test failed (${res.status})`,
+    };
+  }
+
+  if (!res.ok && !data.error) {
+    data.error = `Visual test failed (${res.status})`;
+  }
+  if (data.ok === undefined) {
+    data.ok = res.ok && !data.error;
+  }
+
+  return data;
+}
+
+export async function runVisualTest(
+  component: string,
+  args: Record<string, unknown>,
+  theme: "light" | "dark",
+): Promise<VisualTestResponse> {
+  return postVisual("/__tide/visual/run", component, args, theme);
+}
+
+export async function updateVisualBaseline(
+  component: string,
+  args: Record<string, unknown>,
+  theme: "light" | "dark",
+): Promise<VisualTestResponse> {
+  return postVisual("/__tide/visual/update", component, args, theme);
 }

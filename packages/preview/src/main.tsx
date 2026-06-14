@@ -1,7 +1,13 @@
-import { applyCompactMode, applyPreviewTheme, getInitialPreviewTheme } from "./theme";
+import {
+  applyCompactMode,
+  applyPreviewTheme,
+  applyVisualMode,
+  getInitialPreviewTheme,
+} from "./theme";
 
 applyPreviewTheme(getInitialPreviewTheme());
 applyCompactMode();
+applyVisualMode();
 
 import React from "react";
 import { createRoot } from "react-dom/client";

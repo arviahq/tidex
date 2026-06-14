@@ -20,10 +20,42 @@ pnpm exec tide dev
 - `tide dev` — Start manager (6006) + preview (6007)
 - `tide generate` — Scan components and generate artifacts
 - `tide build` — Generate build artifacts
-- `tide test` — Run accessibility tests (requires Playwright)
+- `tide test` — Run accessibility and interaction tests (requires Playwright)
 - `tide visual` — Run visual regression tests (requires Playwright)
+- `tide visual --update` — Refresh visual baselines
 
-## Lint & Format
+## Testing
+
+Install Playwright browsers once per project:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+### Interaction tests
+
+Author steps in the manager **Tests** tab. Saved to `.tide/tests/<Component>.json`. Run in the manager or headlessly:
+
+```bash
+pnpm exec tide test
+```
+
+### Visual regression
+
+Use the manager **Visual** tab to capture baselines, compare screenshots, and review diffs. Baselines live in `.tide/baselines/` and should be **committed to git** in consumer apps (`tide init` ignores `.tide/*` but tracks baselines).
+
+```bash
+pnpm exec tide visual           # compare all components
+pnpm exec tide visual --update  # accept current UI as baseline
+```
+
+Optional threshold in `tide.config.ts`:
+
+```typescript
+export default defineConfig({
+  visual: { threshold: 0.1 },
+});
+```
 
 Uses [Oxlint](https://oxc.rs/docs/guide/usage/linter) and [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) at the repo root:
 
@@ -48,8 +80,8 @@ pnpm quality:fix   # lint:fix + format:fix
 | `@tide/runtime` | React preview renderer                                 |
 | `@tide/react`   | Control helpers, variant computation                   |
 | `@tide/docs`    | Auto-documentation generator                           |
-| `@tide/visual`  | Visual diff testing                                    |
-| `@tide/testing` | Accessibility testing                                  |
+| `@tide/visual`  | Visual diff testing (Playwright + pixelmatch)          |
+| `@tide/testing` | Accessibility and interaction testing                  |
 
 ## Plugin API
 

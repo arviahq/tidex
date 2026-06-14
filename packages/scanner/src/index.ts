@@ -3,6 +3,7 @@ import path from "node:path";
 import fg from "fast-glob";
 import {
   buildDefaultArgs,
+  buildCallbacksFromProps,
   getTideDir,
   getManifestPath,
   getPropsPath,
@@ -64,7 +65,9 @@ function generateStoriesFile(root: string, manifest: Manifest, props: PropsMap):
 
     const componentProps = props[component.name] ?? {};
     const args = buildDefaultArgs(componentProps);
+    const callbacks = buildCallbacksFromProps(componentProps);
     const argsJson = JSON.stringify(args, null, 2).split("\n").join("\n    ");
+    const callbacksJson = JSON.stringify(callbacks, null, 2).split("\n").join("\n    ");
 
     const exportKey = component.isDefault ? "default" : component.exportName;
     storyEntries.push(`  ${JSON.stringify(component.name)}: {
@@ -72,6 +75,7 @@ function generateStoriesFile(root: string, manifest: Manifest, props: PropsMap):
     exportName: ${JSON.stringify(exportKey)},
     isDefault: ${component.isDefault ?? false},
     args: ${argsJson},
+    callbacks: ${callbacksJson},
     title: ${JSON.stringify(component.title)},
     path: ${JSON.stringify(component.path)},
   }`);

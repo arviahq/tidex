@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 import { createServer, type ViteDevServer } from "vite";
 import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
+import { tideVisualPlugin } from "@tide/visual";
 import { generateArtifacts } from "@tide/scanner";
 import { loadConfig } from "./config.js";
 
@@ -25,9 +26,17 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   const managerRoot = path.resolve(__dirname, "../../manager");
   const previewRoot = path.resolve(__dirname, "../../preview");
 
+  const previewUrl = `http://localhost:${config.previewPort ?? 6007}`;
+
   const sharedPluginOptions = {
     root: cwd,
     tideDir,
+  };
+
+  const visualPluginOptions = {
+    root: cwd,
+    previewUrl,
+    threshold: config.visual?.threshold,
   };
 
   let managerServer: ViteDevServer | undefined;
@@ -44,7 +53,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
       __TIDE_ROOT__: JSON.stringify(cwd),
       __TIDE_PREVIEW_URL__: JSON.stringify(`http://localhost:${config.previewPort ?? 6007}`),
     },
-    plugins: [tideVitePlugin(sharedPluginOptions)],
+    plugins: [tideVitePlugin(sharedPluginOptions), tideVisualPlugin(visualPluginOptions)],
   });
 
   previewServer = await createServer({
@@ -125,14 +134,20 @@ export default defineConfig({
   }
 
   const gitignorePath = path.join(root, ".gitignore");
+  const tideGitignoreBlock = `# Tide generated artifacts (commit baselines for visual regression)
+.tide/*
+!.tide/baselines/
+!.tide/baselines/**
+`;
+
   if (fs.existsSync(gitignorePath)) {
     const content = fs.readFileSync(gitignorePath, "utf-8");
     if (!content.includes(".tide")) {
-      fs.appendFileSync(gitignorePath, "\n.tide/\n");
-      console.log("Added .tide/ to .gitignore");
+      fs.appendFileSync(gitignorePath, `\n${tideGitignoreBlock}`);
+      console.log("Added .tide/ rules to .gitignore (baselines are tracked)");
     }
   } else {
-    fs.writeFileSync(gitignorePath, ".tide/\n");
+    fs.writeFileSync(gitignorePath, tideGitignoreBlock);
   }
 
   const pkgPath = path.join(root, "package.json");
@@ -155,17 +170,23 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   await generateArtifacts(config);
   const { readManifest } = await import("./config.js");
   const manifest = readManifest(root);
-  const { runVisualTests, hasVisualDiffs } = await import("@tide/visual");
+  const { runVisualTests, hasVisualDiffs, formatVisualSummary } = await import("@tide/visual");
 
   // Start preview server temporarily for visual tests
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);
+  const previewPort = config.previewPort ?? 6007;
   const previewServer = await createServer({
     root: previewRoot,
     configFile: path.join(previewRoot, "vite.config.ts"),
-    server: { port: config.previewPort ?? 6007, strictPort: false },
+    server: { port: previewPort, strictPort: false },
     define: { __TIDE_ROOT__: JSON.stringify(root) },
-    plugins: [tideVitePlugin({ root, tideDir })],
+    plugins: [
+      tideVitePlugin({
+        root,
+        tideDir,
+      }),
+    ],
   });
   await previewServer.listen();
   const port = previewServer.config.server.port;
@@ -176,12 +197,10 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
       previewUrl: `http://localhost:${port}`,
       manifest,
       update,
+      threshold: config.visual?.threshold,
     });
 
-    for (const [name, entry] of Object.entries(report)) {
-      const status = entry.changed ? "CHANGED" : "OK";
-      console.log(`  ${name}: ${status}${entry.changed ? ` (${entry.pixelsChanged} pixels)` : ""}`);
-    }
+    console.log(formatVisualSummary(report));
 
     return hasVisualDiffs(report) ? 1 : 0;
   } finally {
@@ -206,10 +225,11 @@ export async function runTest(cwd?: string): Promise<number> {
 
   const previewRoot = path.resolve(__dirname, "../../preview");
   const tideDir = getTideDir(root);
+  const previewPort = config.previewPort ?? 6007;
   const previewServer = await createServer({
     root: previewRoot,
     configFile: path.join(previewRoot, "vite.config.ts"),
-    server: { port: config.previewPort ?? 6007, strictPort: false },
+    server: { port: previewPort, strictPort: false },
     define: { __TIDE_ROOT__: JSON.stringify(root) },
     plugins: [tideVitePlugin({ root, tideDir })],
   });

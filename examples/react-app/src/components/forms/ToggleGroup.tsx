@@ -5,6 +5,7 @@ export type ToggleGroupProps = {
   size: "sm" | "md" | "lg";
   layout: "horizontal" | "vertical";
   fullWidth?: boolean;
+  onValueChange?: (value: ToggleGroupProps["value"]) => void;
 };
 
 const options = ["day", "week", "month", "year"] as const;
@@ -17,7 +18,13 @@ const paddings = {
 
 const fontSizes = { sm: 12, md: 13, lg: 14 };
 
-export function ToggleGroup({ value, size, layout, fullWidth = false }: ToggleGroupProps) {
+export function ToggleGroup({
+  value,
+  size,
+  layout,
+  fullWidth = false,
+  onValueChange,
+}: ToggleGroupProps) {
   return (
     <div
       role="group"
@@ -43,6 +50,7 @@ export function ToggleGroup({ value, size, layout, fullWidth = false }: ToggleGr
             key={option}
             type="button"
             aria-pressed={active}
+            onClick={() => onValueChange?.(option)}
             style={{
               flex: fullWidth && layout === "horizontal" ? 1 : undefined,
               padding: paddings[size],

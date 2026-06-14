@@ -106,6 +106,23 @@ html.preview-compact .bb-preview-canvas {
   font-size: 14px;
 }
 
+/* Headless visual capture: padded canvas, no transform scaling. */
+html.preview-visual #root {
+  min-height: 100vh;
+  padding: 0;
+}
+
+html.preview-visual [data-tide-visual] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 360px;
+  min-height: 240px;
+  padding: 48px;
+  box-sizing: border-box;
+  background: var(--preview-bg);
+}
+
 .bb-preview-boundary {
   padding: 16px;
   color: var(--preview-error);

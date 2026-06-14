@@ -163,3 +163,57 @@
 .bb-controls__code {
   margin: 16px 0 0;
 }
+
+.bb-controls__actions {
+  margin-top: 16px;
+  border: 1px solid var(--bb-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bb-surface);
+}
+
+.bb-controls__actions-title {
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bb-muted);
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-controls__actions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.bb-controls__actions-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--bb-border);
+  font-size: 12px;
+}
+
+.bb-controls__actions-item:last-child {
+  border-bottom: none;
+}
+
+.bb-controls__actions-name {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: var(--bb-text);
+}
+
+.bb-controls__actions-args {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: var(--bb-muted);
+  word-break: break-all;
+}

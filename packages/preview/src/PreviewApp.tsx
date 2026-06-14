@@ -13,6 +13,7 @@ import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
+import { buildInteractiveArgs, useInteractiveArgs } from "./useInteractiveArgs";
 
 class PreviewErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -161,6 +162,35 @@ export function PreviewApp() {
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
 
+  const baseArgs = story ? { ...story.args, ...args } : args;
+
+  const postArgChanged = useCallback(
+    (key: string, value: unknown) => {
+      if (!isEmbedded() || compact) return;
+      window.parent.postMessage(
+        { type: PREVIEW_MESSAGE.ARG_CHANGED, payload: { key, value } },
+        "*",
+      );
+    },
+    [compact],
+  );
+
+  const postAction = useCallback(
+    (name: string, handlerArgs: unknown[]) => {
+      if (!isEmbedded() || compact) return;
+      window.parent.postMessage(
+        { type: PREVIEW_MESSAGE.ACTION, payload: { name, args: handlerArgs } },
+        "*",
+      );
+    },
+    [compact],
+  );
+
+  const interactiveArgs = useInteractiveArgs(baseArgs, story?.callbacks, {
+    onArgChanged: postArgChanged,
+    onAction: postAction,
+  });
+
   // True while a test run is driving the render, so the declarative
   // story/args effect below stands aside and doesn't fight over the root.
   const runningTestRef = useRef(false);
@@ -201,7 +231,7 @@ export function PreviewApp() {
           return;
         }
         // Mount the component fresh for a clean run.
-        const mergedArgs = { ...entry.args, ...testArgs };
+        const mergedArgs = buildInteractiveArgs({ ...entry.args, ...testArgs }, entry.callbacks);
         setArgs(mergedArgs);
         rootRef.current?.unmount();
         rootRef.current = createRoot(container);
@@ -360,7 +390,7 @@ export function PreviewApp() {
 
         rootRef.current?.render(
           <PreviewErrorBoundary>
-            <Component {...{ ...story.args, ...args }} />
+            <Component {...interactiveArgs} />
           </PreviewErrorBoundary>,
         );
       } catch (err) {
@@ -374,7 +404,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, args]);
+  }, [story, interactiveArgs]);
 
   useEffect(() => {
     return () => {
@@ -401,6 +431,7 @@ export function PreviewApp() {
     <div
       ref={containerRef}
       className={compact ? "bb-preview-canvas" : undefined}
+      data-tide-visual=""
       style={compact && scale !== 1 ? { transform: `scale(${scale})` } : undefined}
     />
   );

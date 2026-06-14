@@ -22,3 +22,10 @@ export function applyCompactMode() {
     document.documentElement.classList.add("preview-compact");
   }
 }
+
+export function applyVisualMode() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("visual") === "1") {
+    document.documentElement.classList.add("preview-visual");
+  }
+}

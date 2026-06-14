@@ -12,19 +12,30 @@ import { computeVariants } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
-import { ControlsPanel } from "./components/ControlsPanel";
+import { ControlsPanel, type ActionLogEntry } from "./components/ControlsPanel";
 import { VariantsPanel } from "./components/VariantsPanel";
 import { DocsPanel } from "./components/DocsPanel";
 import { TokensPanel } from "./components/TokensPanel";
 import { TestsPanel } from "./components/TestsPanel";
+import { VisualPanel, type VisualPanelEntry } from "./components/VisualPanel";
 import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
-import { PREVIEW_URL, PREVIEW_MESSAGE, postToPreview, fetchTest, saveTest } from "./api";
+import {
+  PREVIEW_URL,
+  PREVIEW_MESSAGE,
+  postToPreview,
+  fetchTest,
+  saveTest,
+  checkVisualBaseline,
+  runVisualTest,
+  updateVisualBaseline,
+  fetchVisualReport,
+} from "./api";
 import "./components/layout.css";
 
-type PanelTab = "props" | "docs" | "tests";
+type PanelTab = "props" | "docs" | "tests" | "visual";
 type PreviewTab = "preview" | "variants";
 type FoundationView = "tokens";
 
@@ -32,6 +43,7 @@ const PANEL_TABS: { id: PanelTab; label: string }[] = [
   { id: "props", label: "Props" },
   { id: "docs", label: "Docs" },
   { id: "tests", label: "Tests" },
+  { id: "visual", label: "Visual" },
 ];
 
 const FOUNDATION_ITEMS: { id: FoundationView; label: string; description: string }[] = [
@@ -45,6 +57,8 @@ const EMPTY_COMPONENTS: ComponentEntry[] = [];
 const EMPTY_PROPS_MAP: PropsMap = {};
 const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
 
+const MAX_ACTION_LOG = 20;
+
 export function App() {
   const { manifest, props, tokens } = useTideData();
   const [search, setSearch] = useState("");
@@ -53,9 +67,17 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [actions, setActions] = useState<ActionLogEntry[]>([]);
+  const actionIdRef = useRef(0);
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
   const [testRunning, setTestRunning] = useState(false);
+  const [visualRunning, setVisualRunning] = useState(false);
+  const [visualEntry, setVisualEntry] = useState<VisualPanelEntry | null>(null);
+  const [visualHasBaseline, setVisualHasBaseline] = useState(false);
+  const [visualImageVersion, setVisualImageVersion] = useState(0);
+  const [visualError, setVisualError] = useState<string | null>(null);
+  const [visualNotice, setVisualNotice] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { theme: previewTheme, toggle: togglePreviewTheme } = usePreviewTheme();
 
@@ -126,6 +148,8 @@ export function App() {
   }, [selected, propsMap]);
 
   const previewReadyRef = useRef(false);
+  const argsRef = useRef(args);
+  argsRef.current = args;
   const pendingRunRef = useRef<{
     story: string;
     steps: InteractionStep[];
@@ -143,9 +167,9 @@ export function App() {
     const defaults = propsMap[selected] ? buildDefaultArgs(propsMap[selected]!) : {};
     postToPreview(iframeRef.current, {
       type: PREVIEW_MESSAGE.SELECT_STORY,
-      payload: { story: selected, args: { ...defaults, ...args } },
+      payload: { story: selected, args: { ...defaults, ...argsRef.current } },
     });
-  }, [selected, args, propsMap]);
+  }, [selected, propsMap]);
 
   const syncPreviewTheme = useCallback(() => {
     postToPreview(iframeRef.current, {
@@ -215,6 +239,62 @@ export function App() {
   useEffect(() => {
     setTestResults([]);
     setTestRunning(false);
+    setVisualEntry(null);
+    setActions([]);
+  }, [selected]);
+
+  // Preview interaction sync and action log.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (previewTab !== "preview") return;
+
+      if (event.data?.type === PREVIEW_MESSAGE.ARG_CHANGED) {
+        const payload = event.data.payload as { key?: string; value?: unknown };
+        if (typeof payload?.key === "string") {
+          setArgs((prev) => ({ ...prev, [payload.key!]: payload.value }));
+        }
+      }
+
+      if (event.data?.type === PREVIEW_MESSAGE.ACTION) {
+        const payload = event.data.payload as { name?: string; args?: unknown[] };
+        if (typeof payload?.name === "string") {
+          actionIdRef.current += 1;
+          setActions((prev) =>
+            [
+              {
+                id: actionIdRef.current,
+                name: payload.name!,
+                args: Array.isArray(payload.args) ? payload.args : [],
+              },
+              ...prev,
+            ].slice(0, MAX_ACTION_LOG),
+          );
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [previewTab]);
+
+  // Load visual baseline status and report entry when component changes.
+  useEffect(() => {
+    if (!selected) return;
+    let cancelled = false;
+    setVisualError(null);
+    setVisualNotice(null);
+    void (async () => {
+      const [hasBaseline, report] = await Promise.all([
+        checkVisualBaseline(selected),
+        fetchVisualReport(),
+      ]);
+      if (cancelled) return;
+      setVisualHasBaseline(hasBaseline);
+      setVisualEntry(report[selected] ?? null);
+      setVisualImageVersion((v) => v + 1);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [selected]);
 
   // Collect live step results streamed back from the preview.
@@ -269,6 +349,49 @@ export function App() {
     // Let errors propagate so the panel can surface a "Save failed" state.
     await saveTest(selected, toSave);
   }, [selected, tests, args]);
+
+  const handleRunVisual = useCallback(async () => {
+    if (!selected) return;
+    setVisualRunning(true);
+    setVisualError(null);
+    setVisualNotice(null);
+    try {
+      const result = await runVisualTest(selected, args, previewTheme);
+      if (result.error || result.ok === false) {
+        setVisualError(result.error ?? "Visual test failed");
+        return;
+      }
+      if (result.entry) setVisualEntry(result.entry);
+      if (result.hasBaseline !== undefined) setVisualHasBaseline(result.hasBaseline);
+      setVisualImageVersion((v) => v + 1);
+    } catch (err) {
+      setVisualError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setVisualRunning(false);
+    }
+  }, [selected, args, previewTheme]);
+
+  const handleUpdateVisualBaseline = useCallback(async () => {
+    if (!selected) return;
+    setVisualRunning(true);
+    setVisualError(null);
+    setVisualNotice(null);
+    try {
+      const result = await updateVisualBaseline(selected, args, previewTheme);
+      if (result.error || result.ok === false) {
+        setVisualError(result.error ?? "Failed to update baseline");
+        return;
+      }
+      if (result.entry) setVisualEntry(result.entry);
+      setVisualHasBaseline(result.hasBaseline ?? true);
+      setVisualImageVersion((v) => v + 1);
+      setVisualNotice("Baseline updated");
+    } catch (err) {
+      setVisualError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setVisualRunning(false);
+    }
+  }, [selected, args, previewTheme]);
 
   if (manifest.isLoading) {
     return <div className="bb-layout__center">Loading Tide...</div>;
@@ -478,6 +601,7 @@ export function App() {
                       componentName={selected}
                       props={componentProps}
                       args={args}
+                      actions={actions}
                       onChange={(next) => {
                         setArgs(next);
                         sendArgs(next);
@@ -496,6 +620,21 @@ export function App() {
                       onChange={updateTest}
                       onRun={runTest}
                       onSave={handleSaveTest}
+                    />
+                  )}
+                  {selected && tab === "visual" && (
+                    <VisualPanel
+                      componentName={selected}
+                      args={args}
+                      theme={previewTheme}
+                      hasBaseline={visualHasBaseline}
+                      entry={visualEntry}
+                      running={visualRunning}
+                      error={visualError}
+                      notice={visualNotice}
+                      onRun={handleRunVisual}
+                      onUpdateBaseline={handleUpdateVisualBaseline}
+                      imageVersion={visualImageVersion}
                     />
                   )}
                 </div>

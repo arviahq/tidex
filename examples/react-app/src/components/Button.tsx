@@ -6,6 +6,7 @@ export type ButtonProps = {
   size: "sm" | "md" | "lg";
   disabled?: boolean;
   children?: React.ReactNode;
+  onClick?: () => void;
 };
 
 const sizes = {
@@ -14,7 +15,7 @@ const sizes = {
   lg: { padding: "12px 20px", fontSize: 15 },
 };
 
-export function Button({ variant, size, disabled, children }: ButtonProps) {
+export function Button({ variant, size, disabled, children, onClick }: ButtonProps) {
   const base: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -54,6 +55,7 @@ export function Button({ variant, size, disabled, children }: ButtonProps) {
       type="button"
       style={{ ...base, ...(variants[variant] ?? variants.primary) }}
       disabled={disabled}
+      onClick={onClick}
     >
       {children ?? "Button"}
     </button>
