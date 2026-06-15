@@ -9,7 +9,7 @@ import type {
   PropsMap,
   StepResult,
 } from "@tide/core";
-import { computeVariants } from "@tide/react";
+import { computeVariants, propToControl } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
@@ -216,6 +216,24 @@ export function App() {
     return propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
   }, [selected, propsMap]);
 
+  // A component with no controllable props (none, or all props skipped)
+  // shouldn't show a Props tab at all.
+  const hasControls = useMemo(
+    () =>
+      Object.entries(componentProps).some(([name, schema]) => propToControl(name, schema) !== null),
+    [componentProps],
+  );
+  const panelTabs = useMemo(
+    () => PANEL_TABS.filter((t) => t.id !== "props" || hasControls),
+    [hasControls],
+  );
+
+  useEffect(() => {
+    if (tab === "props" && !hasControls) {
+      setTab(panelTabs[0]?.id ?? "docs");
+    }
+  }, [tab, hasControls, panelTabs]);
+
   const previewTabs = useMemo((): { id: PreviewTab; label: string }[] => {
     const tabs: { id: PreviewTab; label: string }[] = [PREVIEW_TAB_PREVIEW];
     if (computeVariants(componentProps, 12).length > 0) {
@@ -230,15 +248,16 @@ export function App() {
     }
   }, [previewTab, previewTabs]);
 
-  // Reset args to defaults when the *selected component* changes, but preserve
-  // the user's in-progress values when props are merely regenerated for the same
-  // component (e.g. after an edit): keep existing values for props that still
-  // exist, add defaults for newly-added props, and drop removed ones.
+  // Reset args to defaults when the *selected component* changes. Only preserve
+  // existing values once the user has actually edited a control — otherwise
+  // re-running with late-arriving `defaultOverrides` (config loads after the
+  // first render) must apply them, not keep the stale pre-override guess.
+  const userEditedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selected || !propsMap[selected]) return;
     const defaults = buildDefaultArgs(propsMap[selected]!, defaultOverrides);
-    if (prevSelectedRef.current === selected) {
+    if (prevSelectedRef.current === selected && userEditedRef.current) {
       setArgs((prev) => {
         const merged: Record<string, unknown> = {};
         for (const key of Object.keys(defaults)) {
@@ -248,6 +267,7 @@ export function App() {
       });
     } else {
       prevSelectedRef.current = selected;
+      userEditedRef.current = false;
       setArgs(defaults);
     }
   }, [selected, propsMap, defaultOverrides]);
@@ -729,7 +749,7 @@ export function App() {
 
               <footer className="bb-layout__panel" style={{ height: panel.size }}>
                 <nav className="bb-layout__tabs">
-                  <Tabs items={PANEL_TABS} value={tab} onChange={setTab} ariaLabel="Panel" />
+                  <Tabs items={panelTabs} value={tab} onChange={setTab} ariaLabel="Panel" />
                 </nav>
                 <div className="bb-layout__panel-body">
                   {selected && selectedComponent && tab === "props" && (
@@ -738,6 +758,7 @@ export function App() {
                       props={componentProps}
                       args={args}
                       onChange={(next) => {
+                        userEditedRef.current = true;
                         setArgs(next);
                         sendArgs(next);
                       }}

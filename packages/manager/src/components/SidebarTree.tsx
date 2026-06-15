@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import type { ComponentEntry } from "@tide/core";
 import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
 import type { PropsMap } from "@tide/core";
 import {
-  buildComponentTree,
+  buildComponentSections,
   collectFolderIds,
+  countLeaves,
   type ComponentTreeNode,
 } from "../utils/componentTree";
 import "./sidebar-tree.css";
@@ -191,8 +192,11 @@ export function SidebarTree({
   search,
   onComponentSelect,
 }: SidebarTreeProps) {
-  const tree = useMemo(() => buildComponentTree(components), [components]);
-  const allFolderIds = useMemo(() => collectFolderIds(tree), [tree]);
+  const sections = useMemo(() => buildComponentSections(components), [components]);
+  const allFolderIds = useMemo(
+    () => sections.flatMap((section) => collectFolderIds(section.nodes)),
+    [sections],
+  );
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(allFolderIds));
 
   useEffect(() => {
@@ -263,23 +267,32 @@ export function SidebarTree({
         ))}
       </ul>
 
-      <div className="bb-sidebar__section bb-sidebar__section--components">
-        <span className="bb-sidebar__section-label">Components</span>
-        <span className="bb-sidebar__count">{components.length}</span>
-      </div>
-
       {components.length === 0 ? (
-        <p className="bb-sidebar__empty">No components match your search.</p>
+        <>
+          <div className="bb-sidebar__section bb-sidebar__section--components">
+            <span className="bb-sidebar__section-label">Components</span>
+          </div>
+          <p className="bb-sidebar__empty">No components match your search.</p>
+        </>
       ) : (
-        <TreeBranch
-          nodes={tree}
-          depth={0}
-          expanded={expanded}
-          onToggleFolder={toggleFolder}
-          selected={selected}
-          foundationView={foundationView}
-          onComponentSelect={handleComponentSelect}
-        />
+        // Each top-level folder (the first id segment) becomes its own section.
+        sections.map((section) => (
+          <Fragment key={section.key}>
+            <div className="bb-sidebar__section bb-sidebar__section--components">
+              <span className="bb-sidebar__section-label">{section.label}</span>
+              <span className="bb-sidebar__count">{countLeaves(section.nodes)}</span>
+            </div>
+            <TreeBranch
+              nodes={section.nodes}
+              depth={0}
+              expanded={expanded}
+              onToggleFolder={toggleFolder}
+              selected={selected}
+              foundationView={foundationView}
+              onComponentSelect={handleComponentSelect}
+            />
+          </Fragment>
+        ))
       )}
     </nav>
   );
