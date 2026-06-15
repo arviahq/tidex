@@ -465,8 +465,10 @@ export function App() {
     setVisualNotice(null);
     try {
       const result = await runVisualTest(selected, args, previewTheme);
-      if (result.error || result.ok === false) {
-        setVisualError(result.error ?? "Visual test failed");
+      // `ok === false` just means differences were found — that's a valid result we
+      // must render, not an error. Only a real `error` (e.g. Playwright failure) bails.
+      if (result.error) {
+        setVisualError(result.error);
         return;
       }
       if (result.entry) setVisualEntry(result.entry);
@@ -492,8 +494,8 @@ export function App() {
     setVisualNotice(null);
     try {
       const result = await updateVisualBaseline(selected, args, previewTheme);
-      if (result.error || result.ok === false) {
-        setVisualError(result.error ?? "Failed to update baseline");
+      if (result.error) {
+        setVisualError(result.error);
         return;
       }
       if (result.entry) setVisualEntry(result.entry);
