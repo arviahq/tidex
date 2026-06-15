@@ -228,9 +228,18 @@ export interface A11yChange {
 export interface A11yDiff {
   changes: A11yChange[];
 }
+export interface PropChange {
+  name: string;
+  from?: unknown;
+  to?: unknown;
+}
+export interface PropsDiff {
+  changed: PropChange[];
+}
 export interface VisualDiffDetail {
   storyId: string;
   summary: VisualDiffSummary;
+  props: PropsDiff;
   dom: DomDiff;
   styles: StyleDiff;
   layout: LayoutDiff;

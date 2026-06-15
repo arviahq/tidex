@@ -234,6 +234,68 @@ a.bb-visual__canvas:hover {
   padding-top: 4px;
 }
 
+/* Props diff bar — the input-level cause shown above the screenshot views. */
+.bb-visual__props {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--bb-radius-md);
+  border: 1px solid var(--bb-border);
+  background: var(--bb-surface);
+}
+
+.bb-visual__props-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bb-muted);
+}
+
+.bb-visual__props-none {
+  font-size: 12px;
+  color: var(--bb-muted);
+}
+
+.bb-visual__props-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bb-visual__prop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--bb-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--bb-accent) 24%, var(--bb-border));
+  background: color-mix(in srgb, var(--bb-accent) 7%, var(--bb-surface));
+  font-family: var(--bb-font-mono);
+  font-size: 11px;
+}
+
+.bb-visual__prop-key {
+  font-weight: 600;
+  color: var(--bb-muted);
+}
+
+.bb-visual__prop-from {
+  color: var(--bb-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--bb-danger) 50%, transparent);
+}
+
+.bb-visual__prop-arrow {
+  color: var(--bb-muted);
+}
+
+.bb-visual__prop-to {
+  color: var(--bb-text);
+}
+
 /* ── Per-layer diff views ── */
 
 .bb-vdiff {

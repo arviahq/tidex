@@ -7,10 +7,20 @@ import type {
   A11yDiff,
   DomDiff,
   LayoutDiff,
+  PropsDiff,
   StyleDiff,
   VisualDiffDetail,
   VisualDiffSummary,
 } from "./types.js";
+
+/** Diff the story args used for the baseline vs the current capture. */
+function propsDiff(base: Record<string, unknown>, cur: Record<string, unknown>): PropsDiff {
+  const names = [...new Set([...Object.keys(base), ...Object.keys(cur)])].sort();
+  const changed = names
+    .filter((name) => JSON.stringify(base[name]) !== JSON.stringify(cur[name]))
+    .map((name) => ({ name, from: base[name], to: cur[name] }));
+  return { changed };
+}
 
 interface SummarizeOptions {
   pixelsChanged: number;
@@ -139,5 +149,7 @@ export function computeVisualDiff(
     { pixelsChanged: opts.pixelsChanged, sizeMismatch: opts.sizeMismatch, describe },
   );
 
-  return { storyId: cur.meta.componentId, summary, dom, styles, layout, a11y };
+  const props = propsDiff(base.meta.args ?? {}, cur.meta.args ?? {});
+
+  return { storyId: cur.meta.componentId, summary, props, dom, styles, layout, a11y };
 }

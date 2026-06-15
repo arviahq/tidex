@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatDisplayName } from "@tide/core";
-import type { VisualDiffDetail, VisualDiffSummary, VisualLayerKey } from "../api";
+import type { PropsDiff, VisualDiffDetail, VisualDiffSummary, VisualLayerKey } from "../api";
 import { CodeBlock } from "./CodeBlock";
 import { IconButton } from "./IconButton";
 import { StatusBadge, type StatusKind } from "./StatusBadge";
@@ -225,6 +225,7 @@ export function VisualPanel({
 
         {activeLayer === "screenshot" ? (
           <>
+            {diffDetail && <PropsDiffBar diff={diffDetail.props} />}
             <div className="bb-visual__toolbar">
               <Tabs
                 items={modes}
@@ -323,6 +324,38 @@ const LAYER_LABELS: Record<VisualLayerKey, string> = {
 
 function countLabel(base: string, count: number): string {
   return count > 0 ? `${base} ${count}` : base;
+}
+
+function formatProp(value: unknown): string {
+  if (value === undefined) return "∅";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
+}
+
+// Shows which story args differ between the baseline and current capture — the
+// input-level cause of a visual change. Visible across all screenshot sub-tabs.
+function PropsDiffBar({ diff }: { diff: PropsDiff }) {
+  return (
+    <div className="bb-visual__props">
+      <span className="bb-visual__props-label">Props</span>
+      {diff.changed.length === 0 ? (
+        <span className="bb-visual__props-none">unchanged from baseline</span>
+      ) : (
+        <span className="bb-visual__props-chips">
+          {diff.changed.map((c) => (
+            <span key={c.name} className="bb-visual__prop-chip">
+              <span className="bb-visual__prop-key">{c.name}</span>
+              <span className="bb-visual__prop-from">{formatProp(c.from)}</span>
+              <span className="bb-visual__prop-arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="bb-visual__prop-to">{formatProp(c.to)}</span>
+            </span>
+          ))}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function VisualCanvas({

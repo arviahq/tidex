@@ -85,10 +85,21 @@ export interface VisualDiffSummary {
   verdict: string;
 }
 
+// ── Props (story args used for baseline vs current capture) ──
+export interface PropChange {
+  name: string;
+  from?: unknown;
+  to?: unknown;
+}
+export interface PropsDiff {
+  changed: PropChange[];
+}
+
 /** Full per-layer detail — written to .tide/reports/{id}-diff.json, fetched on demand. */
 export interface VisualDiffDetail {
   storyId: string;
   summary: VisualDiffSummary;
+  props: PropsDiff;
   dom: DomDiff;
   styles: StyleDiff;
   layout: LayoutDiff;
