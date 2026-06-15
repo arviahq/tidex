@@ -81,4 +81,7 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
+  // manager -> preview: explicit callback→state wiring for the current story,
+  // sent with SELECT_STORY and pushed live when edited in the Interactions tab.
+  SET_CALLBACKS: "TIDE_SET_CALLBACKS",
 } as const;

@@ -5,6 +5,7 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  type ComponentType,
   type ReactNode,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -13,6 +14,7 @@ import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
+import { buildWiredArgs, useWiredArgs, type CallbackMap } from "./wireCallbacks";
 
 class PreviewErrorBoundary extends Component<
   { children: ReactNode; resetKey?: unknown },
@@ -52,6 +54,18 @@ class PreviewErrorBoundary extends Component<
 
 function loadStories(): Promise<Record<string, StoryModule>> {
   return import("virtual:tide-stories").then((mod) => mod.stories as Record<string, StoryModule>);
+}
+
+type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
+
+function loadPreviewWrapper(): Promise<PreviewWrapper> {
+  return import("virtual:tide-stories").then((mod) => mod.previewWrapper ?? null).catch(() => null);
+}
+
+// Wrap the rendered component in the user-configured provider/decorator (e.g. a
+// ChakraProvider/theme wrapper) when one is set; otherwise render it bare.
+function wrap(Wrapper: PreviewWrapper, child: ReactNode): ReactNode {
+  return Wrapper ? <Wrapper>{child}</Wrapper> : child;
 }
 
 function formatError(err: unknown): string {
@@ -113,7 +127,9 @@ function useScaleToFit(
     const bounds = boundsRef.current;
     const refW = bounds ? Math.max(bounds.w, w) : w;
     const refH = bounds ? Math.max(bounds.h, h) : h;
-    setScale(Math.min(avail.w / refW, avail.h / refH));
+    // Shrink large components to fit, but never enlarge a small one — upscaling
+    // turned tiny badges into giant blurry blobs in the variant gallery.
+    setScale(Math.min(1, avail.w / refW, avail.h / refH));
   }, [ref]);
 
   // Measure natural size and report it to the manager.
@@ -171,11 +187,16 @@ export function PreviewApp() {
   const rootRef = useRef<Root | null>(null);
   const [story, setStory] = useState<StoryModule | null>(null);
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [callbacks, setCallbacks] = useState<CallbackMap>({});
   const [error, setError] = useState<string | null>(null);
   const [storyName, setStoryName] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(true);
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
+
+  // Args with explicit callback wiring applied; a mapped callback updates local
+  // state here and re-renders the live preview.
+  const wiredArgs = useWiredArgs(story ? { ...story.args, ...args } : args, callbacks);
 
   // True while a test run is driving the render, so the declarative
   // story/args effect below stands aside and doesn't fight over the root.
@@ -189,12 +210,33 @@ export function PreviewApp() {
   // re-announce loop below can stop.
   const handshakeDoneRef = useRef(false);
 
+  // The configured global wrapper (providers/theme), loaded once from the
+  // generated module. `wrapperRef` mirrors it for the imperative test path.
+  const [Wrapper, setWrapper] = useState<PreviewWrapper>(null);
+  const wrapperRef = useRef<PreviewWrapper>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadPreviewWrapper().then((w) => {
+      if (cancelled) return;
+      wrapperRef.current = w;
+      setWrapper(() => w);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Run an interaction test, fully self-contained: load + freshly mount the
   // requested story (clean state for re-runs), wait for it to settle, then
   // drive the steps and stream each result back. Works even on a just-mounted
   // iframe where no story has been selected yet (e.g. switching from Variants).
   const runTestRun = useCallback(
-    async (name: string, steps: InteractionStep[], testArgs?: Record<string, unknown>) => {
+    async (
+      name: string,
+      steps: InteractionStep[],
+      testArgs?: Record<string, unknown>,
+      testCallbacks?: CallbackMap,
+    ) => {
       const post = (type: string, payload: unknown) =>
         window.parent.postMessage({ type, payload }, "*");
       const fail = (message?: string) => {
@@ -224,8 +266,10 @@ export function PreviewApp() {
           fail("Preview canvas not ready.");
           return;
         }
-        // Mount the component fresh for a clean run.
+        // Mount the component fresh for a clean run, with callback wiring so a
+        // test driving clicks observes the same state updates as the preview.
         const mergedArgs = { ...entry.args, ...testArgs };
+        const wired = buildWiredArgs(mergedArgs, testCallbacks);
         setArgs(mergedArgs);
         rootRef.current?.unmount();
         rootRef.current = createRoot(container);
@@ -238,7 +282,7 @@ export function PreviewApp() {
         }
         rootRef.current.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...mergedArgs} />
+            {wrap(wrapperRef.current, <Component {...wired} />)}
           </PreviewErrorBoundary>,
         );
         // Let React commit and effects settle before interacting.
@@ -294,14 +338,19 @@ export function PreviewApp() {
           applyPreviewTheme(theme);
         }
       }
+      if (event.data?.type === PREVIEW_MESSAGE.SET_CALLBACKS) {
+        setCallbacks((event.data.payload as CallbackMap) ?? {});
+      }
       if (event.data?.type === PREVIEW_MESSAGE.SELECT_STORY) {
         handshakeDoneRef.current = true;
         const payload = event.data.payload as
           | string
-          | { story: string; args?: Record<string, unknown> };
+          | { story: string; args?: Record<string, unknown>; callbacks?: CallbackMap };
         if (typeof payload === "string") {
+          setCallbacks({});
           void selectStory(payload);
         } else if (payload?.story) {
+          setCallbacks(payload.callbacks ?? {});
           void selectStory(payload.story, payload.args);
         }
       }
@@ -311,8 +360,9 @@ export function PreviewApp() {
           story: string;
           steps: InteractionStep[];
           args?: Record<string, unknown>;
+          callbacks?: CallbackMap;
         };
-        void runTestRun(payload.story, payload.steps ?? [], payload.args);
+        void runTestRun(payload.story, payload.steps ?? [], payload.args, payload.callbacks);
       }
     };
     window.addEventListener("message", handler);
@@ -393,7 +443,7 @@ export function PreviewApp() {
 
         rootRef.current?.render(
           <PreviewErrorBoundary resetKey={(renderNonceRef.current += 1)}>
-            <Component {...{ ...story.args, ...args }} />
+            {wrap(Wrapper, <Component {...wiredArgs} />)}
           </PreviewErrorBoundary>,
         );
       } catch (err) {
@@ -407,7 +457,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, args]);
+  }, [story, wiredArgs, Wrapper]);
 
   useEffect(() => {
     return () => {

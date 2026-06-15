@@ -50,6 +50,13 @@ html.preview-compact {
   overflow: hidden;
 }
 
+/* In variant tiles the manager supplies the stage backdrop, so keep the
+   compact preview transparent rather than painting its own theme background. */
+html.preview-compact,
+html.preview-compact body {
+  background: transparent;
+}
+
 html.preview-compact body {
   height: 100%;
   min-height: 100%;

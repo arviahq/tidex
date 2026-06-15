@@ -5,6 +5,7 @@ export interface PropDoc {
   name: string;
   typeLabel: string;
   required: boolean;
+  description?: string;
 }
 
 export interface ComponentDoc {
@@ -37,6 +38,7 @@ export function generateComponentDoc(
       name,
       typeLabel: propTypeLabel(schema),
       required: schema.required !== false && schema.type !== "boolean",
+      description: schema.description,
     }));
 
   return {

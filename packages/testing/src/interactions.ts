@@ -3,6 +3,7 @@ import path from "node:path";
 import {
   getReportsDir,
   getTestPath,
+  getComponentId,
   type InteractionTest,
   type Manifest,
   type StepResult,
@@ -39,7 +40,8 @@ export async function runInteractionTests(
   const report: InteractionReport = {};
 
   for (const component of options.manifest.components) {
-    const testPath = getTestPath(options.root, component.name);
+    const componentId = getComponentId(component);
+    const testPath = getTestPath(options.root, componentId);
     if (!fs.existsSync(testPath)) continue;
 
     let test: InteractionTest;
@@ -51,13 +53,13 @@ export async function runInteractionTests(
     if (!test.steps || test.steps.length === 0) continue;
 
     const argsParam = test.args ? `&args=${encodeURIComponent(JSON.stringify(test.args))}` : "";
-    const url = `${options.previewUrl}?story=${encodeURIComponent(component.name)}${argsParam}`;
+    const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}${argsParam}`;
     await page.goto(url, { waitUntil: "networkidle" });
     await page.waitForTimeout(300);
 
     const steps = await runStepsPlaywright(page, test.steps);
     const ok = steps.length === test.steps.length && steps.every((s) => s.ok);
-    report[component.name] = { ok, steps };
+    report[componentId] = { ok, steps };
   }
 
   await browser.close();

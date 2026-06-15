@@ -1,7 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { discoverComponents } from "../src/discover.js";
+import { getComponentId } from "@tide/core";
+import { discoverComponents, deriveComponentId } from "../src/discover.js";
 import { extractProps } from "../src/extract-props.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,6 +14,7 @@ describe("discoverComponents", () => {
     const components = discoverComponents(fixtures, [file]);
     expect(components).toHaveLength(1);
     expect(components[0]?.name).toBe("Button");
+    expect(components[0]?.id).toBe("Button");
   });
 
   it("finds export const arrow components", () => {
@@ -29,10 +31,23 @@ describe("discoverComponents", () => {
     expect(components[0]?.isDefault).toBe(true);
   });
 
+  it("finds forwardRef components", () => {
+    const file = path.join(fixtures, "export-forward-ref.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    expect(components).toHaveLength(1);
+    expect(components[0]?.name).toBe("Input");
+  });
+
   it("ignores non-component exports", () => {
     const file = path.join(fixtures, "non-component.tsx");
     const components = discoverComponents(fixtures, [file]);
     expect(components).toHaveLength(0);
+  });
+
+  it("derives folder-scoped ids", () => {
+    expect(
+      deriveComponentId("src/components/forms/Checkbox.tsx", "Checkbox", "src/components"),
+    ).toBe("forms/Checkbox");
   });
 });
 
@@ -41,10 +56,28 @@ describe("extractProps", () => {
     const file = path.join(fixtures, "button-with-props.tsx");
     const components = discoverComponents(fixtures, [file]);
     const props = extractProps(fixtures, components);
-    expect(props.Button).toEqual({
+    const id = getComponentId(components[0]!);
+    expect(props[id]).toEqual({
       variant: { type: "union", values: ["primary", "secondary"], required: true },
       size: { type: "union", values: ["sm", "md", "lg"], required: true },
       disabled: { type: "boolean", required: false },
+    });
+  });
+
+  it("resolves imported prop types within the project", () => {
+    const file = path.join(fixtures, "imported-props.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const props = extractProps(fixtures, components);
+    const id = getComponentId(components[0]!);
+    expect(props[id]?.label).toEqual({
+      type: "string",
+      required: true,
+      description: "Visible label text",
+    });
+    expect(props[id]?.tone).toEqual({
+      type: "union",
+      values: ["neutral", "danger"],
+      required: true,
     });
   });
 });

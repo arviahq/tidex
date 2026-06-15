@@ -19,9 +19,9 @@
 .bb-tree__folder-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   width: 100%;
-  padding: 5px 10px;
+  padding: 4px 10px;
   padding-left: calc(10px + var(--bb-tree-depth, 0) * 12px);
   border: none;
   border-radius: 6px;
@@ -55,12 +55,43 @@
 
 .bb-tree__folder-icon {
   flex-shrink: 0;
-  color: var(--bb-muted);
+  color: inherit;
 }
 
-.bb-tree__folder-row:hover .bb-tree__folder-icon,
 .bb-tree__folder-row:hover .bb-tree__folder-chevron {
   color: var(--bb-text);
+}
+
+/* Neutral icon chip behind folder + component icons. */
+.bb-tree__chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bb-muted) 9%, transparent);
+  color: var(--bb-muted);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.bb-tree__chip svg {
+  width: 12px;
+  height: 12px;
+}
+
+.bb-tree__folder-row:hover .bb-tree__chip,
+.bb-sidebar__item--tree:hover .bb-tree__chip {
+  color: var(--bb-text);
+}
+
+/* Selected component: the only place the accent appears in the tree. */
+.bb-sidebar__item--tree[data-active="true"] .bb-tree__chip {
+  background: color-mix(in srgb, var(--bb-accent) 14%, transparent);
+  color: var(--bb-accent);
 }
 
 .bb-tree__folder-row[data-expanded="true"] .bb-tree__folder-chevron {
@@ -80,19 +111,14 @@
 
 .bb-tree__item-wrap .bb-sidebar__item--tree {
   width: 100%;
-  gap: 5px;
-  padding: 5px 10px;
-  padding-left: calc(27px + var(--bb-tree-depth, 0) * 12px);
+  gap: 6px;
+  padding: 4px 10px;
+  padding-left: calc(28px + var(--bb-tree-depth, 0) * 12px);
 }
 
 .bb-tree__component-icon {
   flex-shrink: 0;
-  color: var(--bb-muted);
-}
-
-.bb-sidebar__item--tree:hover .bb-tree__component-icon,
-.bb-sidebar__item--tree[data-active="true"] .bb-tree__component-icon {
-  color: var(--bb-text);
+  color: inherit;
 }
 
 .bb-tree__item-wrap .bb-sidebar__item--tree .bb-sidebar__item-title,

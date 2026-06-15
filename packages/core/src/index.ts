@@ -1,14 +1,49 @@
 import path from "node:path";
+import type { InlineConfig } from "vite";
 
 export interface TideConfig {
   root: string;
-  scan: { include: string[] };
+  scan: {
+    include: string[];
+    exclude?: string[];
+    /** Folder segment used for sidebar grouping, e.g. `src/components` or `src/ui`. */
+    componentsDir?: string;
+  };
+  /** npm package name shown in generated import examples, e.g. `@myorg/ui`. */
+  packageName?: string;
+  /** Per-component default arg overrides, keyed by component id. */
+  defaults?: Record<string, Record<string, unknown>>;
   tokens?: string;
   plugins?: TidePlugin[];
   managerPort?: number;
   previewPort?: number;
   visual?: { threshold?: number };
+  /**
+   * Preview rendering options.
+   * - `wrapper`: path (relative to the project root) to a module whose default
+   *   export is a React component taking `children`; every rendered component is
+   *   wrapped in it (e.g. a theme/ChakraProvider/i18n provider).
+   * - `vite`: extra Vite config merged into the preview/visual/test servers.
+   *   Use it to add build plugins your components need (e.g. vanilla-extract,
+   *   svgr). Tide already provides React, so add only the extra plugins.
+   */
+  preview?: { wrapper?: string; vite?: InlineConfig };
 }
+
+/**
+ * Globs always excluded from component discovery, on top of any user
+ * `scan.exclude`. Keeps Storybook stories and test files from being scanned as
+ * components (e.g. CSF2 `export const Primary = () => <Button/>` would
+ * otherwise be picked up as a component named "Primary").
+ */
+export const DEFAULT_SCAN_EXCLUDE = [
+  "**/node_modules/**",
+  "**/*.stories.*",
+  "**/*.story.*",
+  "**/*.test.*",
+  "**/*.spec.*",
+  "**/*.d.ts",
+];
 
 export interface TidePlugin {
   name: string;
@@ -29,6 +64,8 @@ export interface TideContext {
 }
 
 export interface ComponentEntry {
+  /** Stable id for stories, props, tests, and baselines (e.g. `forms/Checkbox`). */
+  id: string;
   name: string;
   path: string;
   exportName: string;
@@ -36,19 +73,47 @@ export interface ComponentEntry {
   isDefault?: boolean;
 }
 
+/** Resolve the stable component id; falls back to `name` for older manifests. */
+export function getComponentId(entry: Pick<ComponentEntry, "id" | "name">): string {
+  return entry.id || entry.name;
+}
+
+export function isValidComponentId(id: string): boolean {
+  if (!id || id.includes("..")) return false;
+  return /^[A-Za-z0-9_./-]+$/.test(id);
+}
+
 export interface Manifest {
   components: ComponentEntry[];
 }
 
 export type PropSchema =
-  | { type: "boolean"; required?: boolean }
-  | { type: "string"; required?: boolean }
-  | { type: "number"; required?: boolean }
-  | { type: "union"; values: string[]; required?: boolean }
-  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
-  | { type: "unknown"; required?: boolean };
+  | { type: "boolean"; required?: boolean; description?: string }
+  | { type: "string"; required?: boolean; description?: string }
+  | { type: "number"; required?: boolean; description?: string }
+  | { type: "union"; values: string[]; required?: boolean; description?: string }
+  | {
+      type: "object";
+      properties: Record<string, PropSchema>;
+      required?: boolean;
+      description?: string;
+    }
+  | { type: "callback"; required?: boolean; description?: string }
+  | { type: "unknown"; required?: boolean; description?: string };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
+
+/**
+ * Persisted callback→state wiring for a component, authored in the manager's
+ * Interactions tab and stored at `.tide/interactions/<Component>.json`. A
+ * callback mapped with `updates` re-renders the preview with the new value; an
+ * empty `{}` means action-only (wired to a no-op). Wiring is fully explicit —
+ * nothing is inferred from callback names.
+ */
+export interface InteractionWiring {
+  component: string;
+  callbacks: Record<string, { updates?: string }>;
+}
 
 export interface StoryEntry {
   componentPath: string;
@@ -123,18 +188,48 @@ export function getBaselinesDir(root: string): string {
   return path.join(getTideDir(root), "baselines");
 }
 
+/** Committed multi-layer snapshot stored alongside the baseline PNG. */
+export function getBaselineSnapshotPath(root: string, componentId: string): string {
+  return path.join(getBaselinesDir(root), `${componentId}.snapshot.json`);
+}
+
+/** Gitignored current-run snapshot stored alongside the current PNG. */
+export function getCurrentSnapshotPath(root: string, componentId: string): string {
+  return path.join(getReportsDir(root), `${componentId}-current.snapshot.json`);
+}
+
 export function getTestsDir(root: string): string {
   return path.join(getTideDir(root), "tests");
 }
 
-export function getTestPath(root: string, component: string): string {
-  return path.join(getTestsDir(root), `${component}.json`);
+export function getTestPath(root: string, componentId: string): string {
+  return path.join(getTestsDir(root), `${componentId}.json`);
+}
+
+export function getConfigSnapshotPath(root: string): string {
+  return path.join(getTideDir(root), "config.json");
+}
+
+export function getScanReportPath(root: string): string {
+  return path.join(getTideDir(root), "scan-report.json");
+}
+
+export function getInteractionsDir(root: string): string {
+  return path.join(getTideDir(root), "interactions");
+}
+
+export function getInteractionPath(root: string, componentId: string): string {
+  return path.join(getInteractionsDir(root), `${componentId}.json`);
 }
 
 export function defaultConfig(root: string): TideConfig {
   return {
     root,
-    scan: { include: ["src/**/*.tsx"] },
+    scan: {
+      include: ["src/**/*.tsx"],
+      exclude: ["**/preview/**"],
+      componentsDir: "src/components",
+    },
     managerPort: 6006,
     previewPort: 6007,
   };
@@ -142,7 +237,8 @@ export function defaultConfig(root: string): TideConfig {
 
 export function defineConfig(config: Partial<TideConfig> & { root?: string }): TideConfig {
   const root = config.root ?? process.cwd();
-  return { ...defaultConfig(root), ...config, root };
+  const base = defaultConfig(root);
+  return { ...base, ...config, root, scan: { ...base.scan, ...config.scan } };
 }
 
 export interface PluginContext extends TideContext {}
@@ -217,11 +313,19 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
   }
 }
 
-export function buildDefaultArgs(props: Record<string, PropSchema>): Record<string, unknown> {
+export function buildDefaultArgs(
+  props: Record<string, PropSchema>,
+  overrides?: Record<string, unknown>,
+): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(props)) {
-    if (schema.type === "unknown") continue;
+    if (schema.type === "unknown" || schema.type === "callback") continue;
     args[name] = defaultArgsForProp(schema, name);
+  }
+  if (overrides) {
+    for (const [key, value] of Object.entries(overrides)) {
+      if (key in props) args[key] = value;
+    }
   }
   return args;
 }
@@ -232,18 +336,27 @@ export const SKIP_PROP_PATTERNS = [
   /^style$/,
   /^ref$/,
   /^key$/,
-  /^on[A-Z]/,
   /ReactNode/,
   /ReactElement/,
   /ElementType/,
   /HTMLAttributes/,
-  /=>\s*/,
   /\.\.\./,
 ];
 
+// A prop is a callback (function) if its name looks like an event handler or
+// its type is a function. Callbacks aren't controllable props; they surface in
+// the Interactions tab where the author maps each to the state prop it updates.
+export function isCallbackProp(name: string, typeText?: string): boolean {
+  if (/^on[A-Z]/.test(name)) return true;
+  if (typeText && /=>\s*/.test(typeText)) return true;
+  return false;
+}
+
 export function shouldSkipProp(name: string, typeText?: string): boolean {
+  if (isCallbackProp(name, typeText)) return false;
   if (SKIP_PROP_PATTERNS.some((p) => p.test(name))) return true;
   if (typeText && SKIP_PROP_PATTERNS.some((p) => p.test(typeText))) return true;
+  if (typeText && /=>\s*/.test(typeText)) return true;
   return false;
 }
 
@@ -290,12 +403,14 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
             try {
               const parsed = JSON.parse(body) as { component?: string; test?: unknown };
               const component = parsed.component ?? "";
-              if (!/^[A-Za-z0-9_-]+$/.test(component)) {
+              if (!isValidComponentId(component)) {
                 res.statusCode = 400;
-                res.end(JSON.stringify({ ok: false, error: "Invalid component name" }));
+                res.end(JSON.stringify({ ok: false, error: "Invalid component id" }));
                 return;
               }
-              fs.mkdirSync(getTestsDir(options.root), { recursive: true });
+              fs.mkdirSync(path.dirname(getTestPath(options.root, component)), {
+                recursive: true,
+              });
               fs.writeFileSync(
                 getTestPath(options.root, component),
                 JSON.stringify(parsed.test ?? {}, null, 2),
@@ -311,24 +426,73 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
           return;
         }
 
+        // Save callback→state wiring to .tide/interactions/<Component>.json.
+        if (url === "/__tide/interactions" && req.method === "POST") {
+          let body = "";
+          req.on("data", (chunk) => {
+            body += chunk;
+          });
+          req.on("end", () => {
+            try {
+              const parsed = JSON.parse(body) as { component?: string; wiring?: unknown };
+              const component = parsed.component ?? "";
+              if (!isValidComponentId(component)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ ok: false, error: "Invalid component id" }));
+                return;
+              }
+              fs.mkdirSync(path.dirname(getInteractionPath(options.root, component)), {
+                recursive: true,
+              });
+              fs.writeFileSync(
+                getInteractionPath(options.root, component),
+                JSON.stringify(parsed.wiring ?? {}, null, 2),
+              );
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ ok: true }));
+            } catch (err) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ ok: false, error: String(err) }));
+            }
+          });
+          return;
+        }
+
         // List components that have a saved interaction test.
         if (url === "/__tide/tests" && req.method === "GET") {
           const testsDir = getTestsDir(options.root);
-          const names = fs.existsSync(testsDir)
-            ? fs
-                .readdirSync(testsDir)
-                .filter((f) => f.endsWith(".json"))
-                .map((f) => f.replace(/\.json$/, ""))
-            : [];
+          const names: string[] = [];
+          const walk = (dir: string, prefix = "") => {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+              if (entry.isDirectory()) {
+                walk(path.join(dir, entry.name), rel);
+              } else if (entry.name.endsWith(".json")) {
+                names.push(rel.replace(/\.json$/, ""));
+              }
+            }
+          };
+          walk(testsDir);
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify(names));
           return;
         }
 
         // Otherwise serve a static artifact from the .tide directory.
-        const file = url.replace("/__tide/", "");
+        const file = decodeURIComponent(url.replace("/__tide/", ""));
+        if (file.includes("..")) {
+          res.statusCode = 400;
+          res.end();
+          return;
+        }
         const filePath = path.join(options.tideDir, file);
         if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          // Artifacts (baselines, current/diff captures, generated JSON) are
+          // rewritten in place during a dev session — never let the browser
+          // serve a stale copy.
+          res.setHeader("Cache-Control", "no-store");
           if (file.endsWith(".png")) {
             res.setHeader("Content-Type", "image/png");
             if (req.method === "HEAD") {

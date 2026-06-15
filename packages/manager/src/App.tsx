@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { buildDefaultArgs, formatDisplayName } from "@tide/core";
+import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
 import type {
   ComponentEntry,
   InteractionStep,
@@ -19,25 +19,32 @@ import { DocsPanel } from "./components/DocsPanel";
 import { TokensPanel } from "./components/TokensPanel";
 import { TestsPanel } from "./components/TestsPanel";
 import { VisualPanel, type VisualPanelEntry } from "./components/VisualPanel";
+import { InteractionsPanel } from "./components/InteractionsPanel";
 import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
 import { SidebarTree } from "./components/SidebarTree";
+import { CommandPalette } from "./components/CommandPalette";
 import {
   PREVIEW_URL,
   PREVIEW_MESSAGE,
   postToPreview,
   fetchTest,
   saveTest,
+  fetchInteractions,
+  saveInteractions,
   checkVisualBaseline,
   runVisualTest,
   updateVisualBaseline,
   fetchVisualReport,
+  fetchVisualDiffDetail,
+  type CallbackMap,
+  type VisualDiffDetail,
 } from "./api";
 import "./components/layout.css";
 
-type PanelTab = "props" | "docs" | "tests" | "visual";
+type PanelTab = "props" | "docs" | "tests" | "visual" | "interactions";
 type PreviewTab = "preview" | "variants";
 type FoundationView = "tokens";
 
@@ -46,6 +53,7 @@ const PANEL_TABS: { id: PanelTab; label: string }[] = [
   { id: "docs", label: "Docs" },
   { id: "tests", label: "Tests" },
   { id: "visual", label: "Visual" },
+  { id: "interactions", label: "Interactions" },
 ];
 
 const FOUNDATION_ITEMS: { id: FoundationView; label: string; description: string }[] = [
@@ -59,9 +67,30 @@ const EMPTY_COMPONENTS: ComponentEntry[] = [];
 const EMPTY_PROPS_MAP: PropsMap = {};
 const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
 
+function TideLogo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M1.5 5.75c1.3-1.6 2.6-1.6 3.9 0s2.6 1.6 3.9 0 2.6-1.6 3.9 0"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M1.5 10.25c1.3-1.6 2.6-1.6 3.9 0s2.6 1.6 3.9 0 2.6-1.6 3.9 0"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function App() {
   const queryClient = useQueryClient();
-  const { manifest, props, tokens } = useTideData();
+  const { manifest, props, tokens, config, scanReport } = useTideData();
 
   // The dev server regenerates artifacts and signals a data change instead of
   // full-reloading the manager (see packages/cli/src/dev.ts). Refetch in place
@@ -79,14 +108,17 @@ export function App() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [foundationView, setFoundationView] = useState<FoundationView | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  const [callbacks, setCallbacks] = useState<CallbackMap>({});
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
   const [testRunning, setTestRunning] = useState(false);
   const [visualRunning, setVisualRunning] = useState(false);
   const [visualEntry, setVisualEntry] = useState<VisualPanelEntry | null>(null);
+  const [visualDiffDetail, setVisualDiffDetail] = useState<VisualDiffDetail | null>(null);
   const [visualHasBaseline, setVisualHasBaseline] = useState(false);
   const [visualImageVersion, setVisualImageVersion] = useState(0);
   const [visualError, setVisualError] = useState<string | null>(null);
@@ -123,6 +155,7 @@ export function App() {
     return components.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
+        getComponentId(c).toLowerCase().includes(q) ||
         formatDisplayName(c.name).toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q),
     );
@@ -130,11 +163,54 @@ export function App() {
 
   useEffect(() => {
     if (!selected && components.length > 0) {
-      setSelected(components[0]!.name);
+      setSelected(getComponentId(components[0]!));
     }
   }, [components, selected]);
 
-  const selectedComponent = components.find((c) => c.name === selected);
+  // Toggle the command palette with ⌘K / Ctrl-K from anywhere.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const selectComponentById = useCallback(
+    (id: string) => {
+      const schema = propsMap[id];
+      setFoundationView(null);
+      setSelected(id);
+      setArgs(schema ? buildDefaultArgs(schema) : {});
+    },
+    [propsMap],
+  );
+
+  const paletteComponents = useMemo(
+    () =>
+      components.map((c) => ({
+        id: getComponentId(c),
+        label: formatDisplayName(c.name),
+        sublabel: c.path,
+      })),
+    [components],
+  );
+
+  const paletteFoundation = useMemo(
+    () =>
+      FOUNDATION_ITEMS.map((item) => ({
+        id: item.id,
+        label: item.label,
+        sublabel: item.description,
+      })),
+    [],
+  );
+
+  const selectedComponent = components.find((c) => getComponentId(c) === selected);
+  const defaultOverrides = selected ? config.data?.defaults?.[selected] : undefined;
   const componentProps = useMemo(() => {
     if (!selected) return EMPTY_COMPONENT_PROPS;
     return propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
@@ -161,7 +237,7 @@ export function App() {
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selected || !propsMap[selected]) return;
-    const defaults = buildDefaultArgs(propsMap[selected]!);
+    const defaults = buildDefaultArgs(propsMap[selected]!, defaultOverrides);
     if (prevSelectedRef.current === selected) {
       setArgs((prev) => {
         const merged: Record<string, unknown> = {};
@@ -174,15 +250,18 @@ export function App() {
       prevSelectedRef.current = selected;
       setArgs(defaults);
     }
-  }, [selected, propsMap]);
+  }, [selected, propsMap, defaultOverrides]);
 
   const previewReadyRef = useRef(false);
   const argsRef = useRef(args);
   argsRef.current = args;
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
   const pendingRunRef = useRef<{
     story: string;
     steps: InteractionStep[];
     args: Record<string, unknown>;
+    callbacks: CallbackMap;
   } | null>(null);
 
   // The iframe only exists on the Preview tab; treat it as not-ready elsewhere
@@ -196,7 +275,11 @@ export function App() {
     const defaults = propsMap[selected] ? buildDefaultArgs(propsMap[selected]!) : {};
     postToPreview(iframeRef.current, {
       type: PREVIEW_MESSAGE.SELECT_STORY,
-      payload: { story: selected, args: { ...defaults, ...argsRef.current } },
+      payload: {
+        story: selected,
+        args: { ...defaults, ...argsRef.current },
+        callbacks: callbacksRef.current,
+      },
     });
   }, [selected, propsMap]);
 
@@ -226,6 +309,17 @@ export function App() {
       syncPreviewTheme();
     }
   }, [previewTheme, syncPreviewTheme]);
+
+  // Push callback wiring to the preview whenever it loads or is edited, so the
+  // live preview re-wires without re-sending the whole story.
+  useEffect(() => {
+    if (previewReadyRef.current) {
+      postToPreview(iframeRef.current, {
+        type: PREVIEW_MESSAGE.SET_CALLBACKS,
+        payload: callbacks,
+      });
+    }
+  }, [callbacks]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -264,11 +358,27 @@ export function App() {
     };
   }, [selected, tests]);
 
+  // Load saved callback wiring whenever the selected component changes.
+  useEffect(() => {
+    if (!selected) {
+      setCallbacks({});
+      return;
+    }
+    let cancelled = false;
+    void fetchInteractions(selected).then((loaded) => {
+      if (!cancelled) setCallbacks(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
   // Clear stale results when switching components.
   useEffect(() => {
     setTestResults([]);
     setTestRunning(false);
     setVisualEntry(null);
+    setVisualDiffDetail(null);
   }, [selected]);
 
   // Load visual baseline status and report entry when component changes.
@@ -284,8 +394,16 @@ export function App() {
       ]);
       if (cancelled) return;
       setVisualHasBaseline(hasBaseline);
-      setVisualEntry(report[selected] ?? null);
+      const reportEntry = report[selected] ?? null;
+      setVisualEntry(reportEntry);
       setVisualImageVersion((v) => v + 1);
+      // Load the per-layer detail when the stored report has a multi-layer summary.
+      if (reportEntry?.summary) {
+        const detail = await fetchVisualDiffDetail(selected);
+        if (!cancelled) setVisualDiffDetail(detail);
+      } else {
+        setVisualDiffDetail(null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -325,7 +443,7 @@ export function App() {
     if (test.steps.length === 0) return;
     setTestResults([]);
     setTestRunning(true);
-    const payload = { story: selected, steps: test.steps, args };
+    const payload = { story: selected, steps: test.steps, args, callbacks };
     if (previewTab === "preview" && previewReadyRef.current) {
       postToPreview(iframeRef.current, { type: PREVIEW_MESSAGE.RUN_TEST, payload });
     } else {
@@ -334,7 +452,7 @@ export function App() {
       pendingRunRef.current = payload;
       if (previewTab !== "preview") setPreviewTab("preview");
     }
-  }, [selected, previewTab, tests, args]);
+  }, [selected, previewTab, tests, args, callbacks]);
 
   const handleSaveTest = useCallback(async () => {
     if (!selected) return;
@@ -352,13 +470,21 @@ export function App() {
     setVisualNotice(null);
     try {
       const result = await runVisualTest(selected, args, previewTheme);
-      if (result.error || result.ok === false) {
-        setVisualError(result.error ?? "Visual test failed");
+      // `ok === false` just means differences were found — that's a valid result we
+      // must render, not an error. Only a real `error` (e.g. Playwright failure) bails.
+      if (result.error) {
+        setVisualError(result.error);
         return;
       }
       if (result.entry) setVisualEntry(result.entry);
       if (result.hasBaseline !== undefined) setVisualHasBaseline(result.hasBaseline);
       setVisualImageVersion((v) => v + 1);
+      // The compact summary arrives in the response; lazily fetch the full detail.
+      if (result.entry?.summary) {
+        setVisualDiffDetail(await fetchVisualDiffDetail(selected));
+      } else {
+        setVisualDiffDetail(null);
+      }
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -373,13 +499,14 @@ export function App() {
     setVisualNotice(null);
     try {
       const result = await updateVisualBaseline(selected, args, previewTheme);
-      if (result.error || result.ok === false) {
-        setVisualError(result.error ?? "Failed to update baseline");
+      if (result.error) {
+        setVisualError(result.error);
         return;
       }
       if (result.entry) setVisualEntry(result.entry);
       setVisualHasBaseline(result.hasBaseline ?? true);
       setVisualImageVersion((v) => v + 1);
+      setVisualDiffDetail(null);
       setVisualNotice("Baseline updated");
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : String(err));
@@ -389,15 +516,29 @@ export function App() {
   }, [selected, args, previewTheme]);
 
   if (manifest.isLoading) {
-    return <div className="bb-layout__center">Loading Tide...</div>;
+    return (
+      <div className="bb-layout__center">
+        <div className="bb-splash">
+          <span className="bb-splash__logo bb-splash__logo--pulse" aria-hidden="true">
+            <TideLogo />
+          </span>
+          <p className="bb-splash__title">Loading your design system…</p>
+        </div>
+      </div>
+    );
   }
 
   if (manifest.isError) {
     return (
       <div className="bb-layout__center">
-        <p>
-          Failed to load manifest. Run <code>tide generate</code> first.
-        </p>
+        <div className="bb-splash">
+          <span className="bb-splash__logo bb-splash__logo--error" aria-hidden="true">
+            <TideLogo />
+          </span>
+          <h1 className="bb-splash__heading">Couldn’t load your design system</h1>
+          <p className="bb-splash__text">No manifest was found. Generate one to get started:</p>
+          <code className="bb-splash__code">tide generate</code>
+        </div>
       </div>
     );
   }
@@ -405,19 +546,70 @@ export function App() {
   return (
     <div className="bb-layout">
       <header className="bb-layout__header">
-        <ThemeToggle />
+        <div className="bb-appbar__left">
+          <div className="bb-brand">
+            <span className="bb-brand__logo" aria-hidden="true">
+              <TideLogo />
+            </span>
+            <span className="bb-brand__name">Tide</span>
+            <span className="bb-brand__tag">Design</span>
+          </div>
+          <span className="bb-appbar__divider" aria-hidden="true" />
+          <nav className="bb-breadcrumb" aria-label="Breadcrumb">
+            {foundationView ? (
+              <>
+                <span className="bb-breadcrumb__crumb">Foundation</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">
+                  /
+                </span>
+                <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
+                  {FOUNDATION_ITEMS.find((item) => item.id === foundationView)?.label}
+                </span>
+              </>
+            ) : selectedComponent ? (
+              <>
+                <span className="bb-breadcrumb__crumb">Components</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">
+                  /
+                </span>
+                <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
+                  {formatDisplayName(selectedComponent.name)}
+                </span>
+              </>
+            ) : (
+              <span className="bb-breadcrumb__crumb">Components</span>
+            )}
+          </nav>
+        </div>
+        <div className="bb-appbar__right">
+          <button
+            type="button"
+            className="bb-appbar__search-trigger"
+            onClick={() => setPaletteOpen(true)}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M11.5 11.5 14 14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="bb-appbar__search-text">Search</span>
+            <kbd className="bb-appbar__kbd">⌘K</kbd>
+          </button>
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="bb-layout__workspace">
         <aside className="bb-sidebar" style={{ width: sidebar.size }}>
           <div className="bb-sidebar__header">
-            <div className="bb-sidebar__brand">
-              <span className="bb-sidebar__logo" aria-hidden="true">
-                B
-              </span>
-              <span className="bb-sidebar__title">Tide</span>
-            </div>
-
             <label className="bb-sidebar__search">
               <svg
                 className="bb-sidebar__search-icon"
@@ -458,9 +650,9 @@ export function App() {
             selected={selected}
             propsMap={propsMap}
             search={search}
-            onComponentSelect={(name, nextArgs) => {
+            onComponentSelect={(id, nextArgs) => {
               setFoundationView(null);
-              setSelected(name);
+              setSelected(id);
               setArgs(nextArgs);
             }}
           />
@@ -469,6 +661,13 @@ export function App() {
         <SidebarSplitter isResizing={sidebar.isResizing} onPointerDown={sidebar.onPointerDown} />
 
         <div className="bb-layout__main">
+          {scanReport.data?.warnings?.length ? (
+            <div className="bb-layout__scan-warnings" role="status">
+              {scanReport.data.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          ) : null}
           <section className="bb-layout__preview-section">
             {foundationView === null ? (
               <nav className="bb-layout__preview-tabs">
@@ -507,9 +706,10 @@ export function App() {
                     syncPreviewTheme();
                   }}
                 />
-              ) : selected ? (
+              ) : selected && selectedComponent ? (
                 <VariantsPanel
-                  componentName={selected}
+                  storyId={selected}
+                  componentName={selectedComponent.name}
                   props={componentProps}
                   baseArgs={args}
                   theme={previewTheme}
@@ -534,7 +734,7 @@ export function App() {
                 <div className="bb-layout__panel-body">
                   {selected && selectedComponent && tab === "props" && (
                     <ControlsPanel
-                      componentName={selected}
+                      componentName={selectedComponent.name}
                       props={componentProps}
                       args={args}
                       onChange={(next) => {
@@ -544,11 +744,16 @@ export function App() {
                     />
                   )}
                   {selected && selectedComponent && tab === "docs" && (
-                    <DocsPanel component={selectedComponent} props={componentProps} args={args} />
+                    <DocsPanel
+                      component={selectedComponent}
+                      props={componentProps}
+                      args={args}
+                      packageName={config.data?.packageName ?? undefined}
+                    />
                   )}
-                  {selected && tab === "tests" && (
+                  {selected && selectedComponent && tab === "tests" && (
                     <TestsPanel
-                      componentName={selected}
+                      componentName={selectedComponent.name}
                       test={currentTest}
                       results={testResults}
                       running={testRunning}
@@ -557,13 +762,15 @@ export function App() {
                       onSave={handleSaveTest}
                     />
                   )}
-                  {selected && tab === "visual" && (
+                  {selected && selectedComponent && tab === "visual" && (
                     <VisualPanel
-                      componentName={selected}
+                      storyId={selected}
+                      componentName={selectedComponent.name}
                       args={args}
                       theme={previewTheme}
                       hasBaseline={visualHasBaseline}
                       entry={visualEntry}
+                      diffDetail={visualDiffDetail}
                       running={visualRunning}
                       error={visualError}
                       notice={visualNotice}
@@ -572,12 +779,33 @@ export function App() {
                       imageVersion={visualImageVersion}
                     />
                   )}
+                  {selected && selectedComponent && tab === "interactions" && (
+                    <InteractionsPanel
+                      componentName={selectedComponent.name}
+                      props={componentProps}
+                      callbacks={callbacks}
+                      onChange={(next) => {
+                        setCallbacks(next);
+                        void saveInteractions(selected, next);
+                      }}
+                    />
+                  )}
                 </div>
               </footer>
             </>
           )}
         </div>
       </div>
+
+      {paletteOpen && (
+        <CommandPalette
+          onClose={() => setPaletteOpen(false)}
+          components={paletteComponents}
+          foundation={paletteFoundation}
+          onSelectComponent={selectComponentById}
+          onSelectFoundation={setFoundationView}
+        />
+      )}
     </div>
   );
 }

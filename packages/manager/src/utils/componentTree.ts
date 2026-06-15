@@ -1,5 +1,5 @@
 import type { ComponentEntry } from "@tide/core";
-import { formatDisplayName } from "@tide/core";
+import { formatDisplayName, getComponentId } from "@tide/core";
 
 export type ComponentTreeFolder = {
   kind: "folder";
@@ -20,19 +20,12 @@ function formatFolderLabel(segment: string): string {
   return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
-/** Folder segments relative to the `components` directory, e.g. ["forms"] or []. */
+/** Folder segments derived from the stable component id, e.g. ["forms"] or []. */
 export function getComponentFolderSegments(entry: ComponentEntry): string[] {
-  const normalized = entry.path.replace(/\\/g, "/");
-  const lastSlash = normalized.lastIndexOf("/");
-  if (lastSlash === -1) return [];
-
-  const parts = normalized.slice(0, lastSlash).split("/").filter(Boolean);
-  const componentsIdx = parts.lastIndexOf("components");
-  if (componentsIdx >= 0) return parts.slice(componentsIdx + 1);
-
-  const titleParts = entry.title.split("/");
-  titleParts.pop();
-  return titleParts.map((part) => part.toLowerCase());
+  const id = getComponentId(entry);
+  const slash = id.lastIndexOf("/");
+  if (slash === -1) return [];
+  return id.slice(0, slash).split("/").filter(Boolean);
 }
 
 function insertEntry(

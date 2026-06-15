@@ -1,4 +1,6 @@
-import type { InteractionTest } from "@tide/core";
+import type { ComponentEntry, InteractionTest, InteractionWiring } from "@tide/core";
+
+export type CallbackMap = Record<string, { updates?: string }>;
 
 declare const __TIDE_PREVIEW_URL__: string;
 
@@ -19,32 +21,59 @@ export const PREVIEW_MESSAGE = {
   RUN_TEST: "TIDE_RUN_TEST",
   TEST_STEP: "TIDE_TEST_STEP",
   TEST_DONE: "TIDE_TEST_DONE",
+  // manager -> preview: explicit callback→state wiring for the current story.
+  SET_CALLBACKS: "TIDE_SET_CALLBACKS",
 } as const;
 
 export interface Manifest {
-  components: Array<{
-    name: string;
-    path: string;
-    exportName: string;
-    title: string;
-    isDefault?: boolean;
-  }>;
+  components: ComponentEntry[];
+}
+
+export interface TideConfigSnapshot {
+  packageName: string | null;
+  defaults: Record<string, Record<string, unknown>>;
+  componentsDir: string | null;
+}
+
+export interface ScanReport {
+  warnings: string[];
+  duplicateNames: Array<{ name: string; ids: string[]; paths: string[] }>;
+  filesWithNoComponents: string[];
+  componentsWithNoProps: string[];
+  componentsWithUnknownProps: Array<{ id: string; name: string; unknownCount: number }>;
 }
 
 export type PropSchema =
-  | { type: "boolean"; required?: boolean }
-  | { type: "string"; required?: boolean }
-  | { type: "number"; required?: boolean }
-  | { type: "union"; values: string[]; required?: boolean }
-  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean }
-  | { type: "unknown"; required?: boolean };
+  | { type: "boolean"; required?: boolean; description?: string }
+  | { type: "string"; required?: boolean; description?: string }
+  | { type: "number"; required?: boolean; description?: string }
+  | { type: "union"; values: string[]; required?: boolean; description?: string }
+  | {
+      type: "object";
+      properties: Record<string, PropSchema>;
+      required?: boolean;
+      description?: string;
+    }
+  | { type: "callback"; required?: boolean; description?: string }
+  | { type: "unknown"; required?: boolean; description?: string };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
+
+function tideArtifactPath(kind: string, componentId: string, ext: string): string {
+  const segments = componentId.split("/").map(encodeURIComponent).join("/");
+  return `/__tide/${kind}/${segments}.${ext}`;
+}
 
 export async function fetchManifest(): Promise<Manifest> {
   const res = await fetch("/__tide/manifest.json");
   if (!res.ok) throw new Error("Failed to load manifest");
-  return res.json();
+  const data = (await res.json()) as Manifest;
+  return {
+    components: data.components.map((component) => ({
+      ...component,
+      id: component.id ?? component.name,
+    })),
+  };
 }
 
 export async function fetchProps(): Promise<PropsMap> {
@@ -63,6 +92,26 @@ export async function fetchTokens(): Promise<Record<string, unknown> | null> {
   }
 }
 
+export async function fetchConfigSnapshot(): Promise<TideConfigSnapshot | null> {
+  try {
+    const res = await fetch("/__tide/config.json");
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchScanReport(): Promise<ScanReport | null> {
+  try {
+    const res = await fetch("/__tide/scan-report.json");
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export function postToPreview(
   iframe: HTMLIFrameElement | null,
   message: { type: string; payload?: unknown },
@@ -70,9 +119,9 @@ export function postToPreview(
   iframe?.contentWindow?.postMessage(message, "*");
 }
 
-export async function fetchTest(name: string): Promise<InteractionTest | null> {
+export async function fetchTest(componentId: string): Promise<InteractionTest | null> {
   try {
-    const res = await fetch(`/__tide/tests/${name}.json`);
+    const res = await fetch(tideArtifactPath("tests", componentId, "json"));
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -89,12 +138,122 @@ export async function saveTest(component: string, test: InteractionTest): Promis
   if (!res.ok) throw new Error(`Failed to save test (${res.status})`);
 }
 
+export async function fetchInteractions(componentId: string): Promise<CallbackMap> {
+  try {
+    const res = await fetch(tideArtifactPath("interactions", componentId, "json"));
+    if (!res.ok) return {};
+    const wiring = (await res.json()) as InteractionWiring;
+    return wiring.callbacks ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveInteractions(component: string, callbacks: CallbackMap): Promise<void> {
+  const wiring: InteractionWiring = { component, callbacks };
+  const res = await fetch("/__tide/interactions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ component, wiring }),
+  });
+  if (!res.ok) throw new Error(`Failed to save interactions (${res.status})`);
+}
+
+export type VisualLayerKey = "screenshot" | "styles" | "dom" | "layout" | "a11y";
+export type VisualClassification = "identical" | "semantic" | "pixel-noise";
+
+export interface VisualLayerSummary {
+  changed: boolean;
+  count: number;
+}
+
+export interface VisualDiffSummary {
+  layers: Record<VisualLayerKey, VisualLayerSummary>;
+  semanticChanged: boolean;
+  classification: VisualClassification;
+  verdict: string;
+}
+
+export interface DomAttrChange {
+  name: string;
+  from?: string;
+  to?: string;
+}
+export interface DomNodeChange {
+  key: string;
+  tag: string;
+  label?: string;
+  attrs?: DomAttrChange[];
+  classes?: { added: string[]; removed: string[] };
+  text?: { from?: string; to?: string };
+}
+export interface DomDiff {
+  added: { key: string; tag: string }[];
+  removed: { key: string; tag: string }[];
+  moved: { fromKey: string; toKey: string; tag: string }[];
+  changed: DomNodeChange[];
+}
+export interface StylePropChange {
+  prop: string;
+  from: string;
+  to: string;
+  isColor: boolean;
+}
+export interface StyleNodeChange {
+  nodeKey: string;
+  label?: string;
+  props: StylePropChange[];
+}
+export interface StyleDiff {
+  nodes: StyleNodeChange[];
+  totalProps: number;
+}
+export interface LayoutNodeChange {
+  nodeKey: string;
+  label?: string;
+  dx: number;
+  dy: number;
+  dw: number;
+  dh: number;
+  phrase: string;
+}
+export interface LayoutDiff {
+  nodes: LayoutNodeChange[];
+  tolerancePx: number;
+}
+export interface A11yChange {
+  kind: "added" | "removed";
+  line: string;
+}
+export interface A11yDiff {
+  changes: A11yChange[];
+}
+export interface PropChange {
+  name: string;
+  from?: unknown;
+  to?: unknown;
+}
+export interface PropsDiff {
+  changed: PropChange[];
+}
+export interface VisualDiffDetail {
+  storyId: string;
+  summary: VisualDiffSummary;
+  props: PropsDiff;
+  dom: DomDiff;
+  styles: StyleDiff;
+  layout: LayoutDiff;
+  a11y: A11yDiff;
+}
+
 export interface VisualReportEntry {
   changed: boolean;
   pixelsChanged: number;
   diffPath?: string;
   currentPath?: string;
   sizeMismatch?: boolean;
+  snapshotPath?: string;
+  summary?: VisualDiffSummary;
 }
 
 export type VisualReport = Record<string, VisualReportEntry>;
@@ -123,7 +282,8 @@ export function buildVisualPreviewUrl(
 
 export async function fetchVisualReport(): Promise<VisualReport> {
   try {
-    const res = await fetch("/__tide/visual/report.json");
+    // never serve a stale report — it drives which images the panel shows.
+    const res = await fetch("/__tide/visual/report.json", { cache: "no-store" });
     if (!res.ok) return {};
     return res.json();
   } catch {
@@ -131,9 +291,23 @@ export async function fetchVisualReport(): Promise<VisualReport> {
   }
 }
 
-export async function checkVisualBaseline(component: string): Promise<boolean> {
+export async function fetchVisualDiffDetail(componentId: string): Promise<VisualDiffDetail | null> {
   try {
-    const res = await fetch(`/__tide/baselines/${component}.png`, { method: "HEAD" });
+    const encoded = componentId.split("/").map(encodeURIComponent).join("/");
+    const res = await fetch(`/__tide/reports/${encoded}-diff.json`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as VisualDiffDetail;
+  } catch {
+    return null;
+  }
+}
+
+export async function checkVisualBaseline(componentId: string): Promise<boolean> {
+  try {
+    const res = await fetch(tideArtifactPath("baselines", componentId, "png"), {
+      method: "HEAD",
+      cache: "no-store",
+    });
     return res.ok;
   } catch {
     return false;

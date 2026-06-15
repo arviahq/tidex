@@ -1,0 +1,49 @@
+.bb-iconbtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-surface);
+  color: var(--bb-muted);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.bb-iconbtn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bb-iconbtn:hover:not(:disabled) {
+  border-color: var(--bb-border-strong);
+  color: var(--bb-text);
+}
+
+.bb-iconbtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--bb-brand) 50%, transparent);
+  outline-offset: 2px;
+}
+
+.bb-iconbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bb-iconbtn--primary {
+  background: var(--bb-brand);
+  border-color: var(--bb-brand);
+  color: #ffffff;
+}
+
+.bb-iconbtn--primary:hover:not(:disabled) {
+  background: var(--bb-brand-strong);
+  border-color: var(--bb-brand-strong);
+  color: #ffffff;
+}
