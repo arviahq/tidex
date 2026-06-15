@@ -49,33 +49,39 @@ export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport
   fs.mkdirSync(reportsDir, { recursive: true });
 
   const browser = await chromium.launch();
-  const page = await browser.newPage();
+  // axe-core/playwright requires a page created from an explicit browser
+  // context (a bare `browser.newPage()` throws "Please use browser.newContext()").
+  const context = await browser.newContext();
+  const page = await context.newPage();
   const report: A11yReport = {};
 
-  const components = options.manifest.components;
-  for (let i = 0; i < components.length; i++) {
-    const component = components[i]!;
-    const componentId = getComponentId(component);
-    options.onProgress?.(i, components.length, component.name);
-    const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}`;
-    await page.goto(url, { waitUntil: "networkidle" });
-    await page.waitForTimeout(300);
+  try {
+    const components = options.manifest.components;
+    for (let i = 0; i < components.length; i++) {
+      const component = components[i]!;
+      const componentId = getComponentId(component);
+      options.onProgress?.(i, components.length, component.name);
+      const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}`;
+      await page.goto(url, { waitUntil: "networkidle" });
+      await page.waitForTimeout(300);
 
-    const results = await new AxeBuilder({ page }).analyze();
+      const results = await new AxeBuilder({ page }).analyze();
 
-    report[componentId] = {
-      violations: results.violations.map((v) => ({
-        id: v.id,
-        impact: v.impact,
-        description: v.description,
-        nodes: v.nodes.length,
-      })),
-      passes: results.passes.length,
-    };
+      report[componentId] = {
+        violations: results.violations.map((v) => ({
+          id: v.id,
+          impact: v.impact,
+          description: v.description,
+          nodes: v.nodes.length,
+        })),
+        passes: results.passes.length,
+      };
+    }
+    options.onProgress?.(components.length, components.length);
+  } finally {
+    await context.close();
+    await browser.close();
   }
-  options.onProgress?.(components.length, components.length);
-
-  await browser.close();
 
   const reportPath = path.join(reportsDir, "a11y.json");
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
