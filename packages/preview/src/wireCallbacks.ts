@@ -1,12 +1,82 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ExtractStrategy, InteractionRecord } from "@tide/core";
+
+export type { InteractionRecord };
 
 /**
- * Explicit callback→state wiring map, authored in the manager's Interactions
- * tab and persisted at `.tide/interactions/<Component>.json`. Each entry maps a
- * callback prop name to the state prop it updates; `{}` (no `updates`) means
+ * Callback→state wiring map. Each entry maps a callback prop to the state prop
+ * it updates (`updates`) and how to extract the next value from the handler's
+ * arguments (`strategy`, default `first-arg`). `{}` (no `updates`) means
  * action-only and is wired to a no-op so the component never calls `undefined`.
+ * Entries are inferred by Tide and/or authored in the Interactions tab.
  */
-export type CallbackMap = Record<string, { updates?: string }>;
+export type CallbackMap = Record<string, { updates?: string; strategy?: ExtractStrategy }>;
+
+/** Extract the controlled prop's next value from a fired handler's arguments. */
+export function extractNext(
+  strategy: ExtractStrategy | undefined,
+  args: unknown[],
+  prev: unknown,
+): unknown {
+  const first = args[0] as { target?: { value?: unknown; checked?: unknown } } | undefined;
+  switch (strategy) {
+    case "event-value":
+      return first?.target?.value;
+    case "event-checked":
+      return first?.target?.checked;
+    case "updater":
+      return typeof args[0] === "function" ? (args[0] as (p: unknown) => unknown)(prev) : args[0];
+    case "toggle":
+      return !prev;
+    case "constant-true":
+      return true;
+    case "constant-false":
+      return false;
+    default:
+      // first-arg, object, set, map
+      return args[0];
+  }
+}
+
+/** Short, structured-clone-free summary of a value for the interaction log. */
+export function summarizeValue(value: unknown): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "function") return "fn";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Set) return `Set(${value.size})`;
+  if (value instanceof Map) return `Map(${value.size})`;
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown> & { $$typeof?: symbol; target?: unknown };
+    if (obj.$$typeof) return "ReactElement";
+    const target = obj.target as
+      | { tagName?: string; value?: unknown; checked?: unknown }
+      | undefined;
+    if (target?.tagName) {
+      const detail = target.value ?? target.checked;
+      return `${target.tagName.toLowerCase()}[${JSON.stringify(detail)}]`;
+    }
+    if (Array.isArray(value)) return `[${value.length}]`;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "object";
+    }
+  }
+  return String(value);
+}
+
+/** Whether a value is safe to send raw over postMessage (structured clone). */
+function isCloneable(value: unknown): boolean {
+  if (typeof value === "function" || typeof value === "symbol") return false;
+  if (value && typeof value === "object") {
+    const obj = value as { $$typeof?: symbol; nativeEvent?: unknown };
+    if (obj.$$typeof || obj.nativeEvent) return false; // React element / synthetic event
+  }
+  return true;
+}
 
 function argsKey(args: Record<string, unknown>): string {
   try {
@@ -20,31 +90,49 @@ function applyCallbacks(
   baseArgs: Record<string, unknown>,
   callbacks: CallbackMap | undefined,
   setOverride: (key: string, value: unknown) => void,
+  onInteraction?: (record: InteractionRecord) => void,
 ): Record<string, unknown> {
   if (!callbacks || Object.keys(callbacks).length === 0) return baseArgs;
 
   const result = { ...baseArgs };
   for (const [name, meta] of Object.entries(callbacks)) {
-    // Respect an explicit function the story already provides.
-    if (typeof result[name] === "function") continue;
+    const original = result[name];
     const updates = meta?.updates;
-    result[name] =
-      updates !== undefined
-        ? (...handlerArgs: unknown[]) => setOverride(updates, handlerArgs[0])
-        : () => {};
+    result[name] = (...handlerArgs: unknown[]) => {
+      const prev = updates !== undefined ? baseArgs[updates] : undefined;
+      const next =
+        updates !== undefined ? extractNext(meta?.strategy, handlerArgs, prev) : undefined;
+      if (updates !== undefined) setOverride(updates, next);
+      // Preserve a real handler the story already provides (side effects, etc.).
+      if (typeof original === "function") {
+        try {
+          (original as (...a: unknown[]) => unknown)(...handlerArgs);
+        } catch {
+          /* user handler threw — keep the preview alive */
+        }
+      }
+      onInteraction?.({
+        handler: name,
+        stateProp: updates,
+        argsSummary: handlerArgs.map(summarizeValue).join(", "),
+        prevSummary: updates !== undefined ? summarizeValue(prev) : undefined,
+        nextSummary: updates !== undefined ? summarizeValue(next) : undefined,
+        next: updates !== undefined && isCloneable(next) ? next : undefined,
+      });
+    };
   }
   return result;
 }
 
 /**
- * Merge base args with local interaction overrides and the explicit callback
- * wiring. A mapped callback updates local state and re-renders the preview;
- * unmapped callbacks are no-ops. Purely local — no postMessage back to the
- * manager.
+ * Merge base args with local interaction overrides and the callback wiring. A
+ * mapped callback extracts the next value (per its strategy), updates local
+ * state, re-renders the preview, and reports the interaction via `onInteraction`.
  */
 export function useWiredArgs(
   baseArgs: Record<string, unknown>,
   callbacks: CallbackMap | undefined,
+  onInteraction?: (record: InteractionRecord) => void,
 ): Record<string, unknown> {
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
   const baseKeyRef = useRef(argsKey(baseArgs));
@@ -63,10 +151,13 @@ export function useWiredArgs(
 
   return useMemo(
     () =>
-      applyCallbacks(merged, callbacks, (key, value) =>
-        setOverrides((prev) => ({ ...prev, [key]: value })),
+      applyCallbacks(
+        merged,
+        callbacks,
+        (key, value) => setOverrides((prev) => ({ ...prev, [key]: value })),
+        onInteraction,
       ),
-    [merged, callbacks],
+    [merged, callbacks, onInteraction],
   );
 }
 
@@ -82,14 +173,20 @@ export function buildWiredArgs(
   const result = { ...baseArgs };
   if (!callbacks) return result;
   for (const [name, meta] of Object.entries(callbacks)) {
-    if (typeof result[name] === "function") continue;
+    const original = result[name];
     const updates = meta?.updates;
-    result[name] =
-      updates !== undefined
-        ? (...handlerArgs: unknown[]) => {
-            result[updates] = handlerArgs[0];
-          }
-        : () => {};
+    result[name] = (...handlerArgs: unknown[]) => {
+      if (updates !== undefined) {
+        result[updates] = extractNext(meta?.strategy, handlerArgs, result[updates]);
+      }
+      if (typeof original === "function") {
+        try {
+          (original as (...a: unknown[]) => unknown)(...handlerArgs);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
   }
   return result;
 }

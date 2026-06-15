@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
 import type {
   ComponentEntry,
+  InteractionBinding,
+  InteractionRecord,
   InteractionStep,
   InteractionTest,
   PropSchema,
@@ -67,6 +69,20 @@ const PREVIEW_TAB_VARIANTS = { id: "variants" as const, label: "Variants" };
 const EMPTY_COMPONENTS: ComponentEntry[] = [];
 const EMPTY_PROPS_MAP: PropsMap = {};
 const EMPTY_COMPONENT_PROPS: Record<string, PropSchema> = {};
+const EMPTY_BINDINGS: InteractionBinding[] = [];
+
+/**
+ * Inferred bindings → runtime wiring. High/medium confidence auto-wire; low is
+ * left action-only. The result is overlaid with the user's saved wiring.
+ */
+function bindingsToCallbackMap(bindings: InteractionBinding[]): CallbackMap {
+  const map: CallbackMap = {};
+  for (const b of bindings) {
+    if (b.confidence === "low") continue;
+    map[b.handler] = { updates: b.stateProp, strategy: b.strategy };
+  }
+  return map;
+}
 
 function TideLogo() {
   return (
@@ -91,7 +107,7 @@ function TideLogo() {
 
 export function App() {
   const queryClient = useQueryClient();
-  const { manifest, props, tokens, config, scanReport } = useTideData();
+  const { manifest, props, tokens, config, scanReport, bindings } = useTideData();
 
   // The dev server regenerates artifacts and signals a data change instead of
   // full-reloading the manager (see packages/cli/src/dev.ts). Refetch in place
@@ -113,7 +129,10 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  // User-authored wiring (overrides inferred bindings); persisted to .tide/interactions.
   const [callbacks, setCallbacks] = useState<CallbackMap>({});
+  // Live interaction records reported by the preview (most-recent first).
+  const [interactionLog, setInteractionLog] = useState<InteractionRecord[]>([]);
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
   const [testRunning, setTestRunning] = useState(false);
@@ -274,10 +293,20 @@ export function App() {
   }, [selected, propsMap, defaultOverrides]);
 
   const previewReadyRef = useRef(false);
+  // Inferred bindings for the selected component, overlaid with the user's
+  // saved wiring (user wins). This is what the preview is wired with.
+  const selectedBindings = selected
+    ? (bindings.data?.[selected] ?? EMPTY_BINDINGS)
+    : EMPTY_BINDINGS;
+  const effectiveCallbacks = useMemo(
+    () => ({ ...bindingsToCallbackMap(selectedBindings), ...callbacks }),
+    [selectedBindings, callbacks],
+  );
+
   const argsRef = useRef(args);
   argsRef.current = args;
-  const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
+  const callbacksRef = useRef(effectiveCallbacks);
+  callbacksRef.current = effectiveCallbacks;
   const pendingRunRef = useRef<{
     story: string;
     steps: InteractionStep[];
@@ -337,13 +366,24 @@ export function App() {
     if (previewReadyRef.current) {
       postToPreview(iframeRef.current, {
         type: PREVIEW_MESSAGE.SET_CALLBACKS,
-        payload: callbacks,
+        payload: effectiveCallbacks,
       });
     }
-  }, [callbacks]);
+  }, [effectiveCallbacks]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      if (event.data?.type === PREVIEW_MESSAGE.INTERACTION) {
+        const record = event.data.payload as InteractionRecord;
+        setInteractionLog((prev) => [record, ...prev].slice(0, 50));
+        // Two-way controls sync: reflect the new controlled value in the args
+        // (display only — the preview already holds it, so don't echo back).
+        if (record.stateProp && record.next !== undefined) {
+          const prop = record.stateProp;
+          setArgs((prev) => ({ ...prev, [prop]: record.next }));
+        }
+        return;
+      }
       if (event.data?.type === PREVIEW_MESSAGE.READY) {
         previewReadyRef.current = true;
         syncPreview();
@@ -379,8 +419,10 @@ export function App() {
     };
   }, [selected, tests]);
 
-  // Load saved callback wiring whenever the selected component changes.
+  // Load saved callback wiring whenever the selected component changes, and
+  // clear the live interaction log for the new component.
   useEffect(() => {
+    setInteractionLog([]);
     if (!selected) {
       setCallbacks({});
       return;
@@ -800,6 +842,8 @@ export function App() {
                       componentName={selectedComponent.name}
                       props={componentProps}
                       callbacks={callbacks}
+                      bindings={selectedBindings}
+                      log={interactionLog}
                       onChange={(next) => {
                         setCallbacks(next);
                         void saveInteractions(selected, next);

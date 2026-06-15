@@ -14,7 +14,12 @@ import type { InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
-import { buildWiredArgs, useWiredArgs, type CallbackMap } from "./wireCallbacks";
+import {
+  buildWiredArgs,
+  useWiredArgs,
+  type CallbackMap,
+  type InteractionRecord,
+} from "./wireCallbacks";
 
 class PreviewErrorBoundary extends Component<
   { children: ReactNode; resetKey?: unknown },
@@ -194,9 +199,27 @@ export function PreviewApp() {
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
 
+  // Mirror the selected story id so the (stable) interaction reporter can tag
+  // records without re-subscribing the wired handlers on every selection.
+  const storyNameRef = useRef(storyName);
+  storyNameRef.current = storyName;
+
+  // Report each wired callback fire to the manager — drives the interaction log
+  // and two-way controls sync (the manager applies the new controlled value).
+  const reportInteraction = useCallback((record: InteractionRecord) => {
+    window.parent.postMessage(
+      { type: PREVIEW_MESSAGE.INTERACTION, payload: { ...record, storyId: storyNameRef.current } },
+      "*",
+    );
+  }, []);
+
   // Args with explicit callback wiring applied; a mapped callback updates local
   // state here and re-renders the live preview.
-  const wiredArgs = useWiredArgs(story ? { ...story.args, ...args } : args, callbacks);
+  const wiredArgs = useWiredArgs(
+    story ? { ...story.args, ...args } : args,
+    callbacks,
+    reportInteraction,
+  );
 
   // True while a test run is driving the render, so the declarative
   // story/args effect below stands aside and doesn't fight over the root.

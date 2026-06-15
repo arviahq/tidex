@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  fetchBindings,
   fetchConfigSnapshot,
   fetchManifest,
   fetchProps,
@@ -13,5 +14,6 @@ export function useTideData() {
   const tokens = useQuery({ queryKey: ["tokens"], queryFn: fetchTokens });
   const config = useQuery({ queryKey: ["config"], queryFn: fetchConfigSnapshot });
   const scanReport = useQuery({ queryKey: ["scan-report"], queryFn: fetchScanReport });
-  return { manifest, props, tokens, config, scanReport };
+  const bindings = useQuery({ queryKey: ["bindings"], queryFn: fetchBindings });
+  return { manifest, props, tokens, config, scanReport, bindings };
 }

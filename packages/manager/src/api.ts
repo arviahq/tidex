@@ -1,6 +1,15 @@
-import type { ComponentEntry, InteractionTest, InteractionWiring } from "@tide/core";
+import type {
+  BindingsMap,
+  ComponentEntry,
+  ExtractStrategy,
+  InteractionBinding,
+  InteractionRecord,
+  InteractionTest,
+  InteractionWiring,
+} from "@tide/core";
 
-export type CallbackMap = Record<string, { updates?: string }>;
+export type CallbackMap = Record<string, { updates?: string; strategy?: ExtractStrategy }>;
+export type { ExtractStrategy, InteractionBinding, InteractionRecord, BindingsMap };
 
 declare const __TIDE_PREVIEW_URL__: string;
 
@@ -23,6 +32,7 @@ export const PREVIEW_MESSAGE = {
   TEST_DONE: "TIDE_TEST_DONE",
   // manager -> preview: explicit callback→state wiring for the current story.
   SET_CALLBACKS: "TIDE_SET_CALLBACKS",
+  INTERACTION: "TIDE_INTERACTION",
 } as const;
 
 export interface Manifest {
@@ -103,6 +113,17 @@ export async function fetchScanReport(): Promise<ScanReport | null> {
     return res.json();
   } catch {
     return null;
+  }
+}
+
+/** Tide's inferred interaction bindings (state prop ↔ change handler), per component id. */
+export async function fetchBindings(): Promise<BindingsMap> {
+  try {
+    const res = await fetch("/__tide/bindings.json");
+    if (!res.ok) return {};
+    return res.json();
+  } catch {
+    return {};
   }
 }
 

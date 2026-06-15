@@ -120,15 +120,70 @@ export type PropSchema =
 export type PropsMap = Record<string, Record<string, PropSchema>>;
 
 /**
- * Persisted callback→state wiring for a component, authored in the manager's
- * Interactions tab and stored at `.tide/interactions/<Component>.json`. A
- * callback mapped with `updates` re-renders the preview with the new value; an
- * empty `{}` means action-only (wired to a no-op). Wiring is fully explicit —
- * nothing is inferred from callback names.
+ * How the runtime extracts the next value of a controlled prop from a fired
+ * handler's arguments.
+ * - `first-arg`: `args[0]` (e.g. `onValueChange(next)`, `onOpenChange(true)`)
+ * - `event-value` / `event-checked`: `args[0].target.value` / `.checked`
+ * - `updater`: `args[0](prev)` (functional setter)
+ * - `toggle`: `!prev`
+ * - `constant-true` / `constant-false`: a fixed boolean (e.g. `onOpen`/`onClose`)
+ * - `object` / `set` / `map`: the first-arg payload of that shape
+ */
+export type ExtractStrategy =
+  | "first-arg"
+  | "event-value"
+  | "event-checked"
+  | "updater"
+  | "toggle"
+  | "constant-true"
+  | "constant-false"
+  | "object"
+  | "set"
+  | "map";
+
+export type BindingConfidence = "high" | "medium" | "low";
+
+/** A single inferred `state prop ↔ change handler` relationship for a component. */
+export interface InteractionBinding {
+  stateProp: string;
+  handler: string;
+  strategy: ExtractStrategy;
+  confidence: BindingConfidence;
+  source: "convention" | "static" | "runtime" | "user";
+}
+
+/** Inferred bindings per component id, written to `.tide/bindings.json`. */
+export type BindingsMap = Record<string, InteractionBinding[]>;
+
+/** A wired-handler fire reported by the preview (drives the log + controls sync). */
+export interface InteractionRecord {
+  handler: string;
+  stateProp?: string;
+  argsSummary: string;
+  prevSummary?: string;
+  nextSummary?: string;
+  /** Raw next value for controls sync (structured-clone-safe). */
+  next?: unknown;
+  /** Story id the interaction belongs to (tagged by the preview). */
+  storyId?: string;
+}
+
+/** Runtime callback→state entry. `updates` is the controlled prop; `strategy` defaults to `first-arg`. */
+export interface CallbackBinding {
+  updates?: string;
+  strategy?: ExtractStrategy;
+}
+
+/**
+ * Persisted callback→state wiring for a component, stored at
+ * `.tide/interactions/<Component>.json`. A callback mapped with `updates`
+ * re-renders the preview with the extracted value; an empty `{}` means
+ * action-only (wired to a no-op). User-authored entries override Tide's
+ * inferred bindings.
  */
 export interface InteractionWiring {
   component: string;
-  callbacks: Record<string, { updates?: string }>;
+  callbacks: Record<string, CallbackBinding>;
 }
 
 export interface StoryEntry {
@@ -194,6 +249,11 @@ export function getPropsPath(root: string): string {
 
 export function getStoriesPath(root: string): string {
   return path.join(getTideDir(root), "stories.generated.ts");
+}
+
+/** Inferred interaction bindings, keyed by component id. */
+export function getBindingsPath(root: string): string {
+  return path.join(getTideDir(root), "bindings.json");
 }
 
 export function getReportsDir(root: string): string {

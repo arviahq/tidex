@@ -9,6 +9,7 @@ import {
   getPropsPath,
   getScanReportPath,
   getStoriesPath,
+  getBindingsPath,
   getTideDir,
   DEFAULT_SCAN_EXCLUDE,
   type TideConfig,
@@ -17,6 +18,7 @@ import {
 } from "@tide/core";
 import { discoverComponents } from "./discover.js";
 import { extractProps } from "./extract-props.js";
+import { inferInteractions } from "./infer-interactions.js";
 import {
   buildScanDiagnostics,
   formatScanDiagnostics,
@@ -73,8 +75,13 @@ export async function generateArtifacts(
   const manifest: Manifest = { components };
   const diagnostics = buildScanDiagnostics(files, components, props);
 
+  // Infer interaction bindings (state prop ↔ change handler) so the preview can
+  // wire itself interactive automatically.
+  const bindings = inferInteractions(root, components, props);
+
   fs.writeFileSync(getManifestPath(root), JSON.stringify(manifest, null, 2));
   fs.writeFileSync(getPropsPath(root), JSON.stringify(props, null, 2));
+  fs.writeFileSync(getBindingsPath(root), JSON.stringify(bindings, null, 2));
   fs.writeFileSync(getScanReportPath(root), JSON.stringify(diagnostics, null, 2));
   fs.writeFileSync(
     getConfigSnapshotPath(root),
@@ -169,6 +176,7 @@ function generateStoriesFile(
 
 export { discoverComponents } from "./discover.js";
 export { extractProps } from "./extract-props.js";
+export { inferInteractions, inferComponentBindings } from "./infer-interactions.js";
 export {
   buildScanDiagnostics,
   formatScanDiagnostics,

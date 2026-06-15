@@ -53,6 +53,20 @@ export function text(file: ParsedFile, node: AstNode): string {
   return file.source.slice(node.start, node.end);
 }
 
+/** Depth-first visit every AST node in a subtree (visit returns false to skip children). */
+export function walk(node: AstNode, visit: (n: AstNode) => boolean | void): void {
+  if (visit(node) === false) return;
+  for (const key in node) {
+    if (key === "type" || key === "start" || key === "end") continue;
+    const value = node[key];
+    if (Array.isArray(value)) {
+      for (const el of value) if (isNode(el)) walk(el, visit);
+    } else if (isNode(value)) {
+      walk(value, visit);
+    }
+  }
+}
+
 /** Does this subtree contain any JSX? Used to identify React components. */
 export function containsJsx(node: AstNode): boolean {
   if (

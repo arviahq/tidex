@@ -84,4 +84,7 @@ export const PREVIEW_MESSAGE = {
   // manager -> preview: explicit callback→state wiring for the current story,
   // sent with SELECT_STORY and pushed live when edited in the Interactions tab.
   SET_CALLBACKS: "TIDE_SET_CALLBACKS",
+  // preview -> manager: a wired callback fired. Drives the interaction log and
+  // two-way controls sync (the manager applies the new controlled value).
+  INTERACTION: "TIDE_INTERACTION",
 } as const;

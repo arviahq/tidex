@@ -1,16 +1,40 @@
 import { useMemo } from "react";
 import { formatDisplayName } from "@tide/core";
-import type { CallbackMap, PropSchema } from "../api";
+import type {
+  CallbackMap,
+  ExtractStrategy,
+  InteractionBinding,
+  InteractionRecord,
+  PropSchema,
+} from "../api";
 import "./interactions.css";
 
 interface InteractionsPanelProps {
   componentName: string;
   props: Record<string, PropSchema>;
+  /** User-authored wiring (overrides inferred). */
   callbacks: CallbackMap;
+  /** Tide's inferred bindings for this component. */
+  bindings: InteractionBinding[];
+  /** Live interaction records (most-recent first). */
+  log: InteractionRecord[];
   onChange: (next: CallbackMap) => void;
 }
 
 const ACTION_ONLY = "";
+
+const STRATEGIES: ExtractStrategy[] = [
+  "first-arg",
+  "event-value",
+  "event-checked",
+  "updater",
+  "toggle",
+  "constant-true",
+  "constant-false",
+  "object",
+  "set",
+  "map",
+];
 
 function FnGlyph() {
   return (
@@ -51,6 +75,8 @@ export function InteractionsPanel({
   componentName,
   props,
   callbacks,
+  bindings,
+  log,
   onChange,
 }: InteractionsPanelProps) {
   const callbackNames = useMemo(
@@ -70,14 +96,51 @@ export function InteractionsPanel({
     [props],
   );
 
-  const setUpdates = (callback: string, value: string) => {
+  const inferred = useMemo(
+    () => Object.fromEntries(bindings.map((b) => [b.handler, b])),
+    [bindings],
+  );
+
+  // The effective wiring for a handler: the user's override if present,
+  // otherwise Tide's inferred binding.
+  const resolve = (name: string) => {
+    const userEntry = Object.prototype.hasOwnProperty.call(callbacks, name)
+      ? callbacks[name]
+      : undefined;
+    if (userEntry) {
+      return {
+        updates: userEntry.updates ?? ACTION_ONLY,
+        strategy: userEntry.strategy ?? "first-arg",
+        origin: "manual" as const,
+        confidence: undefined,
+      };
+    }
+    const b = inferred[name];
+    return {
+      updates: b?.stateProp ?? ACTION_ONLY,
+      strategy: b?.strategy ?? "first-arg",
+      origin: b ? ("auto" as const) : ("none" as const),
+      confidence: b?.confidence,
+    };
+  };
+
+  const setUpdates = (name: string, value: string) => {
+    const { strategy } = resolve(name);
     onChange({
       ...callbacks,
-      [callback]: value === ACTION_ONLY ? {} : { updates: value },
+      [name]: value === ACTION_ONLY ? {} : { updates: value, strategy },
     });
   };
 
-  const wiredCount = callbackNames.filter((name) => callbacks[name]?.updates).length;
+  const setStrategy = (name: string, strategy: ExtractStrategy) => {
+    const { updates } = resolve(name);
+    onChange({
+      ...callbacks,
+      [name]: updates === ACTION_ONLY ? {} : { updates, strategy },
+    });
+  };
+
+  const wiredCount = callbackNames.filter((name) => resolve(name).updates !== ACTION_ONLY).length;
 
   return (
     <div className="bb-interactions">
@@ -85,7 +148,7 @@ export function InteractionsPanel({
         <div className="bb-interactions__title-block">
           <h2 className="bb-interactions__name-title">{formatDisplayName(componentName)}</h2>
           <p className="bb-interactions__subtitle">
-            Callback wiring · saved to .tide/interactions/{componentName}.json
+            Auto-wired interactions · overrides saved to .tide/interactions/{componentName}.json
           </p>
         </div>
         {callbackNames.length > 0 && (
@@ -102,22 +165,21 @@ export function InteractionsPanel({
           </span>
           <p className="bb-interactions__empty-text">
             No function props detected on <strong>{formatDisplayName(componentName)}</strong>.
-            Callback props like <code>onClick</code> or <code>onChange</code> appear here so you can
-            wire them to state.
           </p>
         </div>
       ) : (
         <section className="bb-interactions__section">
           <div className="bb-interactions__section-head">
-            <h3 className="bb-interactions__section-title">Callbacks</h3>
+            <h3 className="bb-interactions__section-title">Interactive props</h3>
             <span className="bb-interactions__section-count">{callbackNames.length}</span>
           </div>
           <p className="bb-interactions__hint">
-            Map each callback to the prop it updates so the live preview reacts when it fires.
+            Tide wires these automatically. Change the target prop or extraction strategy to
+            override, or set a handler to <em>action only</em> to disconnect it.
           </p>
           <div className="bb-interactions__list">
             {callbackNames.map((name) => {
-              const current = callbacks[name]?.updates ?? ACTION_ONLY;
+              const { updates, strategy, origin, confidence } = resolve(name);
               return (
                 <div key={name} className="bb-interactions__row">
                   <span className="bb-interactions__name-cell">
@@ -125,6 +187,15 @@ export function InteractionsPanel({
                       <FnGlyph />
                     </span>
                     <span className="bb-interactions__name">{name}</span>
+                    {origin === "auto" && confidence ? (
+                      <span className="bb-interactions__badge" data-confidence={confidence}>
+                        auto · {confidence}
+                      </span>
+                    ) : origin === "manual" ? (
+                      <span className="bb-interactions__badge" data-confidence="manual">
+                        manual
+                      </span>
+                    ) : null}
                   </span>
                   <span className="bb-interactions__arrow" aria-hidden="true">
                     updates
@@ -132,9 +203,9 @@ export function InteractionsPanel({
                   </span>
                   <select
                     className="bb-interactions__select"
-                    data-empty={current === ACTION_ONLY ? "true" : undefined}
+                    data-empty={updates === ACTION_ONLY ? "true" : undefined}
                     aria-label={`${name} updates`}
-                    value={current}
+                    value={updates}
                     onChange={(event) => setUpdates(name, event.target.value)}
                   >
                     <option value={ACTION_ONLY}>action only</option>
@@ -144,10 +215,50 @@ export function InteractionsPanel({
                       </option>
                     ))}
                   </select>
+                  <select
+                    className="bb-interactions__select bb-interactions__select--strategy"
+                    aria-label={`${name} strategy`}
+                    value={strategy}
+                    disabled={updates === ACTION_ONLY}
+                    onChange={(event) => setStrategy(name, event.target.value as ExtractStrategy)}
+                  >
+                    {STRATEGIES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               );
             })}
           </div>
+        </section>
+      )}
+
+      {log.length > 0 && (
+        <section className="bb-interactions__section">
+          <div className="bb-interactions__section-head">
+            <h3 className="bb-interactions__section-title">Interaction log</h3>
+            <span className="bb-interactions__section-count">{log.length}</span>
+          </div>
+          <ul className="bb-interactions__log">
+            {log.map((entry, i) => (
+              <li key={i} className="bb-interactions__log-row">
+                <code className="bb-interactions__log-call">
+                  {entry.handler}({entry.argsSummary})
+                </code>
+                <span className="bb-interactions__log-effect">
+                  {entry.stateProp ? (
+                    <>
+                      {entry.stateProp}: {entry.prevSummary} → {entry.nextSummary}
+                    </>
+                  ) : (
+                    <span data-muted="true">no controlled prop</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </div>
