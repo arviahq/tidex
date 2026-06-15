@@ -1,4 +1,4 @@
-import { Node, Project, type InterfaceDeclaration, type TypeNode } from "ts-morph";
+import path from "node:path";
 import {
   getComponentId,
   isCallbackProp,
@@ -7,181 +7,182 @@ import {
   type PropsMap,
   type ComponentEntry,
 } from "@tide/core";
-import path from "node:path";
+import {
+  child,
+  children,
+  jsDocDescription,
+  str,
+  text,
+  type AstNode,
+  type ParsedFile,
+} from "./oxc-ast.js";
 import {
   discoverComponents,
   findPropsTypeNode,
   findPropsInterface,
   getComponentParameterType,
 } from "./discover.js";
-import { jsDocDescription, ProjectTypeResolver } from "./resolve-type.js";
+import { ProjectTypeResolver } from "./resolve-type.js";
+
+/** Property name from a `TSPropertySignature` key (identifier or string/number literal). */
+function memberName(member: AstNode): string | undefined {
+  const key = child(member, "key");
+  if (!key) return undefined;
+  const name = str(key, "name");
+  if (name) return name;
+  const value = key.value;
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  return undefined;
+}
+
+function memberTypeNode(member: AstNode): AstNode | undefined {
+  return child(child(member, "typeAnnotation"), "typeAnnotation");
+}
+
+function addMember(
+  properties: Record<string, PropSchema>,
+  member: AstNode,
+  file: ParsedFile,
+  resolver: ProjectTypeResolver,
+  depth: number,
+): void {
+  if (member.type !== "TSPropertySignature") return;
+  const name = memberName(member);
+  const typeNode = memberTypeNode(member);
+  if (!name || !typeNode) return;
+
+  const typeText = text(file, typeNode);
+  const description = jsDocDescription(file, member.start);
+
+  if (isCallbackProp(name, typeText)) {
+    properties[name] = { type: "callback", description };
+    return;
+  }
+  if (shouldSkipProp(name, typeText)) return;
+
+  const schema = schemaFromTypeNode(typeNode, file, resolver, depth + 1);
+  properties[name] = { ...schema, required: member.optional !== true, description };
+}
 
 function schemaFromInterface(
-  iface: InterfaceDeclaration,
+  iface: AstNode,
+  file: ParsedFile,
   resolver: ProjectTypeResolver,
-  fromAbsPath: string,
+  depth = 0,
 ): PropSchema {
   const properties: Record<string, PropSchema> = {};
-  const sourceFile = iface.getSourceFile();
 
-  for (const base of iface.getExtends()) {
-    const baseName = base.getExpression().getText();
-    const extendedIface =
-      sourceFile.getInterface(baseName) ?? resolver.findInterface(sourceFile, baseName);
-    if (extendedIface) {
-      const baseSchema = schemaFromInterface(extendedIface, resolver, fromAbsPath);
-      if (baseSchema.type === "object") {
-        Object.assign(properties, baseSchema.properties);
-      }
+  for (const base of children(iface, "extends")) {
+    const baseName = str(child(base, "expression"), "name");
+    if (!baseName) continue;
+    const baseIface = resolver.findInterface(file, baseName);
+    if (baseIface) {
+      const baseSchema = schemaFromInterface(baseIface, file, resolver, depth + 1);
+      if (baseSchema.type === "object") Object.assign(properties, baseSchema.properties);
     }
   }
 
-  for (const member of iface.getMembers()) {
-    if (!Node.isPropertySignature(member)) continue;
-    const name = member.getName();
-    const memberType = member.getTypeNode();
-    if (!name || !memberType) continue;
-    const typeText = memberType.getText();
-    const description = jsDocDescription(member);
-    if (isCallbackProp(name, typeText)) {
-      properties[name] = { type: "callback", description };
-      continue;
-    }
-    if (shouldSkipProp(name, typeText)) continue;
-    let schema = schemaFromTypeNode(memberType, resolver, fromAbsPath);
-    schema = {
-      ...schema,
-      required: !member.hasQuestionToken() ? true : false,
-      description,
-    };
-    properties[name] = schema;
+  for (const member of children(child(iface, "body"), "body")) {
+    addMember(properties, member, file, resolver, depth);
   }
 
   return { type: "object", properties };
 }
 
+function unionFromTypeNodes(nodes: AstNode[], file: ParsedFile): PropSchema | null {
+  const values: string[] = [];
+  const kinds = new Set<"string" | "number" | "boolean">();
+
+  for (const t of nodes) {
+    if (t.type !== "TSLiteralType") continue;
+    const literal = child(t, "literal");
+    if (!literal) continue;
+    if (literal.type === "UnaryExpression") {
+      // Negative numeric literal, e.g. `-1`.
+      values.push(text(file, literal));
+      kinds.add("number");
+      continue;
+    }
+    const value = literal.value;
+    if (typeof value === "string") {
+      values.push(value);
+      kinds.add("string");
+    } else if (typeof value === "number") {
+      values.push(String(value));
+      kinds.add("number");
+    } else if (typeof value === "boolean") {
+      values.push(String(value));
+      kinds.add("boolean");
+    }
+  }
+
+  if (values.length === 0) return null;
+  const valueType = kinds.size === 1 ? [...kinds][0]! : "string";
+  return { type: "union", values, valueType };
+}
+
 function schemaFromTypeNode(
-  typeNode: TypeNode,
+  typeNode: AstNode,
+  file: ParsedFile,
   resolver: ProjectTypeResolver,
-  fromAbsPath: string,
   depth = 0,
 ): PropSchema {
   if (depth > 10) return { type: "unknown" };
 
-  if (Node.isTypeLiteral(typeNode)) {
-    const properties: Record<string, PropSchema> = {};
-    for (const member of typeNode.getMembers()) {
-      if (!Node.isPropertySignature(member)) continue;
-      const name = member.getName();
-      const memberType = member.getTypeNode();
-      if (!name || !memberType) continue;
-      const typeText = memberType.getText();
-      const description = jsDocDescription(member);
-      if (isCallbackProp(name, typeText)) {
-        properties[name] = { type: "callback", description };
-        continue;
+  switch (typeNode.type) {
+    case "TSTypeLiteral": {
+      const properties: Record<string, PropSchema> = {};
+      for (const member of children(typeNode, "members")) {
+        addMember(properties, member, file, resolver, depth);
       }
-      if (shouldSkipProp(name, typeText)) continue;
-      let schema = schemaFromTypeNode(memberType, resolver, fromAbsPath, depth + 1);
-      schema = {
-        ...schema,
-        required: !member.hasQuestionToken() ? true : false,
-        description,
-      };
-      properties[name] = schema;
+      return { type: "object", properties };
     }
-    return { type: "object", properties };
-  }
-
-  if (Node.isIntersectionTypeNode(typeNode)) {
-    const properties: Record<string, PropSchema> = {};
-    for (const part of typeNode.getTypeNodes()) {
-      const schema = schemaFromTypeNode(part, resolver, fromAbsPath, depth + 1);
-      if (schema.type === "object") {
-        Object.assign(properties, schema.properties);
+    case "TSIntersectionType": {
+      const properties: Record<string, PropSchema> = {};
+      for (const part of children(typeNode, "types")) {
+        const schema = schemaFromTypeNode(part, file, resolver, depth + 1);
+        if (schema.type === "object") Object.assign(properties, schema.properties);
       }
+      return { type: "object", properties };
     }
-    return { type: "object", properties };
-  }
-
-  if (Node.isUnionTypeNode(typeNode)) {
-    const union = unionFromTypeNodes(typeNode.getTypeNodes());
-    if (union) return union;
-  }
-
-  const text = typeNode.getText();
-  if (text === "boolean") return { type: "boolean" };
-  if (text === "string") return { type: "string" };
-  if (text === "number") return { type: "number" };
-
-  // `T[]` — represent as an array of the (best-effort) element schema; the UI
-  // edits it as JSON.
-  if (Node.isArrayTypeNode(typeNode)) {
-    return {
-      type: "array",
-      element: schemaFromTypeNode(typeNode.getElementTypeNode(), resolver, fromAbsPath, depth + 1),
-    };
-  }
-
-  if (Node.isTypeReference(typeNode)) {
-    const name = typeNode.getTypeName().getText();
-    // `Array<T>` / `ReadonlyArray<T>`.
-    if (name === "Array" || name === "ReadonlyArray") {
-      const arg = typeNode.getTypeArguments()[0];
+    case "TSUnionType": {
+      const union = unionFromTypeNodes(children(typeNode, "types"), file);
+      if (union) return union;
+      break;
+    }
+    case "TSStringKeyword":
+      return { type: "string" };
+    case "TSNumberKeyword":
+      return { type: "number" };
+    case "TSBooleanKeyword":
+      return { type: "boolean" };
+    case "TSArrayType":
       return {
         type: "array",
-        element: arg ? schemaFromTypeNode(arg, resolver, fromAbsPath, depth + 1) : undefined,
+        element: schemaFromTypeNode(child(typeNode, "elementType")!, file, resolver, depth + 1),
       };
-    }
-    const resolved = resolver.resolveTypeReference(typeNode, fromAbsPath, depth);
-    if (resolved) {
-      if (Node.isInterfaceDeclaration(resolved)) {
-        return schemaFromInterface(resolved, resolver, resolved.getSourceFile().getFilePath());
+    case "TSTypeReference": {
+      const name = str(child(typeNode, "typeName"), "name");
+      if (name === "Array" || name === "ReadonlyArray") {
+        const arg = children(child(typeNode, "typeArguments"), "params")[0];
+        return {
+          type: "array",
+          element: arg ? schemaFromTypeNode(arg, file, resolver, depth + 1) : undefined,
+        };
       }
-      if (Node.isTypeNode(resolved)) {
-        return schemaFromTypeNode(resolved, resolver, fromAbsPath, depth + 1);
+      const resolved = resolver.resolveTypeReference(typeNode, file, depth);
+      if (resolved) {
+        return resolved.kind === "interface"
+          ? schemaFromInterface(resolved.node, resolved.file, resolver, depth + 1)
+          : schemaFromTypeNode(resolved.node, resolved.file, resolver, depth + 1);
       }
+      break;
     }
   }
 
   // Unresolved — keep the source text (e.g. an imported type name) so the UI
   // can tell the user exactly which type to co-locate.
-  return { type: "unknown", typeText: text };
-}
-
-/**
- * Build a union schema from the members of a union type, supporting string,
- * numeric, and boolean literal members (e.g. `"a" | "b"`, `1 | 2 | 3`). Returns
- * null when there are no literal members. The `valueType` lets controls coerce
- * the chosen option back to its real kind.
- */
-function unionFromTypeNodes(nodes: TypeNode[]): PropSchema | null {
-  const values: string[] = [];
-  const kinds = new Set<"string" | "number" | "boolean">();
-
-  for (const t of nodes) {
-    if (!Node.isLiteralTypeNode(t)) continue;
-    const literal = t.getLiteral();
-    if (Node.isStringLiteral(literal)) {
-      values.push(literal.getLiteralValue());
-      kinds.add("string");
-    } else if (Node.isNumericLiteral(literal)) {
-      values.push(literal.getText());
-      kinds.add("number");
-    } else if (Node.isTrueLiteral(literal) || Node.isFalseLiteral(literal)) {
-      values.push(literal.getText());
-      kinds.add("boolean");
-    } else if (Node.isPrefixUnaryExpression(literal)) {
-      // Negative numeric literal, e.g. `-1`.
-      values.push(literal.getText());
-      kinds.add("number");
-    }
-  }
-
-  if (values.length === 0) return null;
-  // Mixed kinds fall back to string options.
-  const valueType = kinds.size === 1 ? [...kinds][0] : "string";
-  return { type: "union", values, valueType };
+  return { type: "unknown", typeText: text(file, typeNode) };
 }
 
 export type ProgressReporter = (done: number, total: number, label?: string) => void;
@@ -191,10 +192,6 @@ export async function extractProps(
   components: ComponentEntry[],
   onProgress?: ProgressReporter,
 ): Promise<PropsMap> {
-  const project = new Project({
-    skipAddingFilesFromTsConfig: true,
-    compilerOptions: { jsx: 2 },
-  });
   const resolver = new ProjectTypeResolver(root);
   const result: PropsMap = {};
 
@@ -202,40 +199,35 @@ export async function extractProps(
     const component = components[i]!;
     // Reported before the (potentially slow) type resolution for this entry, so
     // the label names the component currently being worked on. Yield to the
-    // event loop when a reporter is attached so a live progress UI can repaint
-    // (this loop is otherwise CPU-bound and would block rendering).
+    // event loop when a reporter is attached so a live progress UI can repaint.
     if (onProgress) {
       onProgress(i, components.length, component.name);
       await new Promise((resolve) => setImmediate(resolve));
     }
+
     const componentId = getComponentId(component);
     const absPath = path.join(root, component.path);
-    let sourceFile;
-    try {
-      sourceFile = project.addSourceFileAtPath(absPath);
-    } catch {
+    const file = resolver.getSourceFile(absPath);
+    if (!file) {
       result[componentId] = {};
       continue;
     }
 
-    const iface = findPropsInterface(sourceFile, component.name);
+    const iface = findPropsInterface(file, component.name);
     if (iface) {
-      const schema = schemaFromInterface(iface, resolver, absPath);
+      const schema = schemaFromInterface(iface, file, resolver);
       result[componentId] = schema.type === "object" ? schema.properties : {};
       continue;
     }
 
-    let typeNode = findPropsTypeNode(sourceFile, component.name);
-    if (!typeNode) {
-      typeNode = getComponentParameterType(sourceFile, component.name);
-    }
-
+    const typeNode =
+      findPropsTypeNode(file, component.name) ?? getComponentParameterType(file, component.name);
     if (!typeNode) {
       result[componentId] = {};
       continue;
     }
 
-    const schema = schemaFromTypeNode(typeNode, resolver, absPath);
+    const schema = schemaFromTypeNode(typeNode, file, resolver);
     result[componentId] = schema.type === "object" ? schema.properties : {};
   }
 
