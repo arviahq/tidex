@@ -181,7 +181,7 @@ export function VisualPanel({
         </div>
       </header>
 
-      {summary && (
+      {summary ? (
         <div className="bb-visual__verdict" data-kind={summary.classification}>
           <p className="bb-visual__verdict-text">{summary.verdict}</p>
           <div className="bb-visual__verdict-layers">
@@ -193,7 +193,15 @@ export function VisualPanel({
             ))}
           </div>
         </div>
-      )}
+      ) : hasBaseline && entry && !running && !error ? (
+        <div className="bb-visual__verdict" data-kind="legacy">
+          <p className="bb-visual__verdict-text">
+            Pixel-only result — this baseline predates multi-layer snapshots, so only the
+            screenshot can be compared. Use the <strong>camera button</strong> to update the baseline
+            and unlock Styles, DOM, Layout &amp; A11y diffs.
+          </p>
+        </div>
+      ) : null}
 
       <section className="bb-visual__section">
         <div className="bb-visual__toolbar">

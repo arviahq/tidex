@@ -212,6 +212,11 @@ a.bb-visual__canvas:hover {
   border-color: color-mix(in srgb, var(--bb-danger) 22%, var(--bb-border));
 }
 
+.bb-visual__verdict[data-kind="legacy"] {
+  border-color: color-mix(in srgb, var(--bb-accent) 24%, var(--bb-border));
+  background: color-mix(in srgb, var(--bb-accent) 5%, var(--bb-surface));
+}
+
 .bb-visual__verdict-text {
   margin: 0;
   font-size: 14px;
