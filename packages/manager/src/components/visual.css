@@ -405,6 +405,81 @@ a.bb-visual__canvas:hover {
   background: color-mix(in srgb, var(--bb-danger) 12%, transparent);
 }
 
+/* Layout view: structured delta chips instead of a sentence. */
+.bb-vlayout {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
+  overflow: hidden;
+  background: var(--bb-surface);
+}
+
+.bb-vlayout__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-vlayout__row:last-child {
+  border-bottom: none;
+}
+
+.bb-vlayout__sel {
+  font-family: var(--bb-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bb-text);
+}
+
+.bb-vlayout__chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bb-vlayout__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--bb-radius-sm);
+  border: 1px solid var(--bb-border);
+  background: var(--bb-surface-muted);
+  font-family: var(--bb-font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.bb-vlayout__chip[data-axis="size"] {
+  border-color: color-mix(in srgb, var(--bb-accent) 24%, var(--bb-border));
+  background: color-mix(in srgb, var(--bb-accent) 7%, var(--bb-surface));
+}
+
+.bb-vlayout__chip-icon {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--bb-muted);
+}
+
+.bb-vlayout__chip[data-axis="size"] .bb-vlayout__chip-icon {
+  color: var(--bb-accent);
+}
+
+.bb-vlayout__chip-label {
+  font-weight: 600;
+  color: var(--bb-muted);
+}
+
+.bb-vlayout__chip-value {
+  color: var(--bb-text);
+}
+
 .bb-vdiff__a11y {
   list-style: none;
   margin: 0;

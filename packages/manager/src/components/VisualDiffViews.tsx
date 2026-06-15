@@ -113,14 +113,43 @@ export function DomDiffView({ diff }: { diff: DomDiff }) {
   );
 }
 
+interface LayoutChip {
+  axis: "move" | "size";
+  icon: string;
+  label: string;
+  value: string;
+  dir: "pos" | "neg";
+}
+
+function layoutChips(n: { dx: number; dy: number; dw: number; dh: number }): LayoutChip[] {
+  const chips: LayoutChip[] = [];
+  if (n.dx)
+    chips.push({ axis: "move", icon: n.dx > 0 ? "→" : "←", label: "X", value: `${Math.abs(n.dx)}px`, dir: n.dx > 0 ? "pos" : "neg" });
+  if (n.dy)
+    chips.push({ axis: "move", icon: n.dy > 0 ? "↓" : "↑", label: "Y", value: `${Math.abs(n.dy)}px`, dir: n.dy > 0 ? "pos" : "neg" });
+  if (n.dw)
+    chips.push({ axis: "size", icon: "↔", label: "W", value: `${n.dw > 0 ? "+" : "−"}${Math.abs(n.dw)}px`, dir: n.dw > 0 ? "pos" : "neg" });
+  if (n.dh)
+    chips.push({ axis: "size", icon: "↕", label: "H", value: `${n.dh > 0 ? "+" : "−"}${Math.abs(n.dh)}px`, dir: n.dh > 0 ? "pos" : "neg" });
+  return chips;
+}
+
 export function LayoutDiffView({ diff }: { diff: LayoutDiff }) {
   if (diff.nodes.length === 0) return <EmptyLayer text="No layout changes." />;
   return (
-    <ul className="bb-vdiff__rows bb-vdiff__rows--flat">
+    <ul className="bb-vlayout">
       {diff.nodes.map((n) => (
-        <li key={n.nodeKey} className="bb-vdiff__row bb-vdiff__row--layout">
-          <span className="bb-vdiff__sel">{n.label ?? n.nodeKey}</span>
-          <span className="bb-vdiff__phrase">{n.phrase}</span>
+        <li key={n.nodeKey} className="bb-vlayout__row">
+          <span className="bb-vlayout__sel">{n.label ?? n.nodeKey}</span>
+          <span className="bb-vlayout__chips">
+            {layoutChips(n).map((c, i) => (
+              <span key={i} className="bb-vlayout__chip" data-axis={c.axis} data-dir={c.dir}>
+                <span className="bb-vlayout__chip-icon" aria-hidden="true">{c.icon}</span>
+                <span className="bb-vlayout__chip-label">{c.label}</span>
+                <span className="bb-vlayout__chip-value">{c.value}</span>
+              </span>
+            ))}
+          </span>
         </li>
       ))}
     </ul>
