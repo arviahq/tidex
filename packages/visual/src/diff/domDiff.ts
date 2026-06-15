@@ -22,10 +22,7 @@ function diffAttrs(a: Record<string, string>, b: Record<string, string>): DomAtt
   return out;
 }
 
-function diffClasses(
-  a: string[],
-  b: string[],
-): { added: string[]; removed: string[] } | undefined {
+function diffClasses(a: string[], b: string[]): { added: string[]; removed: string[] } | undefined {
   const aSet = new Set(a);
   const bSet = new Set(b);
   const added = b.filter((c) => !aSet.has(c));

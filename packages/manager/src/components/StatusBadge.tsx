@@ -14,7 +14,11 @@ export function StatusBadge({
   children: ReactNode;
 }) {
   return (
-    <span className={wrap ? "bb-status bb-status--wrap" : "bb-status"} data-kind={kind} role="status">
+    <span
+      className={wrap ? "bb-status bb-status--wrap" : "bb-status"}
+      data-kind={kind}
+      role="status"
+    >
       <StatusGlyph kind={kind} />
       <span className="bb-status__text">{children}</span>
     </span>

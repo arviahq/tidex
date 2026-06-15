@@ -28,7 +28,9 @@ function badge(overrides: Partial<VisualSnapshot> = {}): VisualSnapshot {
 describe("styleDiff", () => {
   it("reports a color prop change as isColor", () => {
     const base = badge();
-    const cur = badge({ styles: { "": { "background-color": "#635bff", color: "#ffffff", "font-size": "14px" } } });
+    const cur = badge({
+      styles: { "": { "background-color": "#635bff", color: "#ffffff", "font-size": "14px" } },
+    });
     const d = styleDiff(base.styles, cur.styles);
     expect(d.totalProps).toBe(1);
     expect(d.nodes[0]!.props[0]).toMatchObject({
@@ -84,7 +86,9 @@ describe("computeVisualDiff classification", () => {
   });
 
   it("semantic with a single-style verdict sentence", () => {
-    const cur = badge({ styles: { "": { "background-color": "#635bff", color: "#ffffff", "font-size": "14px" } } });
+    const cur = badge({
+      styles: { "": { "background-color": "#635bff", color: "#ffffff", "font-size": "14px" } },
+    });
     const res = computeVisualDiff(badge(), cur, { pixelsChanged: 1200 });
     expect(res.summary.classification).toBe("semantic");
     expect(res.summary.verdict).toBe(

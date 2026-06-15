@@ -200,7 +200,12 @@ export function App() {
   );
 
   const paletteFoundation = useMemo(
-    () => FOUNDATION_ITEMS.map((item) => ({ id: item.id, label: item.label, sublabel: item.description })),
+    () =>
+      FOUNDATION_ITEMS.map((item) => ({
+        id: item.id,
+        label: item.label,
+        sublabel: item.description,
+      })),
     [],
   );
 
@@ -554,7 +559,9 @@ export function App() {
             {foundationView ? (
               <>
                 <span className="bb-breadcrumb__crumb">Foundation</span>
-                <span className="bb-breadcrumb__sep" aria-hidden="true">/</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">
+                  /
+                </span>
                 <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
                   {FOUNDATION_ITEMS.find((item) => item.id === foundationView)?.label}
                 </span>
@@ -562,7 +569,9 @@ export function App() {
             ) : selectedComponent ? (
               <>
                 <span className="bb-breadcrumb__crumb">Components</span>
-                <span className="bb-breadcrumb__sep" aria-hidden="true">/</span>
+                <span className="bb-breadcrumb__sep" aria-hidden="true">
+                  /
+                </span>
                 <span className="bb-breadcrumb__crumb bb-breadcrumb__crumb--current">
                   {formatDisplayName(selectedComponent.name)}
                 </span>
@@ -579,8 +588,17 @@ export function App() {
             onClick={() => setPaletteOpen(true)}
           >
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M11.5 11.5 14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M11.5 11.5 14 14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
             <span className="bb-appbar__search-text">Search</span>
             <kbd className="bb-appbar__kbd">⌘K</kbd>

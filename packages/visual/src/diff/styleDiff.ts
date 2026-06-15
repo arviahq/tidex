@@ -12,9 +12,7 @@ const COLOR_PROPS = new Set([
 
 function isSingleColor(v: string): boolean {
   const s = v.trim();
-  return (
-    /^#[0-9a-f]{3,8}$/i.test(s) || /^rgba?\([^)]*\)$/i.test(s) || /^hsla?\([^)]*\)$/i.test(s)
-  );
+  return /^#[0-9a-f]{3,8}$/i.test(s) || /^rgba?\([^)]*\)$/i.test(s) || /^hsla?\([^)]*\)$/i.test(s);
 }
 
 /** A swatch is only meaningful when the whole value is a single color (not e.g. box-shadow). */

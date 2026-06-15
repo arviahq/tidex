@@ -43,10 +43,10 @@ my-design-system/
 
 Tide looks for a `components` segment in the file path and uses everything after it as folder groups in the manager sidebar.
 
-| File path | Sidebar |
-| --------- | ------- |
-| `src/components/forms/Checkbox.tsx` | **Forms → Checkbox** |
-| `src/components/Button.tsx` | **Button** (top level) |
+| File path                           | Sidebar                |
+| ----------------------------------- | ---------------------- |
+| `src/components/forms/Checkbox.tsx` | **Forms → Checkbox**   |
+| `src/components/Button.tsx`         | **Button** (top level) |
 
 Use short, stable folder names — they become sidebar labels (capitalized automatically):
 
@@ -77,11 +77,15 @@ Put utilities, hooks, and theme logic in `.ts` files, or in folders excluded fro
 **Supported export patterns:**
 
 ```tsx
-export function Button() { return <button />; }
+export function Button() {
+  return <button />;
+}
 
 export const Button = () => <button />;
 
-export default function Button() { return <button />; }
+export default function Button() {
+  return <button />;
+}
 ```
 
 Filename should match the component name when possible (`Button.tsx`).
@@ -106,11 +110,11 @@ export function Button({ variant, size, disabled, onClick }: ButtonProps) {
 
 Tide looks for `{Name}Props`, `Props`, or `I{Name}Props`, or reads the first parameter type directly.
 
-| Prop shape | Controls support |
-| ---------- | ---------------- |
-| String/number/boolean literals | Full controls |
-| Union literals (`"primary" \| "secondary"`) | Dropdown |
-| Same-file type aliases and interfaces | Resolved |
+| Prop shape                                        | Controls support                    |
+| ------------------------------------------------- | ----------------------------------- |
+| String/number/boolean literals                    | Full controls                       |
+| Union literals (`"primary" \| "secondary"`)       | Dropdown                            |
+| Same-file type aliases and interfaces             | Resolved                            |
 | Imported types (e.g. extending a library’s props) | Reported as `unknown` — no controls |
 
 `children`, `className`, `style`, and `ref` are skipped automatically. `onXxx` callbacks appear in the **Interactions** tab instead of Props.
@@ -135,9 +139,9 @@ export default defineConfig({
   scan: {
     include: ["src/**/*.tsx"],
     exclude: [
-      "**/preview/**",      // ThemeProvider wrapper
-      "**/internal/**",     // building blocks you don't want in the catalog
-      "**/*Template*.tsx",  // scaffolding, not real components
+      "**/preview/**", // ThemeProvider wrapper
+      "**/internal/**", // building blocks you don't want in the catalog
+      "**/*Template*.tsx", // scaffolding, not real components
     ],
   },
   tokens: "tokens.json",
@@ -161,13 +165,13 @@ export default function TideWrapper({ children }: { children: ReactNode }) {
 
 ## What to scan vs exclude
 
-| Location | Scanned? | Purpose |
-| -------- | -------- | ------- |
-| `src/components/**/*.tsx` | Yes | Component catalog + stories |
-| `src/theme/`, `src/hooks/` (`.ts`) | No | Implementation details |
-| `src/preview/TideWrapper.tsx` | Yes, unless excluded | Provider shell |
-| `*.stories.tsx`, `*.test.tsx` | Auto-excluded | Legacy stories / tests |
-| `src/index.ts` | No | Package exports |
+| Location                           | Scanned?             | Purpose                     |
+| ---------------------------------- | -------------------- | --------------------------- |
+| `src/components/**/*.tsx`          | Yes                  | Component catalog + stories |
+| `src/theme/`, `src/hooks/` (`.ts`) | No                   | Implementation details      |
+| `src/preview/TideWrapper.tsx`      | Yes, unless excluded | Provider shell              |
+| `*.stories.tsx`, `*.test.tsx`      | Auto-excluded        | Legacy stories / tests      |
+| `src/index.ts`                     | No                   | Package exports             |
 
 Tide always excludes these patterns on top of any `scan.exclude` you set:
 

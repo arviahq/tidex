@@ -93,14 +93,14 @@ Dev server ports. Defaults: `6006` / `6007`.
 
 ## Generated artifacts
 
-| File | Purpose |
-| ---- | ------- |
-| `.tide/manifest.json` | Discovered components (with stable `id`) |
-| `.tide/props.json` | Extracted prop schemas, keyed by id |
-| `.tide/stories.generated.ts` | Lazy story modules |
-| `.tide/config.json` | Snapshot of `packageName`, `defaults`, `componentsDir` |
-| `.tide/scan-report.json` | Warnings and diagnostics |
-| `.tide/tokens.json` | Copy of your tokens file |
+| File                         | Purpose                                                |
+| ---------------------------- | ------------------------------------------------------ |
+| `.tide/manifest.json`        | Discovered components (with stable `id`)               |
+| `.tide/props.json`           | Extracted prop schemas, keyed by id                    |
+| `.tide/stories.generated.ts` | Lazy story modules                                     |
+| `.tide/config.json`          | Snapshot of `packageName`, `defaults`, `componentsDir` |
+| `.tide/scan-report.json`     | Warnings and diagnostics                               |
+| `.tide/tokens.json`          | Copy of your tokens file                               |
 
 ## CLI
 

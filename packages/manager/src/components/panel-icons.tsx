@@ -16,8 +16,21 @@ export function SaveIcon() {
         stroke="currentColor"
         strokeWidth="1.3"
       />
-      <path d="M5.25 2.25v3h4.5v-3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <rect x="5.25" y="8.25" width="5.5" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M5.25 2.25v3h4.5v-3"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="5.25"
+        y="8.25"
+        width="5.5"
+        height="4"
+        rx="0.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
     </svg>
   );
 }

@@ -164,7 +164,9 @@ function TreeBranch({
             <button
               type="button"
               className="bb-sidebar__item bb-sidebar__item--tree"
-              data-active={!foundationView && selected === getComponentId(entry) ? "true" : undefined}
+              data-active={
+                !foundationView && selected === getComponentId(entry) ? "true" : undefined
+              }
               onClick={() => onComponentSelect(entry)}
             >
               <span className="bb-tree__chip">

@@ -59,9 +59,7 @@ function loadStories(): Promise<Record<string, StoryModule>> {
 type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
 
 function loadPreviewWrapper(): Promise<PreviewWrapper> {
-  return import("virtual:tide-stories")
-    .then((mod) => mod.previewWrapper ?? null)
-    .catch(() => null);
+  return import("virtual:tide-stories").then((mod) => mod.previewWrapper ?? null).catch(() => null);
 }
 
 // Wrap the rendered component in the user-configured provider/decorator (e.g. a

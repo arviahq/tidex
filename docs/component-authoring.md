@@ -6,9 +6,9 @@ How to write components so Tide discovers them, extracts props, and builds contr
 
 Each component gets a stable **id** used for stories, tests, baselines, and saved wiring:
 
-| File | Id |
-| ---- | -- |
-| `src/components/Button.tsx` | `Button` |
+| File                                | Id               |
+| ----------------------------------- | ---------------- |
+| `src/components/Button.tsx`         | `Button`         |
 | `src/components/forms/Checkbox.tsx` | `forms/Checkbox` |
 
 Ids are `{folderPath}/{ComponentName}` relative to `scan.componentsDir`. Two components named `Button` in different folders no longer collide.
@@ -109,13 +109,13 @@ export type AlertProps = {
 
 ## Controls vs skipped props
 
-| Prop | Behavior |
-| ---- | -------- |
-| `boolean`, `string`, `number` | Text/number/toggle control |
-| `"a" \| "b"` union | Segmented control |
-| `onClick`, `onChange`, etc. | Interactions tab (callback wiring) |
-| `children`, `className`, `style`, `ref` | Skipped |
-| Imported / unresolved types | `unknown` — no control |
+| Prop                                    | Behavior                           |
+| --------------------------------------- | ---------------------------------- |
+| `boolean`, `string`, `number`           | Text/number/toggle control         |
+| `"a" \| "b"` union                      | Segmented control                  |
+| `onClick`, `onChange`, etc.             | Interactions tab (callback wiring) |
+| `children`, `className`, `style`, `ref` | Skipped                            |
+| Imported / unresolved types             | `unknown` — no control             |
 
 ## Default args
 

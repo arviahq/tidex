@@ -1,5 +1,13 @@
 import path from "node:path";
-import { Node, Project, ts, type Node as MorphNode, type SourceFile, type Type, type TypeNode } from "ts-morph";
+import {
+  Node,
+  Project,
+  ts,
+  type Node as MorphNode,
+  type SourceFile,
+  type Type,
+  type TypeNode,
+} from "ts-morph";
 import type { ComponentEntry } from "@tide/core";
 
 const PASCAL_CASE = /^[A-Z][a-zA-Z0-9]*$/;
@@ -13,7 +21,11 @@ export function isPascalCase(name: string): boolean {
 }
 
 function hasTideSkip(node: MorphNode): boolean {
-  if (!("getJsDocs" in node) || typeof (node as { getJsDocs?: () => Array<{ getFullText: () => string }> }).getJsDocs !== "function") {
+  if (
+    !("getJsDocs" in node) ||
+    typeof (node as { getJsDocs?: () => Array<{ getFullText: () => string }> }).getJsDocs !==
+      "function"
+  ) {
     return false;
   }
   return (node as { getJsDocs: () => Array<{ getFullText: () => string }> })

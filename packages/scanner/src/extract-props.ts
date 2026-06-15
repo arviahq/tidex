@@ -27,8 +27,7 @@ function schemaFromInterface(
   for (const base of iface.getExtends()) {
     const baseName = base.getExpression().getText();
     const extendedIface =
-      sourceFile.getInterface(baseName) ??
-      resolver.findInterface(sourceFile, baseName);
+      sourceFile.getInterface(baseName) ?? resolver.findInterface(sourceFile, baseName);
     if (extendedIface) {
       const baseSchema = schemaFromInterface(extendedIface, resolver, fromAbsPath);
       if (baseSchema.type === "object") {

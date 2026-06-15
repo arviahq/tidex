@@ -47,11 +47,12 @@ export function summarize(
   const semanticChanged =
     layers.styles.changed || layers.dom.changed || layers.layout.changed || layers.a11y.changed;
 
-  const classification: VisualDiffSummary["classification"] = !screenshotChanged && !semanticChanged
-    ? "identical"
-    : screenshotChanged && !semanticChanged
-      ? "pixel-noise"
-      : "semantic";
+  const classification: VisualDiffSummary["classification"] =
+    !screenshotChanged && !semanticChanged
+      ? "identical"
+      : screenshotChanged && !semanticChanged
+        ? "pixel-noise"
+        : "semantic";
 
   const verdict = buildVerdict(classification, parts, {
     domCount,

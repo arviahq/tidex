@@ -16,7 +16,9 @@ tide dev
 **Excluded path** — preview shells and internal files should be in `scan.exclude`:
 
 ```ts
-scan: { exclude: ["**/preview/**", "**/internal/**"] }
+scan: {
+  exclude: ["**/preview/**", "**/internal/**"];
+}
 ```
 
 Run `tide doctor` or `tide generate --verbose` for a scan report.
@@ -55,7 +57,9 @@ export default function TideWrapper({ children }: { children: React.ReactNode })
 ```
 
 ```ts
-preview: { wrapper: "src/preview/TideWrapper.tsx" }
+preview: {
+  wrapper: "src/preview/TideWrapper.tsx";
+}
 ```
 
 Exclude the wrapper from scanning: `exclude: ["**/preview/**"]`.

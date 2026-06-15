@@ -46,7 +46,9 @@ export function CommandPalette({
 
   const { foundationMatches, componentMatches, flat } = useMemo(() => {
     const f = foundation.filter((item) => score(`${item.label} ${item.sublabel}`, query));
-    const c = components.filter((item) => score(`${item.label} ${item.sublabel} ${item.id}`, query));
+    const c = components.filter((item) =>
+      score(`${item.label} ${item.sublabel} ${item.id}`, query),
+    );
     const flatList: FlatEntry[] = [
       ...f.map((item): FlatEntry => ({ kind: "foundation", ...item })),
       ...c.map((item): FlatEntry => ({ kind: "component", ...item })),
@@ -120,7 +122,9 @@ export function CommandPalette({
           <span className="bb-cmdk__row-label">{entry.label}</span>
           <span className="bb-cmdk__row-sublabel">{entry.sublabel}</span>
         </span>
-        <span className="bb-cmdk__row-kind">{entry.kind === "foundation" ? "Foundation" : "Component"}</span>
+        <span className="bb-cmdk__row-kind">
+          {entry.kind === "foundation" ? "Foundation" : "Component"}
+        </span>
       </button>
     );
   };
@@ -136,9 +140,25 @@ export function CommandPalette({
         onKeyDown={onKeyDown}
       >
         <div className="bb-cmdk__search">
-          <svg className="bb-cmdk__search-icon" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M11.5 11.5 14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <svg
+            className="bb-cmdk__search-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M7 12.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M11.5 11.5 14 14"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
           <input
             ref={inputRef}
@@ -163,7 +183,10 @@ export function CommandPalette({
                 <div className="bb-cmdk__group">
                   <div className="bb-cmdk__group-label">Foundation</div>
                   {foundationMatches.map((item) =>
-                    renderRow({ kind: "foundation", ...item }, flat.findIndex((f) => f.kind === "foundation" && f.id === item.id)),
+                    renderRow(
+                      { kind: "foundation", ...item },
+                      flat.findIndex((f) => f.kind === "foundation" && f.id === item.id),
+                    ),
                   )}
                 </div>
               )}
@@ -171,7 +194,10 @@ export function CommandPalette({
                 <div className="bb-cmdk__group">
                   <div className="bb-cmdk__group-label">Components</div>
                   {componentMatches.map((item) =>
-                    renderRow({ kind: "component", ...item }, flat.findIndex((f) => f.kind === "component" && f.id === item.id)),
+                    renderRow(
+                      { kind: "component", ...item },
+                      flat.findIndex((f) => f.kind === "component" && f.id === item.id),
+                    ),
                   )}
                 </div>
               )}
@@ -198,8 +224,24 @@ export function CommandPalette({
 function ComponentGlyph() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="2.75" y="2.75" width="10.5" height="10.5" rx="1.5" stroke="currentColor" strokeWidth="1.25" />
-      <rect x="5.75" y="5.75" width="4.5" height="4.5" rx="0.75" stroke="currentColor" strokeWidth="1.25" />
+      <rect
+        x="2.75"
+        y="2.75"
+        width="10.5"
+        height="10.5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.25"
+      />
+      <rect
+        x="5.75"
+        y="5.75"
+        width="4.5"
+        height="4.5"
+        rx="0.75"
+        stroke="currentColor"
+        strokeWidth="1.25"
+      />
     </svg>
   );
 }

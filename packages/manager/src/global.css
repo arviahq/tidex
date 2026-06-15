@@ -1,8 +1,9 @@
 :root {
   /* Typography — sans for UI chrome, mono for code & token values.
      IBM Plex matches the Avanteam product brand; stack mirrors arvia-ui. */
-  --bb-font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica, Arial, sans-serif;
+  --bb-font-sans:
+    "IBM Plex Sans Variable", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica, Arial, sans-serif;
   --bb-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   /* Back-compat alias: legacy `var(--bb-font)` keeps meaning mono (code/values). */
   --bb-font: var(--bb-font-mono);

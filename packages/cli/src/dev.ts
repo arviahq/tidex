@@ -123,11 +123,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
       path.join(cwd, "tide.config.js"),
       path.join(cwd, "tide.config.mjs"),
       ...(config.tokens
-        ? [
-            path.isAbsolute(config.tokens)
-              ? config.tokens
-              : path.join(cwd, config.tokens),
-          ]
+        ? [path.isAbsolute(config.tokens) ? config.tokens : path.join(cwd, config.tokens)]
         : []),
       ...(config.preview?.wrapper
         ? [
@@ -167,7 +163,9 @@ export async function runGenerate(cwd?: string, verbose?: boolean): Promise<void
   console.log(`  props:    ${getTideDir(root)}/props.json`);
   console.log(`  stories:  ${result.storiesPath}`);
   if (result.diagnostics.warnings.length > 0 && !verbose) {
-    console.log(`  warnings: ${result.diagnostics.warnings.length} (run \`tide generate --verbose\`)`);
+    console.log(
+      `  warnings: ${result.diagnostics.warnings.length} (run \`tide generate --verbose\`)`,
+    );
   }
 }
 

@@ -127,7 +127,9 @@ export function VisualPanel({
   } else if (entry?.changed) {
     status = {
       kind: "fail",
-      text: entry.sizeMismatch ? "Size mismatch" : `${entry.pixelsChanged.toLocaleString()} px changed`,
+      text: entry.sizeMismatch
+        ? "Size mismatch"
+        : `${entry.pixelsChanged.toLocaleString()} px changed`,
     };
   } else if (entry && !entry.changed) status = { kind: "pass", text: "Matches baseline" };
 
@@ -169,7 +171,11 @@ export function VisualPanel({
             >
               {running ? <Spinner /> : <RunIcon />}
             </IconButton>
-            <IconButton label="Update baseline to current" onClick={onUpdateBaseline} disabled={running}>
+            <IconButton
+              label="Update baseline to current"
+              onClick={onUpdateBaseline}
+              disabled={running}
+            >
               <CameraIcon />
             </IconButton>
             {status && (
@@ -188,7 +194,9 @@ export function VisualPanel({
             {(["screenshot", ...LAYER_ORDER] as VisualLayerKey[]).map((k) => (
               <StatusBadge key={k} kind={layerKind(k, summary)}>
                 {LAYER_LABELS[k]}
-                {k !== "screenshot" && summary.layers[k].count > 0 ? ` ${summary.layers[k].count}` : ""}
+                {k !== "screenshot" && summary.layers[k].count > 0
+                  ? ` ${summary.layers[k].count}`
+                  : ""}
               </StatusBadge>
             ))}
           </div>
@@ -196,9 +204,9 @@ export function VisualPanel({
       ) : hasBaseline && entry && !running && !error ? (
         <div className="bb-visual__verdict" data-kind="legacy">
           <p className="bb-visual__verdict-text">
-            Pixel-only result — this baseline predates multi-layer snapshots, so only the
-            screenshot can be compared. Use the <strong>camera button</strong> to update the baseline
-            and unlock Styles, DOM, Layout &amp; A11y diffs.
+            Pixel-only result — this baseline predates multi-layer snapshots, so only the screenshot
+            can be compared. Use the <strong>camera button</strong> to update the baseline and
+            unlock Styles, DOM, Layout &amp; A11y diffs.
           </p>
         </div>
       ) : null}
@@ -218,7 +226,12 @@ export function VisualPanel({
         {activeLayer === "screenshot" ? (
           <>
             <div className="bb-visual__toolbar">
-              <Tabs items={modes} value={activeMode} onChange={setMode} ariaLabel="Comparison view" />
+              <Tabs
+                items={modes}
+                value={activeMode}
+                onChange={setMode}
+                ariaLabel="Comparison view"
+              />
               <span className="bb-visual__meta">
                 {dims ? `${dims.w}×${dims.h}px` : "—"}
                 {pctChanged !== null && (
@@ -353,7 +366,10 @@ function VisualCanvas({
           />
         </a>
       ) : (
-        <div className="bb-visual__canvas bb-visual__canvas--empty" data-solo={solo ? "true" : undefined}>
+        <div
+          className="bb-visual__canvas bb-visual__canvas--empty"
+          data-solo={solo ? "true" : undefined}
+        >
           {errored ? "Image unavailable — run again to regenerate" : emptyText}
         </div>
       )}

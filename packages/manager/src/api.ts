@@ -48,7 +48,12 @@ export type PropSchema =
   | { type: "string"; required?: boolean; description?: string }
   | { type: "number"; required?: boolean; description?: string }
   | { type: "union"; values: string[]; required?: boolean; description?: string }
-  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean; description?: string }
+  | {
+      type: "object";
+      properties: Record<string, PropSchema>;
+      required?: boolean;
+      description?: string;
+    }
   | { type: "callback"; required?: boolean; description?: string }
   | { type: "unknown"; required?: boolean; description?: string };
 
@@ -277,9 +282,7 @@ export async function fetchVisualReport(): Promise<VisualReport> {
   }
 }
 
-export async function fetchVisualDiffDetail(
-  componentId: string,
-): Promise<VisualDiffDetail | null> {
+export async function fetchVisualDiffDetail(componentId: string): Promise<VisualDiffDetail | null> {
   try {
     const encoded = componentId.split("/").map(encodeURIComponent).join("/");
     const res = await fetch(`/__tide/reports/${encoded}-diff.json`, { cache: "no-store" });

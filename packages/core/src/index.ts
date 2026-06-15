@@ -92,7 +92,12 @@ export type PropSchema =
   | { type: "string"; required?: boolean; description?: string }
   | { type: "number"; required?: boolean; description?: string }
   | { type: "union"; values: string[]; required?: boolean; description?: string }
-  | { type: "object"; properties: Record<string, PropSchema>; required?: boolean; description?: string }
+  | {
+      type: "object";
+      properties: Record<string, PropSchema>;
+      required?: boolean;
+      description?: string;
+    }
   | { type: "callback"; required?: boolean; description?: string }
   | { type: "unknown"; required?: boolean; description?: string };
 

@@ -1,12 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  Node,
-  Project,
-  type InterfaceDeclaration,
-  type SourceFile,
-  type TypeNode,
-} from "ts-morph";
+import { Node, Project, type InterfaceDeclaration, type SourceFile, type TypeNode } from "ts-morph";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts"];
 
@@ -91,7 +85,8 @@ export class ProjectTypeResolver {
           const resolved = this.resolveLocalImport(fromAbsPath, specifier);
           if (resolved) {
             const alias = this.findTypeAlias(resolved, typeName);
-            if (alias) return this.resolveTypeReference(alias, resolved.path, depth + 1) ?? alias;
+            if (alias)
+              return this.resolveTypeReference(alias, resolved.getFilePath(), depth + 1) ?? alias;
             const iface = this.findInterface(resolved, typeName);
             if (iface) return iface;
           }
