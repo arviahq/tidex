@@ -91,15 +91,29 @@ export type PropSchema =
   | { type: "boolean"; required?: boolean; description?: string }
   | { type: "string"; required?: boolean; description?: string }
   | { type: "number"; required?: boolean; description?: string }
-  | { type: "union"; values: string[]; required?: boolean; description?: string }
+  | {
+      type: "union";
+      values: string[];
+      /** Underlying literal kind, so controls coerce the chosen option back. */
+      valueType?: "string" | "number" | "boolean";
+      required?: boolean;
+      description?: string;
+    }
   | {
       type: "object";
       properties: Record<string, PropSchema>;
       required?: boolean;
       description?: string;
     }
+  | { type: "array"; element?: PropSchema; required?: boolean; description?: string }
   | { type: "callback"; required?: boolean; description?: string }
-  | { type: "unknown"; required?: boolean; description?: string };
+  | {
+      type: "unknown";
+      required?: boolean;
+      description?: string;
+      /** The source type text Tide couldn't resolve (e.g. an imported type). */
+      typeText?: string;
+    };
 
 export type PropsMap = Record<string, Record<string, PropSchema>>;
 
@@ -291,6 +305,16 @@ function defaultStringValue(propName?: string): string {
   return "Example";
 }
 
+/** Coerce a union option (always stored as a string) back to its literal kind. */
+export function coerceUnionValue(
+  value: string,
+  valueType?: "string" | "number" | "boolean",
+): string | number | boolean {
+  if (valueType === "number") return Number(value);
+  if (valueType === "boolean") return value === "true";
+  return value;
+}
+
 export function defaultArgsForProp(schema: PropSchema, propName?: string): unknown {
   switch (schema.type) {
     case "boolean":
@@ -300,7 +324,9 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
     case "number":
       return 0;
     case "union":
-      return schema.values[0] ?? "";
+      return schema.values.length > 0 ? coerceUnionValue(schema.values[0]!, schema.valueType) : "";
+    case "array":
+      return [];
     case "object": {
       const obj: Record<string, unknown> = {};
       for (const [key, prop] of Object.entries(schema.properties)) {

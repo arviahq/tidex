@@ -40,24 +40,18 @@ export interface ScanReport {
   duplicateNames: Array<{ name: string; ids: string[]; paths: string[] }>;
   filesWithNoComponents: string[];
   componentsWithNoProps: string[];
-  componentsWithUnknownProps: Array<{ id: string; name: string; unknownCount: number }>;
+  componentsWithUnknownProps: Array<{
+    id: string;
+    name: string;
+    unknownCount: number;
+    props: Array<{ name: string; typeText?: string }>;
+  }>;
 }
 
-export type PropSchema =
-  | { type: "boolean"; required?: boolean; description?: string }
-  | { type: "string"; required?: boolean; description?: string }
-  | { type: "number"; required?: boolean; description?: string }
-  | { type: "union"; values: string[]; required?: boolean; description?: string }
-  | {
-      type: "object";
-      properties: Record<string, PropSchema>;
-      required?: boolean;
-      description?: string;
-    }
-  | { type: "callback"; required?: boolean; description?: string }
-  | { type: "unknown"; required?: boolean; description?: string };
-
-export type PropsMap = Record<string, Record<string, PropSchema>>;
+// Re-export the canonical prop schema types from core so the manager never
+// drifts from the scanner's output.
+import type { PropSchema, PropsMap } from "@tide/core";
+export type { PropSchema, PropsMap };
 
 function tideArtifactPath(kind: string, componentId: string, ext: string): string {
   const segments = componentId.split("/").map(encodeURIComponent).join("/");

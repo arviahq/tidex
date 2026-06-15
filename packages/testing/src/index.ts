@@ -29,6 +29,8 @@ export interface A11yTestOptions {
   root: string;
   previewUrl: string;
   manifest: Manifest;
+  /** Reports per-component progress as `(done, total, label)`. */
+  onProgress?: (done: number, total: number, label?: string) => void;
 }
 
 export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport> {
@@ -42,8 +44,11 @@ export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport
   const page = await browser.newPage();
   const report: A11yReport = {};
 
-  for (const component of options.manifest.components) {
+  const components = options.manifest.components;
+  for (let i = 0; i < components.length; i++) {
+    const component = components[i]!;
     const componentId = getComponentId(component);
+    options.onProgress?.(i, components.length, component.name);
     const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}`;
     await page.goto(url, { waitUntil: "networkidle" });
     await page.waitForTimeout(300);
@@ -60,6 +65,7 @@ export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport
       passes: results.passes.length,
     };
   }
+  options.onProgress?.(components.length, components.length);
 
   await browser.close();
 

@@ -22,6 +22,8 @@ function propTypeLabel(schema: PropSchema): string {
       return schema.values.join(" | ");
     case "object":
       return "object";
+    case "array":
+      return schema.element ? `${propTypeLabel(schema.element)}[]` : "array";
     default:
       return schema.type;
   }

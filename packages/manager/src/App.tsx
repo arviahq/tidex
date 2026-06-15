@@ -26,6 +26,7 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { Tabs } from "./components/Tabs";
 import { SidebarTree } from "./components/SidebarTree";
 import { CommandPalette } from "./components/CommandPalette";
+import { ScanDiagnostics } from "./components/ScanDiagnostics";
 import {
   PREVIEW_URL,
   PREVIEW_MESSAGE,
@@ -681,13 +682,7 @@ export function App() {
         <SidebarSplitter isResizing={sidebar.isResizing} onPointerDown={sidebar.onPointerDown} />
 
         <div className="bb-layout__main">
-          {scanReport.data?.warnings?.length ? (
-            <div className="bb-layout__scan-warnings" role="status">
-              {scanReport.data.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
-            </div>
-          ) : null}
+          {scanReport.data ? <ScanDiagnostics report={scanReport.data} /> : null}
           <section className="bb-layout__preview-section">
             {foundationView === null ? (
               <nav className="bb-layout__preview-tabs">

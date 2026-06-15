@@ -21,6 +21,8 @@ export interface InteractionTestOptions {
   root: string;
   previewUrl: string;
   manifest: Manifest;
+  /** Reports per-component progress as `(done, total, label)`. */
+  onProgress?: (done: number, total: number, label?: string) => void;
 }
 
 /**
@@ -39,8 +41,11 @@ export async function runInteractionTests(
   const page = await browser.newPage();
   const report: InteractionReport = {};
 
-  for (const component of options.manifest.components) {
+  const components = options.manifest.components;
+  for (let i = 0; i < components.length; i++) {
+    const component = components[i]!;
     const componentId = getComponentId(component);
+    options.onProgress?.(i, components.length, component.name);
     const testPath = getTestPath(options.root, componentId);
     if (!fs.existsSync(testPath)) continue;
 
@@ -61,6 +66,7 @@ export async function runInteractionTests(
     const ok = steps.length === test.steps.length && steps.every((s) => s.ok);
     report[componentId] = { ok, steps };
   }
+  options.onProgress?.(components.length, components.length);
 
   await browser.close();
 

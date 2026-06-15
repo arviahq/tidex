@@ -1,11 +1,15 @@
-import type { PropSchema } from "@tide/core";
+import { coerceUnionValue, type PropSchema } from "@tide/core";
 
-export type ControlKind = "boolean" | "string" | "number" | "union" | "object";
+export { coerceUnionValue };
+
+export type ControlKind = "boolean" | "string" | "number" | "union" | "object" | "array";
 
 export interface ControlDef {
   name: string;
   kind: ControlKind;
   options?: string[];
+  /** For union controls: the literal kind to coerce a chosen option back to. */
+  valueType?: "string" | "number" | "boolean";
   schema: PropSchema;
 }
 
@@ -20,9 +24,11 @@ export function propToControl(name: string, schema: PropSchema): ControlDef | nu
     case "number":
       return { name, kind: "number", schema };
     case "union":
-      return { name, kind: "union", options: schema.values, schema };
+      return { name, kind: "union", options: schema.values, valueType: schema.valueType, schema };
     case "object":
       return { name, kind: "object", schema };
+    case "array":
+      return { name, kind: "array", schema };
     default:
       return null;
   }
@@ -36,10 +42,10 @@ export function computeVariants(
 
   if (unionProps.length === 0) return [];
 
-  const axes = unionProps.map(([name, schema]) => ({
-    name,
-    values: (schema as { values: string[] }).values,
-  }));
+  const axes = unionProps.map(([name, schema]) => {
+    const u = schema as { values: string[]; valueType?: "string" | "number" | "boolean" };
+    return { name, values: u.values.map((v) => coerceUnionValue(v, u.valueType)) };
+  });
 
   const results: Array<Record<string, unknown>> = [];
 

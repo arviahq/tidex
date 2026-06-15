@@ -36,6 +36,8 @@ export interface VisualTestOptions {
   manifest: Manifest;
   update?: boolean;
   threshold?: number;
+  /** Reports per-component progress as `(done, total, label)`. */
+  onProgress?: (done: number, total: number, label?: string) => void;
 }
 
 export interface VisualComponentTestOptions {
@@ -301,8 +303,11 @@ export async function runVisualTests(options: VisualTestOptions): Promise<Visual
   const report: VisualReport = {};
 
   try {
-    for (const component of options.manifest.components) {
+    const components = options.manifest.components;
+    for (let i = 0; i < components.length; i++) {
+      const component = components[i]!;
       const componentId = getComponentId(component);
+      options.onProgress?.(i, components.length, component.name);
       const entry = await runVisualTestForComponent({
         page,
         root: options.root,
@@ -314,6 +319,7 @@ export async function runVisualTests(options: VisualTestOptions): Promise<Visual
       const { hasBaseline: _hasBaseline, ...reportEntry } = entry;
       report[componentId] = reportEntry;
     }
+    options.onProgress?.(components.length, components.length);
   } finally {
     await context.close();
     await browser.close();

@@ -52,22 +52,27 @@ describe("discoverComponents", () => {
 });
 
 describe("extractProps", () => {
-  it("extracts union and boolean props", () => {
+  it("extracts union and boolean props", async () => {
     const file = path.join(fixtures, "button-with-props.tsx");
     const components = discoverComponents(fixtures, [file]);
-    const props = extractProps(fixtures, components);
+    const props = await extractProps(fixtures, components);
     const id = getComponentId(components[0]!);
     expect(props[id]).toEqual({
-      variant: { type: "union", values: ["primary", "secondary"], required: true },
-      size: { type: "union", values: ["sm", "md", "lg"], required: true },
+      variant: {
+        type: "union",
+        values: ["primary", "secondary"],
+        valueType: "string",
+        required: true,
+      },
+      size: { type: "union", values: ["sm", "md", "lg"], valueType: "string", required: true },
       disabled: { type: "boolean", required: false },
     });
   });
 
-  it("resolves imported prop types within the project", () => {
+  it("resolves imported prop types within the project", async () => {
     const file = path.join(fixtures, "imported-props.tsx");
     const components = discoverComponents(fixtures, [file]);
-    const props = extractProps(fixtures, components);
+    const props = await extractProps(fixtures, components);
     const id = getComponentId(components[0]!);
     expect(props[id]?.label).toEqual({
       type: "string",
@@ -77,6 +82,25 @@ describe("extractProps", () => {
     expect(props[id]?.tone).toEqual({
       type: "union",
       values: ["neutral", "danger"],
+      valueType: "string",
+      required: true,
+    });
+  });
+
+  it("resolves numeric literal unions and array types", async () => {
+    const file = path.join(fixtures, "numeric-array-props.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const props = await extractProps(fixtures, components);
+    const id = getComponentId(components[0]!);
+    expect(props[id]?.columns).toEqual({
+      type: "union",
+      values: ["1", "2", "3", "4"],
+      valueType: "number",
+      required: true,
+    });
+    expect(props[id]?.tags).toEqual({
+      type: "array",
+      element: { type: "string" },
       required: true,
     });
   });

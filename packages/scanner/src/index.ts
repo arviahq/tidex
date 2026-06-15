@@ -32,6 +32,8 @@ export interface GenerateResult {
 
 export interface GenerateOptions {
   verbose?: boolean;
+  /** Reports prop-extraction progress (the slow phase) as `(done, total, label)`. */
+  onProgress?: (done: number, total: number, label?: string) => void;
 }
 
 let warnedFallback = false;
@@ -67,7 +69,7 @@ export async function generateArtifacts(
   const components = discoverComponents(root, files, {
     componentsDir: scan.componentsDir,
   });
-  const props = extractProps(root, components);
+  const props = await extractProps(root, components, options.onProgress);
   const manifest: Manifest = { components };
   const diagnostics = buildScanDiagnostics(files, components, props);
 

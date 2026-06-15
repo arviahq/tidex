@@ -8,6 +8,7 @@ import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
 import { tideVisualPlugin } from "@tide/visual";
 import { generateArtifacts } from "@tide/scanner";
 import { loadConfig } from "./config.js";
+import { startProgress } from "./progress.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -157,7 +158,16 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
 export async function runGenerate(cwd?: string, verbose?: boolean): Promise<void> {
   const root = cwd ?? process.cwd();
   const config = await loadConfig(root);
-  const result = await generateArtifacts(config, { verbose });
+  const progress = startProgress("Analyzing components");
+  let result;
+  try {
+    result = await generateArtifacts(config, {
+      verbose,
+      onProgress: (done, total, label) => progress.update(done, total, label),
+    });
+  } finally {
+    progress.stop();
+  }
   console.log(`Generated ${result.manifest.components.length} components`);
   console.log(`  manifest: ${getTideDir(root)}/manifest.json`);
   console.log(`  props:    ${getTideDir(root)}/props.json`);
@@ -306,6 +316,7 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   await previewServer.listen();
   const port = previewServer.config.server.port;
 
+  const progress = startProgress(update ? "Updating baselines" : "Visual tests");
   try {
     const report = await runVisualTests({
       root,
@@ -313,12 +324,15 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
       manifest,
       update,
       threshold: config.visual?.threshold,
+      onProgress: (done, total, label) => progress.update(done, total, label),
     });
 
+    progress.stop();
     console.log(formatVisualSummary(report));
 
     return hasVisualDiffs(report) ? 1 : 0;
   } finally {
+    progress.stop();
     await previewServer.close();
   }
 }
@@ -365,20 +379,36 @@ export async function runTest(cwd?: string): Promise<number> {
   // Run each suite independently so a failure in one doesn't mask the other.
   let failed = false;
   try {
+    const a11yProgress = startProgress("Accessibility");
     try {
-      const a11yReport = await runA11yTests({ root, previewUrl, manifest });
+      const a11yReport = await runA11yTests({
+        root,
+        previewUrl,
+        manifest,
+        onProgress: (done, total, label) => a11yProgress.update(done, total, label),
+      });
+      a11yProgress.stop();
       console.log(formatA11ySummary(a11yReport));
       if (hasA11yViolations(a11yReport)) failed = true;
     } catch (err) {
+      a11yProgress.stop();
       console.error("Accessibility tests failed to run:", err instanceof Error ? err.message : err);
       failed = true;
     }
 
+    const interactionProgress = startProgress("Interactions");
     try {
-      const interactionReport = await runInteractionTests({ root, previewUrl, manifest });
+      const interactionReport = await runInteractionTests({
+        root,
+        previewUrl,
+        manifest,
+        onProgress: (done, total, label) => interactionProgress.update(done, total, label),
+      });
+      interactionProgress.stop();
       console.log(formatInteractionSummary(interactionReport));
       if (hasInteractionFailures(interactionReport)) failed = true;
     } catch (err) {
+      interactionProgress.stop();
       console.error("Interaction tests failed to run:", err instanceof Error ? err.message : err);
       failed = true;
     }

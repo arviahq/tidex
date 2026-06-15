@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { PropSchema } from "../api";
-import { propToControl, generateJsxSnippet, type ControlDef } from "@tide/react";
+import { propToControl, generateJsxSnippet, coerceUnionValue, type ControlDef } from "@tide/react";
 import { Switch } from "./Switch";
 import { CodeBlock } from "./CodeBlock";
 import "./controls.css";
@@ -46,7 +46,9 @@ export function ControlsPanel({ componentName, props, args, onChange }: Controls
                       type="button"
                       className="bb-controls__segment"
                       data-active={String(args[control.name]) === option ? "true" : undefined}
-                      onClick={() => update(control.name, option)}
+                      onClick={() =>
+                        update(control.name, coerceUnionValue(option, control.valueType))
+                      }
                     >
                       {option}
                     </button>
@@ -66,10 +68,14 @@ export function ControlsPanel({ componentName, props, args, onChange }: Controls
                     update(control.name, event.target.value === "" ? 0 : Number(event.target.value))
                   }
                 />
-              ) : control.kind === "object" ? (
+              ) : control.kind === "object" || control.kind === "array" ? (
                 <textarea
                   className="bb-controls__input bb-controls__textarea"
-                  value={JSON.stringify(args[control.name] ?? {}, null, 2)}
+                  value={JSON.stringify(
+                    args[control.name] ?? (control.kind === "array" ? [] : {}),
+                    null,
+                    2,
+                  )}
                   onChange={(event) => {
                     try {
                       update(control.name, JSON.parse(event.target.value));

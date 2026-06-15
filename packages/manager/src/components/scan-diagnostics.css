@@ -1,0 +1,120 @@
+.bb-diag {
+  border-bottom: 1px solid var(--bb-warning-border);
+  background: var(--bb-warning-surface);
+}
+
+.bb-diag__warning {
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--bb-warning);
+  font-size: 13px;
+}
+
+.bb-diag__card {
+  border-top: 1px solid color-mix(in srgb, var(--bb-warning-border) 60%, transparent);
+}
+.bb-diag__card:first-child {
+  border-top: none;
+}
+
+.bb-diag__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--bb-warning);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.bb-diag__head:hover {
+  background: color-mix(in srgb, var(--bb-warning) 8%, transparent);
+}
+
+.bb-diag__chevron {
+  display: inline-block;
+  transition: transform 120ms ease;
+  font-size: 14px;
+  line-height: 1;
+}
+.bb-diag__chevron[data-open] {
+  transform: rotate(90deg);
+}
+
+.bb-diag__title {
+  font-weight: 600;
+}
+
+.bb-diag__badge {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: var(--bb-radius-sm);
+  background: color-mix(in srgb, var(--bb-warning) 16%, transparent);
+  font-size: 12px;
+}
+
+.bb-diag__body {
+  padding: 0 16px 12px 32px;
+}
+
+.bb-diag__hint {
+  margin: 0 0 10px;
+  max-width: 70ch;
+  color: var(--bb-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.bb-diag__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bb-diag__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface);
+}
+
+.bb-diag__component {
+  font-family: var(--bb-font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bb-text);
+}
+
+.bb-diag__props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bb-diag__prop {
+  padding: 1px 8px;
+  border-radius: var(--bb-radius-sm);
+  background: color-mix(in srgb, var(--bb-warning) 10%, transparent);
+  font-family: var(--bb-font-mono);
+  font-size: 12px;
+}
+
+.bb-diag__prop-name {
+  color: var(--bb-text);
+  font-weight: 600;
+}
+
+.bb-diag__prop-type {
+  color: var(--bb-text-muted);
+}

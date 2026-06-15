@@ -6,7 +6,13 @@ export interface ScanDiagnostics {
   duplicateNames: Array<{ name: string; ids: string[]; paths: string[] }>;
   filesWithNoComponents: string[];
   componentsWithNoProps: string[];
-  componentsWithUnknownProps: Array<{ id: string; name: string; unknownCount: number }>;
+  componentsWithUnknownProps: Array<{
+    id: string;
+    name: string;
+    unknownCount: number;
+    /** The specific props whose types couldn't be resolved. */
+    props: Array<{ name: string; typeText?: string }>;
+  }>;
 }
 
 export function buildScanDiagnostics(
@@ -40,7 +46,7 @@ export function buildScanDiagnostics(
   }
 
   const componentsWithNoProps: string[] = [];
-  const componentsWithUnknownProps: Array<{ id: string; name: string; unknownCount: number }> = [];
+  const componentsWithUnknownProps: ScanDiagnostics["componentsWithUnknownProps"] = [];
 
   for (const component of components) {
     const id = getComponentId(component);
@@ -50,9 +56,22 @@ export function buildScanDiagnostics(
       componentsWithNoProps.push(id);
       continue;
     }
-    const unknownCount = keys.filter((key) => componentProps[key]?.type === "unknown").length;
-    if (unknownCount > 0) {
-      componentsWithUnknownProps.push({ id, name: component.name, unknownCount });
+    const unknown = keys
+      .filter((key) => componentProps[key]?.type === "unknown")
+      .map((key) => {
+        const schema = componentProps[key];
+        return {
+          name: key,
+          typeText: schema && schema.type === "unknown" ? schema.typeText : undefined,
+        };
+      });
+    if (unknown.length > 0) {
+      componentsWithUnknownProps.push({
+        id,
+        name: component.name,
+        unknownCount: unknown.length,
+        props: unknown,
+      });
     }
   }
 
