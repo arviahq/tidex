@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
+import {
+  bindingsToCallbacks,
+  buildDefaultArgs,
+  formatDisplayName,
+  getComponentId,
+} from "@tide/core";
 import type {
   ComponentEntry,
   InteractionBinding,
@@ -76,12 +81,9 @@ const EMPTY_BINDINGS: InteractionBinding[] = [];
  * left action-only. The result is overlaid with the user's saved wiring.
  */
 function bindingsToCallbackMap(bindings: InteractionBinding[]): CallbackMap {
-  const map: CallbackMap = {};
-  for (const b of bindings) {
-    if (b.confidence === "low") continue;
-    map[b.handler] = { updates: b.stateProp, strategy: b.strategy };
-  }
-  return map;
+  // Delegate to the shared core helper so the manager and the preview's
+  // standalone self-wiring never diverge.
+  return bindingsToCallbacks(bindings) as CallbackMap;
 }
 
 function TideLogo() {

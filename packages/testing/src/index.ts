@@ -11,6 +11,14 @@ export {
   type InteractionTestOptions,
 } from "./interactions.js";
 
+export {
+  verifyInteractions,
+  formatVerifySummary,
+  stateArgsFor,
+  type VerifyInteractionsOptions,
+  type VerifyInteractionsResult,
+} from "./verify-interactions.js";
+
 export interface A11yViolation {
   id: string;
   impact: string | null | undefined;

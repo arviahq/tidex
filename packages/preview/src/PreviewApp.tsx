@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
-import type { InteractionStep } from "@tide/core";
+import { bindingsToCallbacks, type BindingsMap, type InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
@@ -59,6 +59,23 @@ class PreviewErrorBoundary extends Component<
 
 function loadStories(): Promise<Record<string, StoryModule>> {
   return import("virtual:tide-stories").then((mod) => mod.stories as Record<string, StoryModule>);
+}
+
+/**
+ * Tide's inferred callback wiring for a story, read straight from
+ * `.tide/bindings.json`. Lets a standalone preview (opened with `?bindings=1`,
+ * e.g. by the headless interaction verifier) be interactive without the manager
+ * — the manager itself always sends the merged wiring via SET_CALLBACKS instead.
+ */
+async function loadInferredCallbacks(storyId: string): Promise<CallbackMap> {
+  try {
+    const res = await fetch("/__tide/bindings.json");
+    if (!res.ok) return {};
+    const map = (await res.json()) as BindingsMap;
+    return bindingsToCallbacks(map[storyId] ?? []) as CallbackMap;
+  } catch {
+    return {};
+  }
 }
 
 type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
@@ -411,6 +428,11 @@ export function PreviewApp() {
         }
       }
       void selectStory(name, initialArgs);
+      // Self-wire Tide's inferred bindings so a directly-opened preview is
+      // interactive (used by the headless interaction verifier).
+      if (params.get("bindings") === "1") {
+        void loadInferredCallbacks(name).then((cb) => setCallbacks(cb));
+      }
       return;
     }
 

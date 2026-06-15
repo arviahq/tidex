@@ -4,13 +4,31 @@ import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 import { createServer, mergeConfig, type ViteDevServer, type PluginOption } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
+import {
+  applyPlugins,
+  tideVitePlugin,
+  getTideDir,
+  getBindingsPath,
+  getPropsPath,
+  type BindingsMap,
+  type PropsMap,
+} from "@tide/core";
 import { tideVisualPlugin } from "@tide/visual";
 import { generateArtifacts } from "@tide/scanner";
 import { loadConfig } from "./config.js";
 import { startProgress } from "./progress.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** Read and parse a JSON artifact, returning null when missing or invalid. */
+function readJson<T>(file: string): T | null {
+  try {
+    if (!fs.existsSync(file)) return null;
+    return JSON.parse(fs.readFileSync(file, "utf-8")) as T;
+  } catch {
+    return null;
+  }
+}
 
 // Walk up from the run directory to the nearest tsconfig.json so we honor the
 // user project's path aliases (e.g. `src/*`) even when tide is run from a
@@ -350,6 +368,8 @@ export async function runTest(cwd?: string): Promise<number> {
     runInteractionTests,
     hasInteractionFailures,
     formatInteractionSummary,
+    verifyInteractions,
+    formatVerifySummary,
   } = await import("@tide/testing");
 
   const previewRoot = path.resolve(__dirname, "../../preview");
@@ -411,6 +431,33 @@ export async function runTest(cwd?: string): Promise<number> {
       interactionProgress.stop();
       console.error("Interaction tests failed to run:", err instanceof Error ? err.message : err);
       failed = true;
+    }
+
+    // Verify inferred interaction bindings and capture their generated states.
+    // Advisory: it tunes binding confidence but never fails the suite.
+    const bindings = readJson<BindingsMap>(getBindingsPath(root)) ?? {};
+    if (Object.keys(bindings).length > 0) {
+      const verifyProgress = startProgress("Verifying interactions");
+      try {
+        const props = readJson<PropsMap>(getPropsPath(root)) ?? {};
+        const { report, bindings: tuned } = await verifyInteractions({
+          root,
+          previewUrl,
+          manifest,
+          bindings,
+          props,
+          onProgress: (done, total, label) => verifyProgress.update(done, total, label),
+        });
+        verifyProgress.stop();
+        fs.writeFileSync(getBindingsPath(root), JSON.stringify(tuned, null, 2));
+        console.log(formatVerifySummary(report));
+      } catch (err) {
+        verifyProgress.stop();
+        console.error(
+          "Interaction verification failed to run:",
+          err instanceof Error ? err.message : err,
+        );
+      }
     }
 
     return failed ? 1 : 0;

@@ -155,6 +155,51 @@ export interface InteractionBinding {
 /** Inferred bindings per component id, written to `.tide/bindings.json`. */
 export type BindingsMap = Record<string, InteractionBinding[]>;
 
+/**
+ * Convert inferred bindings into runtime callback wiring. High/medium confidence
+ * auto-wire; `low` is omitted (left action-only) so the runtime never guesses.
+ * Shared by the manager (live wiring) and the preview (standalone self-wiring)
+ * so the two never drift.
+ */
+export function bindingsToCallbacks(
+  bindings: InteractionBinding[],
+): Record<string, CallbackBinding> {
+  const map: Record<string, CallbackBinding> = {};
+  for (const b of bindings) {
+    if (b.confidence === "low") continue;
+    map[b.handler] = { updates: b.stateProp, strategy: b.strategy };
+  }
+  return map;
+}
+
+/** One binding's runtime-verification outcome (does the wired interaction move state?). */
+export interface BindingVerification {
+  stateProp: string;
+  handler: string;
+  /** `true` confirmed a state change, `false` a no-op, `null` no trigger could be driven. */
+  verified: boolean | null;
+  /** What the verifier did to drive it (e.g. `click checkbox`, `fill textbox`). */
+  trigger?: string;
+  /** Short before→after description of the observed accessible-state change. */
+  delta?: string;
+}
+
+/** A synthesized named state (e.g. `Checked`, `Open`, `Filled`) captured for visual/a11y. */
+export interface GeneratedState {
+  name: string;
+  args: Record<string, unknown>;
+  /** Playwright aria snapshot of the component in this state. */
+  ariaSnapshot?: string;
+}
+
+export interface InteractionVerifyEntry {
+  bindings: BindingVerification[];
+  states: GeneratedState[];
+}
+
+/** Per-component runtime verification + generated states, at `.tide/reports/interactions-verify.json`. */
+export type InteractionVerifyReport = Record<string, InteractionVerifyEntry>;
+
 /** A wired-handler fire reported by the preview (drives the log + controls sync). */
 export interface InteractionRecord {
   handler: string;
@@ -258,6 +303,11 @@ export function getBindingsPath(root: string): string {
 
 export function getReportsDir(root: string): string {
   return path.join(getTideDir(root), "reports");
+}
+
+/** Runtime interaction-verification report (confidence tuning + generated states). */
+export function getVerifyReportPath(root: string): string {
+  return path.join(getReportsDir(root), "interactions-verify.json");
 }
 
 export function getBaselinesDir(root: string): string {
