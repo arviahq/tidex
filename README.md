@@ -80,18 +80,19 @@ pnpm quality:fix   # lint:fix + format:fix
 
 ## Monorepo Packages
 
-| Package         | Description                                            |
-| --------------- | ------------------------------------------------------ |
-| `tide` (cli)    | CLI entry point                                        |
-| `@tide/core`    | Shared types, config, plugin API                       |
-| `@tide/scanner` | Component discovery, prop extraction, story generation |
-| `@tide/manager` | Manager UI                                             |
-| `@tide/preview` | Preview iframe host                                    |
-| `@tide/runtime` | React preview renderer                                 |
-| `@tide/react`   | Control helpers, variant computation                   |
-| `@tide/docs`    | Auto-documentation generator                           |
-| `@tide/visual`  | Visual diff testing (Playwright + pixelmatch)          |
-| `@tide/testing` | Accessibility and interaction testing                  |
+| Package           | Description                                                                  |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `tide` (cli)      | CLI entry point                                                              |
+| `@tide/core`      | Shared types, config, plugin API                                             |
+| `@tide/scanner`   | Component discovery, prop extraction, story generation                       |
+| `@tide/storybook` | Storybook (CSF) ingestion: discovery, codegen, Vite reuse, control hydration |
+| `@tide/manager`   | Manager UI                                                                   |
+| `@tide/preview`   | Preview iframe host                                                          |
+| `@tide/runtime`   | React preview renderer                                                       |
+| `@tide/react`     | Control helpers, variant computation                                         |
+| `@tide/docs`      | Auto-documentation generator                                                 |
+| `@tide/visual`    | Visual diff testing (Playwright + pixelmatch)                                |
+| `@tide/testing`   | Accessibility and interaction testing                                        |
 
 ## Plugin API
 

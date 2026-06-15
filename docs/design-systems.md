@@ -4,6 +4,11 @@ Tide is convention-driven: it scans `.tsx` files, discovers exported React compo
 
 See also: [examples/react-app](../examples/react-app) for a working reference.
 
+> **Already have Storybook?** You don't need this layout to get started. Run `tide dev` in a
+> repo with a `.storybook/` config and Tide auto-detects and ingests your existing `*.stories.*`
+> files at full fidelity (decorators + `preview.*` globals). See
+> [`storybook` in the config reference](config-reference.md#storybook).
+
 ## Recommended layout
 
 ```

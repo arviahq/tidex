@@ -9,7 +9,8 @@ import type {
   PropsMap,
   StepResult,
 } from "@tide/core";
-import { computeVariants } from "@tide/react";
+import { computeVariants, propToControl } from "@tide/react";
+import { STORY_META_MESSAGE, type StoryMetaPayload } from "@tide/storybook/runtime";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
@@ -112,6 +113,11 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
+  // Per-story metadata the preview resolves at runtime via Storybook's
+  // composeStory (real argTypes/args/component name), keyed by story id. For CSF
+  // stories this supersedes the static scan-time guess so Controls/Docs match
+  // Storybook exactly.
+  const [hydrated, setHydrated] = useState<Record<string, StoryMetaPayload>>({});
   const [callbacks, setCallbacks] = useState<CallbackMap>({});
   const [tests, setTests] = useState<Record<string, InteractionTest>>({});
   const [testResults, setTestResults] = useState<StepResult[]>([]);
@@ -211,10 +217,33 @@ export function App() {
 
   const selectedComponent = components.find((c) => getComponentId(c) === selected);
   const defaultOverrides = selected ? config.data?.defaults?.[selected] : undefined;
+  const hydratedSelected = selected ? hydrated[selected] : undefined;
   const componentProps = useMemo(() => {
     if (!selected) return EMPTY_COMPONENT_PROPS;
-    return propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
-  }, [selected, propsMap]);
+    // Runtime-hydrated argTypes (CSF) win over the static scan-time props.
+    return hydratedSelected?.props ?? propsMap[selected] ?? EMPTY_COMPONENT_PROPS;
+  }, [selected, propsMap, hydratedSelected]);
+  // For CSF stories, the JSX/Docs snippet should name the real component, not
+  // the story export (which is the Tide entry's `name`).
+  const displayComponentName = hydratedSelected?.componentName ?? selectedComponent?.name ?? "";
+
+  // A component with no controllable props (none, or all argTypes
+  // disabled/`control: false`) shouldn't show a Props tab at all.
+  const hasControls = useMemo(
+    () =>
+      Object.entries(componentProps).some(([name, schema]) => propToControl(name, schema) !== null),
+    [componentProps],
+  );
+  const panelTabs = useMemo(
+    () => PANEL_TABS.filter((t) => t.id !== "props" || hasControls),
+    [hasControls],
+  );
+
+  useEffect(() => {
+    if (tab === "props" && !hasControls) {
+      setTab(panelTabs[0]?.id ?? "docs");
+    }
+  }, [tab, hasControls, panelTabs]);
 
   const previewTabs = useMemo((): { id: PreviewTab; label: string }[] => {
     const tabs: { id: PreviewTab; label: string }[] = [PREVIEW_TAB_PREVIEW];
@@ -230,15 +259,16 @@ export function App() {
     }
   }, [previewTab, previewTabs]);
 
-  // Reset args to defaults when the *selected component* changes, but preserve
-  // the user's in-progress values when props are merely regenerated for the same
-  // component (e.g. after an edit): keep existing values for props that still
-  // exist, add defaults for newly-added props, and drop removed ones.
+  // Reset args to defaults when the *selected component* changes. Only preserve
+  // existing values once the user has actually edited a control — otherwise
+  // re-running with late-arriving `defaultOverrides` (config loads after the
+  // first render) must apply them, not keep the stale pre-override guess.
+  const userEditedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selected || !propsMap[selected]) return;
     const defaults = buildDefaultArgs(propsMap[selected]!, defaultOverrides);
-    if (prevSelectedRef.current === selected) {
+    if (prevSelectedRef.current === selected && userEditedRef.current) {
       setArgs((prev) => {
         const merged: Record<string, unknown> = {};
         for (const key of Object.keys(defaults)) {
@@ -248,9 +278,29 @@ export function App() {
       });
     } else {
       prevSelectedRef.current = selected;
+      userEditedRef.current = false;
       setArgs(defaults);
     }
   }, [selected, propsMap, defaultOverrides]);
+
+  // When the preview reports a CSF story's real resolved args, adopt them once
+  // per selection (the static defaults above are just a placeholder until the
+  // story loads). Applied once so later user edits aren't clobbered on reload.
+  const hydratedAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selected || !hydratedSelected) return;
+    if (hydratedAppliedRef.current === selected || userEditedRef.current) return;
+    hydratedAppliedRef.current = selected;
+    // Seed every control from the resolved argTypes, then overlay the story's
+    // explicit args. Without the defaults layer, props the story doesn't set
+    // (but the component defaults) would show no value in the controls.
+    const next = { ...buildDefaultArgs(hydratedSelected.props), ...hydratedSelected.args };
+    setArgs(next);
+    // Push straight to the preview: it first rendered with the static
+    // SELECT_STORY guess, so without this the canvas keeps showing the guess
+    // while the controls already show the resolved values.
+    postToPreview(iframeRef.current, { type: PREVIEW_MESSAGE.UPDATE_ARGS, payload: next });
+  }, [selected, hydratedSelected]);
 
   const previewReadyRef = useRef(false);
   const argsRef = useRef(args);
@@ -323,6 +373,13 @@ export function App() {
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      if (event.data?.type === STORY_META_MESSAGE) {
+        const payload = event.data.payload as StoryMetaPayload;
+        if (payload?.storyId) {
+          setHydrated((prev) => ({ ...prev, [payload.storyId]: payload }));
+        }
+        return;
+      }
       if (event.data?.type === PREVIEW_MESSAGE.READY) {
         previewReadyRef.current = true;
         syncPreview();
@@ -729,15 +786,16 @@ export function App() {
 
               <footer className="bb-layout__panel" style={{ height: panel.size }}>
                 <nav className="bb-layout__tabs">
-                  <Tabs items={PANEL_TABS} value={tab} onChange={setTab} ariaLabel="Panel" />
+                  <Tabs items={panelTabs} value={tab} onChange={setTab} ariaLabel="Panel" />
                 </nav>
                 <div className="bb-layout__panel-body">
                   {selected && selectedComponent && tab === "props" && (
                     <ControlsPanel
-                      componentName={selectedComponent.name}
+                      componentName={displayComponentName}
                       props={componentProps}
                       args={args}
                       onChange={(next) => {
+                        userEditedRef.current = true;
                         setArgs(next);
                         sendArgs(next);
                       }}
@@ -745,7 +803,7 @@ export function App() {
                   )}
                   {selected && selectedComponent && tab === "docs" && (
                     <DocsPanel
-                      component={selectedComponent}
+                      component={{ ...selectedComponent, name: displayComponentName }}
                       props={componentProps}
                       args={args}
                       packageName={config.data?.packageName ?? undefined}

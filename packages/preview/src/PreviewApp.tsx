@@ -11,6 +11,11 @@ import React, {
 import { createRoot, type Root } from "react-dom/client";
 import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
 import type { InteractionStep } from "@tide/core";
+import {
+  mapStorybookArgTypes,
+  STORY_META_MESSAGE,
+  type StoryHydration,
+} from "@tide/storybook/runtime";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
@@ -458,6 +463,40 @@ export function PreviewApp() {
       cancelled = true;
     };
   }, [story, wiredArgs, Wrapper]);
+
+  // For CSF stories, report the composed story's *resolved* metadata
+  // (argTypes → control schemas, real args, component name, layout) to the
+  // manager so its Controls/Docs mirror Storybook instead of Tide's static
+  // guess. Keyed on the story id so it fires once per selection, not per arg
+  // edit. `composeStory` is cheap and Vite caches the module import.
+  useEffect(() => {
+    if (!story || !storyName) return;
+    let cancelled = false;
+    void story
+      .load()
+      .then((mod) => {
+        const hydration = (mod as { __tideStory?: StoryHydration }).__tideStory;
+        if (cancelled || !hydration) return;
+        const layout = (hydration.parameters?.layout as string | undefined) ?? null;
+        window.parent.postMessage(
+          {
+            type: STORY_META_MESSAGE,
+            payload: {
+              storyId: storyName,
+              props: mapStorybookArgTypes(hydration.argTypes),
+              args: hydration.args ?? {},
+              componentName: hydration.componentName ?? null,
+              layout,
+            },
+          },
+          "*",
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [story, storyName]);
 
   useEffect(() => {
     return () => {

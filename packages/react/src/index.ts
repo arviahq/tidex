@@ -68,10 +68,20 @@ export function formatVariantLabel(args: Record<string, unknown>): string {
 export function generateJsxSnippet(componentName: string, args: Record<string, unknown>): string {
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(args)) {
-    if (value === undefined || value === "" || value === false) continue;
-    if (typeof value === "boolean") attrs.push(key);
-    else if (typeof value === "number") attrs.push(`${key}={${value}}`);
-    else attrs.push(`${key}="${value}"`);
+    if (value === undefined || value === null || value === "" || value === false) continue;
+    if (typeof value === "boolean") {
+      attrs.push(key);
+    } else if (typeof value === "number") {
+      attrs.push(`${key}={${value}}`);
+    } else if (typeof value === "string") {
+      // Plain strings use the `="..."` form; quote-containing strings fall back
+      // to an expression so the snippet stays valid JSX.
+      attrs.push(value.includes('"') ? `${key}={${JSON.stringify(value)}}` : `${key}="${value}"`);
+    } else {
+      // Arrays/objects (and anything else) render as a JSX expression instead of
+      // the useless `[object Object]` from string coercion.
+      attrs.push(`${key}={${JSON.stringify(value)}}`);
+    }
   }
   const attrStr = attrs.length ? " " + attrs.join(" ") : "";
   return `<${componentName}${attrStr} />`;

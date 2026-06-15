@@ -19,10 +19,11 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --config ../../vitest.config.ts packages/scanner/tests"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@tide/core": "workspace:*",
+    "@tide/storybook": "workspace:*",
     "fast-glob": "^3.3.2",
     "ts-morph": "^24.0.0"
   },

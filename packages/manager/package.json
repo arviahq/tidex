@@ -17,6 +17,7 @@
     "@tide/core": "workspace:*",
     "@tide/docs": "workspace:*",
     "@tide/react": "workspace:*",
+    "@tide/storybook": "workspace:*",
     "highlight.js": "^11.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

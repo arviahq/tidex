@@ -2,11 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
-import { createServer, mergeConfig, type ViteDevServer, type PluginOption } from "vite";
+import { createServer, mergeConfig, type PluginOption, type ViteDevServer } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { applyPlugins, tideVitePlugin, getTideDir } from "@tide/core";
+import { applyPlugins, tideVitePlugin, getTideDir, type TideConfig } from "@tide/core";
 import { tideVisualPlugin } from "@tide/visual";
 import { generateArtifacts } from "@tide/scanner";
+import {
+  hasStorybook,
+  locateStorybook,
+  resolveStorybookOptions,
+  storybookPreviewVite,
+} from "@tide/storybook";
 import { loadConfig } from "./config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,6 +35,11 @@ function findProjectRoot(cwd: string): string {
 // resolve. `loose` keeps unresolved specifiers from hard-failing the server.
 function userPathsPlugin(projectRoot: string): PluginOption {
   return tsconfigPaths({ root: projectRoot, loose: true });
+}
+
+/** Whether Storybook (CSF) ingestion is active for this project. */
+function storybookEnabled(config: TideConfig): boolean {
+  return resolveStorybookOptions(config).enabled;
 }
 
 export interface DevServerOptions {
@@ -103,7 +114,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
           dedupe: ["react", "react-dom"],
         },
       },
-      config.preview?.vite ?? {},
+      await storybookPreviewVite(config, projectRoot),
     ),
   );
 
@@ -116,12 +127,26 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   console.log(`\n  Tide Manager:  http://localhost:${managerPort}`);
   console.log(`  Tide Preview:  http://localhost:${previewPort}\n`);
 
+  // Re-scan when stories or the Storybook config change, too, so CSF edits
+  // (new stories, changed args, decorators, preview globals) regenerate.
+  const storybookWatch: string[] = [];
+  if (storybookEnabled(config)) {
+    const sb = locateStorybook(cwd, {
+      configDir: config.storybook?.configDir,
+      stories: config.storybook?.stories,
+    });
+    storybookWatch.push(...sb.storyGlobs.map((g) => path.join(cwd, g)));
+    const configDir = config.storybook?.configDir ?? ".storybook";
+    storybookWatch.push(path.join(cwd, configDir));
+  }
+
   const watcher = chokidar.watch(
     [
       ...config.scan.include.map((p) => path.join(cwd, p)),
       path.join(cwd, "tide.config.ts"),
       path.join(cwd, "tide.config.js"),
       path.join(cwd, "tide.config.mjs"),
+      ...storybookWatch,
       ...(config.tokens
         ? [path.isAbsolute(config.tokens) ? config.tokens : path.join(cwd, config.tokens)]
         : []),
@@ -272,6 +297,11 @@ export default function TideWrapper({ children }: { children: ReactNode }) {
   console.log("  1. Add components under src/components/");
   console.log("  2. Run tide generate && tide dev");
   console.log("  See docs/design-systems.md for folder structure guidance.");
+  if (hasStorybook(root)) {
+    console.log("");
+    console.log("Detected a Storybook — Tide will ingest your *.stories.* files automatically.");
+    console.log("  Disable with `storybook: { enabled: false }` in tide.config.ts.");
+  }
 }
 
 export async function runVisual(cwd?: string, update?: boolean): Promise<number> {
@@ -300,7 +330,7 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
         define: { __TIDE_ROOT__: JSON.stringify(root) },
         plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
       },
-      config.preview?.vite ?? {},
+      await storybookPreviewVite(config, projectRoot),
     ),
   );
   await previewServer.listen();
@@ -355,7 +385,7 @@ export async function runTest(cwd?: string): Promise<number> {
         define: { __TIDE_ROOT__: JSON.stringify(root) },
         plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
       },
-      config.preview?.vite ?? {},
+      await storybookPreviewVite(config, projectRoot),
     ),
   );
   await previewServer.listen();

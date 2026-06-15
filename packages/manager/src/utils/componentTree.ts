@@ -81,6 +81,55 @@ export function buildComponentTree(entries: ComponentEntry[]): ComponentTreeNode
   return sortTree(root);
 }
 
+/** A top-level sidebar section, e.g. Storybook roots like `Components` / `Next`. */
+export type ComponentSection = {
+  key: string;
+  label: string;
+  nodes: ComponentTreeNode[];
+};
+
+/**
+ * Group components into sections by their top-level folder (the first id
+ * segment) — mirroring Storybook's root sections. Top-level components with no
+ * folder fall under a default "Components" section. Sections merge
+ * case-insensitively so inconsistent title casing ("Components" vs
+ * "components") doesn't split into two headers.
+ */
+export function buildComponentSections(entries: ComponentEntry[]): ComponentSection[] {
+  const tree = buildComponentTree(entries);
+  const folders = new Map<string, ComponentSection>();
+  const loose: ComponentTreeNode[] = [];
+
+  for (const node of tree) {
+    if (node.kind === "folder") {
+      const key = node.label.toLowerCase();
+      const existing = folders.get(key);
+      if (existing) existing.nodes.push(...node.children);
+      else folders.set(key, { key, label: node.label, nodes: [...node.children] });
+    } else {
+      loose.push(node);
+    }
+  }
+
+  const sections = [...folders.values()]
+    .map((s) => ({ ...s, nodes: sortTree(s.nodes) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  if (loose.length > 0) {
+    sections.push({ key: "__components", label: "Components", nodes: sortTree(loose) });
+  }
+  return sections;
+}
+
+/** Total component leaves under a set of nodes (for a section's count badge). */
+export function countLeaves(nodes: ComponentTreeNode[]): number {
+  let total = 0;
+  for (const node of nodes) {
+    if (node.kind === "component") total += 1;
+    else total += countLeaves(node.children);
+  }
+  return total;
+}
+
 export function collectFolderIds(nodes: ComponentTreeNode[]): string[] {
   const ids: string[] = [];
   for (const node of nodes) {

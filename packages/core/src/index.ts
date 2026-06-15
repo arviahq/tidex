@@ -28,6 +28,40 @@ export interface TideConfig {
    *   svgr). Tide already provides React, so add only the extra plugins.
    */
   preview?: { wrapper?: string; vite?: InlineConfig };
+  /**
+   * Ingest an existing Storybook. When a project has a `.storybook/` config (or
+   * any `*.stories.*` files), Tide reads each Component Story Format (CSF) story
+   * and surfaces it alongside (or instead of) its convention-scanned components.
+   * Stories render at full fidelity via Storybook's portable-stories
+   * `composeStory`, so meta/story/global decorators and `.storybook/preview`
+   * globals all apply.
+   * - `enabled`: force on/off. Unset = auto-detect (`.storybook/main.*` or any
+   *   `*.stories.*` present).
+   * - `configDir`: Storybook config directory (default `.storybook`).
+   * - `stories`: override the story globs (relative to the project root). When
+   *   unset, Tide reads them from `<configDir>/main.*`, falling back to
+   *   `**\/*.stories.@(tsx|ts|jsx|js)`.
+   */
+  storybook?: {
+    enabled?: boolean;
+    configDir?: string;
+    stories?: string[];
+    /**
+     * When a Storybook is ingested, also run Tide's convention `.tsx` scan and
+     * show those components alongside the stories. Default `false` — a Storybook
+     * project's sidebar mirrors Storybook (stories only), avoiding duplicate
+     * entries for every component that also has a story.
+     */
+    scan?: boolean;
+    /**
+     * Reuse the project's own `vite.config.*` plugins (e.g. vanilla-extract,
+     * svgr) in Tide's preview/visual/test servers, so stories render with the
+     * same build pipeline Storybook uses. Default `true` when a Storybook is
+     * detected. Build-only/conflicting plugins (dts, the React plugin Tide
+     * already provides) are filtered out. Set `false` to opt out.
+     */
+    viteConfig?: boolean;
+  };
 }
 
 /**
@@ -71,6 +105,16 @@ export interface ComponentEntry {
   exportName: string;
   title: string;
   isDefault?: boolean;
+  /**
+   * How this entry was discovered. `"scan"` (default/omitted) = a convention
+   * component parsed from a `.tsx` file. `"csf"` = one named story from a
+   * Storybook CSF file; `storyExport`/`storyFile` drive `composeStory` codegen.
+   */
+  source?: "scan" | "csf";
+  /** CSF only: the story's named export (e.g. `Primary`). */
+  storyExport?: string;
+  /** CSF only: project-relative path to the `*.stories.*` file. */
+  storyFile?: string;
 }
 
 /** Resolve the stable component id; falls back to `name` for older manifests. */
@@ -81,6 +125,26 @@ export function getComponentId(entry: Pick<ComponentEntry, "id" | "name">): stri
 export function isValidComponentId(id: string): boolean {
   if (!id || id.includes("..")) return false;
   return /^[A-Za-z0-9_./-]+$/.test(id);
+}
+
+/**
+ * Turn an arbitrary label (e.g. a Storybook `title` plus a story name) into a
+ * component id that satisfies {@link isValidComponentId}: collapse whitespace
+ * and any other unsupported character to `-`, keep slashes as folder
+ * separators, and trim stray separators. `"Forms/Primary Button" + "On Hover"`
+ * → `"Forms/Primary-Button/On-Hover"`.
+ */
+export function sanitizeComponentId(raw: string): string {
+  return raw
+    .split("/")
+    .map((seg) =>
+      seg
+        .trim()
+        .replace(/[^A-Za-z0-9_.-]+/g, "-")
+        .replace(/^-+|-+$/g, ""),
+    )
+    .filter(Boolean)
+    .join("/");
 }
 
 export interface Manifest {

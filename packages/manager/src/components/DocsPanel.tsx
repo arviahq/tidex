@@ -220,18 +220,25 @@ function CopyButton({ value, compact }: { value: string; compact?: boolean }) {
 }
 
 function formatImportLine(component: ComponentEntry, packageName?: string): string {
+  // For a CSF story, the usage import should reference the *component*, not the
+  // story export. `component.name` is the resolved component name and the module
+  // is the story file minus its `.stories` suffix (components conventionally sit
+  // beside their stories with the same base name).
+  const isCsf = component.source === "csf";
+
   if (packageName) {
-    if (component.isDefault) {
+    if (component.isDefault && !isCsf) {
       return `import ${component.name} from "${packageName}";`;
     }
-    return `import { ${component.exportName} } from "${packageName}";`;
+    return `import { ${isCsf ? component.name : component.exportName} } from "${packageName}";`;
   }
 
-  const path = component.path.replace(/^src\//, "./").replace(/\.tsx?$/, "");
+  let path = component.path.replace(/^src\//, "./").replace(/\.tsx?$/, "");
+  if (isCsf) path = path.replace(/\.stories$/, "");
 
-  if (component.isDefault) {
+  if (component.isDefault && !isCsf) {
     return `import ${component.exportName} from "${path}";`;
   }
 
-  return `import { ${component.exportName} } from "${path}";`;
+  return `import { ${isCsf ? component.name : component.exportName} } from "${path}";`;
 }
