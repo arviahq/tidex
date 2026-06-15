@@ -38,7 +38,9 @@ import {
   runVisualTest,
   updateVisualBaseline,
   fetchVisualReport,
+  fetchVisualDiffDetail,
   type CallbackMap,
+  type VisualDiffDetail,
 } from "./api";
 import "./components/layout.css";
 
@@ -116,6 +118,7 @@ export function App() {
   const [testRunning, setTestRunning] = useState(false);
   const [visualRunning, setVisualRunning] = useState(false);
   const [visualEntry, setVisualEntry] = useState<VisualPanelEntry | null>(null);
+  const [visualDiffDetail, setVisualDiffDetail] = useState<VisualDiffDetail | null>(null);
   const [visualHasBaseline, setVisualHasBaseline] = useState(false);
   const [visualImageVersion, setVisualImageVersion] = useState(0);
   const [visualError, setVisualError] = useState<string | null>(null);
@@ -370,6 +373,7 @@ export function App() {
     setTestResults([]);
     setTestRunning(false);
     setVisualEntry(null);
+    setVisualDiffDetail(null);
   }, [selected]);
 
   // Load visual baseline status and report entry when component changes.
@@ -385,8 +389,16 @@ export function App() {
       ]);
       if (cancelled) return;
       setVisualHasBaseline(hasBaseline);
-      setVisualEntry(report[selected] ?? null);
+      const reportEntry = report[selected] ?? null;
+      setVisualEntry(reportEntry);
       setVisualImageVersion((v) => v + 1);
+      // Load the per-layer detail when the stored report has a multi-layer summary.
+      if (reportEntry?.summary) {
+        const detail = await fetchVisualDiffDetail(selected);
+        if (!cancelled) setVisualDiffDetail(detail);
+      } else {
+        setVisualDiffDetail(null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -460,6 +472,12 @@ export function App() {
       if (result.entry) setVisualEntry(result.entry);
       if (result.hasBaseline !== undefined) setVisualHasBaseline(result.hasBaseline);
       setVisualImageVersion((v) => v + 1);
+      // The compact summary arrives in the response; lazily fetch the full detail.
+      if (result.entry?.summary) {
+        setVisualDiffDetail(await fetchVisualDiffDetail(selected));
+      } else {
+        setVisualDiffDetail(null);
+      }
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -481,6 +499,7 @@ export function App() {
       if (result.entry) setVisualEntry(result.entry);
       setVisualHasBaseline(result.hasBaseline ?? true);
       setVisualImageVersion((v) => v + 1);
+      setVisualDiffDetail(null);
       setVisualNotice("Baseline updated");
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : String(err));
@@ -731,6 +750,7 @@ export function App() {
                       theme={previewTheme}
                       hasBaseline={visualHasBaseline}
                       entry={visualEntry}
+                      diffDetail={visualDiffDetail}
                       running={visualRunning}
                       error={visualError}
                       notice={visualNotice}

@@ -183,6 +183,16 @@ export function getBaselinesDir(root: string): string {
   return path.join(getTideDir(root), "baselines");
 }
 
+/** Committed multi-layer snapshot stored alongside the baseline PNG. */
+export function getBaselineSnapshotPath(root: string, componentId: string): string {
+  return path.join(getBaselinesDir(root), `${componentId}.snapshot.json`);
+}
+
+/** Gitignored current-run snapshot stored alongside the current PNG. */
+export function getCurrentSnapshotPath(root: string, componentId: string): string {
+  return path.join(getReportsDir(root), `${componentId}-current.snapshot.json`);
+}
+
 export function getTestsDir(root: string): string {
   return path.join(getTideDir(root), "tests");
 }

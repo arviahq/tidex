@@ -154,12 +154,92 @@ export async function saveInteractions(component: string, callbacks: CallbackMap
   if (!res.ok) throw new Error(`Failed to save interactions (${res.status})`);
 }
 
+export type VisualLayerKey = "screenshot" | "styles" | "dom" | "layout" | "a11y";
+export type VisualClassification = "identical" | "semantic" | "pixel-noise";
+
+export interface VisualLayerSummary {
+  changed: boolean;
+  count: number;
+}
+
+export interface VisualDiffSummary {
+  layers: Record<VisualLayerKey, VisualLayerSummary>;
+  semanticChanged: boolean;
+  classification: VisualClassification;
+  verdict: string;
+}
+
+export interface DomAttrChange {
+  name: string;
+  from?: string;
+  to?: string;
+}
+export interface DomNodeChange {
+  key: string;
+  tag: string;
+  label?: string;
+  attrs?: DomAttrChange[];
+  classes?: { added: string[]; removed: string[] };
+  text?: { from?: string; to?: string };
+}
+export interface DomDiff {
+  added: { key: string; tag: string }[];
+  removed: { key: string; tag: string }[];
+  moved: { fromKey: string; toKey: string; tag: string }[];
+  changed: DomNodeChange[];
+}
+export interface StylePropChange {
+  prop: string;
+  from: string;
+  to: string;
+  isColor: boolean;
+}
+export interface StyleNodeChange {
+  nodeKey: string;
+  label?: string;
+  props: StylePropChange[];
+}
+export interface StyleDiff {
+  nodes: StyleNodeChange[];
+  totalProps: number;
+}
+export interface LayoutNodeChange {
+  nodeKey: string;
+  label?: string;
+  dx: number;
+  dy: number;
+  dw: number;
+  dh: number;
+  phrase: string;
+}
+export interface LayoutDiff {
+  nodes: LayoutNodeChange[];
+  tolerancePx: number;
+}
+export interface A11yChange {
+  kind: "added" | "removed";
+  line: string;
+}
+export interface A11yDiff {
+  changes: A11yChange[];
+}
+export interface VisualDiffDetail {
+  storyId: string;
+  summary: VisualDiffSummary;
+  dom: DomDiff;
+  styles: StyleDiff;
+  layout: LayoutDiff;
+  a11y: A11yDiff;
+}
+
 export interface VisualReportEntry {
   changed: boolean;
   pixelsChanged: number;
   diffPath?: string;
   currentPath?: string;
   sizeMismatch?: boolean;
+  snapshotPath?: string;
+  summary?: VisualDiffSummary;
 }
 
 export type VisualReport = Record<string, VisualReportEntry>;
@@ -194,6 +274,19 @@ export async function fetchVisualReport(): Promise<VisualReport> {
     return res.json();
   } catch {
     return {};
+  }
+}
+
+export async function fetchVisualDiffDetail(
+  componentId: string,
+): Promise<VisualDiffDetail | null> {
+  try {
+    const encoded = componentId.split("/").map(encodeURIComponent).join("/");
+    const res = await fetch(`/__tide/reports/${encoded}-diff.json`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as VisualDiffDetail;
+  } catch {
+    return null;
   }
 }
 
