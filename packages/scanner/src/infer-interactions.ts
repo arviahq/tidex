@@ -132,26 +132,53 @@ function destructuredParamNames(fn: AstNode): { destructured: Set<string>; props
   return { destructured };
 }
 
-/** Infer the extraction strategy from the first argument passed to a handler call. */
+/** Conventional event-parameter names — a forwarded one stays ambiguous. */
+const EVENT_PARAM_NAMES = new Set(["e", "ev", "evt", "event"]);
+
+/**
+ * Infer the extraction strategy from the first argument passed to a handler
+ * call. Returns `undefined` when the argument is ambiguous (a forwarded event
+ * param) so the naming convention's guess stands; returns a concrete strategy
+ * for anything that is plainly an event read, a toggle, a constant, or a value.
+ */
 function strategyFromArg(arg: AstNode | undefined): ExtractStrategy | undefined {
   if (!arg) return undefined;
+  if (arg.type === "Identifier") {
+    // `onChange(e)` forwards the whole event — leave the convention's
+    // event-value/checked guess in place. Any other identifier (`onChange(next)`)
+    // holds a value the component already computed, so it's a first-arg.
+    const name = (str(arg, "name") ?? "").toLowerCase();
+    return EVENT_PARAM_NAMES.has(name) ? undefined : "first-arg";
+  }
   if (arg.type === "MemberExpression") {
     const prop = str(child(arg, "property"), "name");
     const objProp = str(child(child(arg, "object"), "property"), "name");
     if (objProp === "target" && prop === "value") return "event-value";
     if (objProp === "target" && prop === "checked") return "event-checked";
+    return "first-arg";
   }
   if (arg.type === "UnaryExpression" && str(arg, "operator") === "!") return "toggle";
   if (arg.type === "Literal") {
     if (arg.value === true) return "constant-true";
     if (arg.value === false) return "constant-false";
+    return "first-arg";
   }
+  // CallExpression (`Number(e.target.value)`), BinaryExpression (`value + 1`),
+  // ConditionalExpression, etc. all resolve to a concrete value.
   return "first-arg";
 }
 
-/** Map handler name → strategy observed at its call sites inside the component body. */
-function staticStrategies(file: ParsedFile, name: string): Map<string, ExtractStrategy> {
-  const out = new Map<string, ExtractStrategy>();
+/**
+ * Map handler name → strategy observed at its call sites inside the component
+ * body. A handler is recorded even when its argument is ambiguous (value
+ * `undefined`) — the call site still confirms the handler↔prop relationship; a
+ * later concrete observation upgrades the ambiguous one.
+ */
+function staticStrategies(
+  file: ParsedFile,
+  name: string,
+): Map<string, ExtractStrategy | undefined> {
+  const out = new Map<string, ExtractStrategy | undefined>();
   const fn = findComponentFn(file, name);
   if (!fn) return out;
   const { destructured, propsVar } = destructuredParamNames(fn);
@@ -170,7 +197,9 @@ function staticStrategies(file: ParsedFile, name: string): Map<string, ExtractSt
     }
     if (!handler || !/^on[A-Z]/.test(handler)) return;
     const strategy = strategyFromArg(children(node, "arguments")[0]);
-    if (strategy && !out.has(handler)) out.set(handler, strategy);
+    if (!out.has(handler) || (out.get(handler) === undefined && strategy !== undefined)) {
+      out.set(handler, strategy);
+    }
   });
 
   return out;
@@ -191,19 +220,19 @@ export function inferComponentBindings(
 
   const observed = file
     ? staticStrategies(file, componentName)
-    : new Map<string, ExtractStrategy>();
+    : new Map<string, ExtractStrategy | undefined>();
   const bindings: InteractionBinding[] = [];
 
   for (const handler of handlers) {
     const binding = conventionBinding(handler, stateProps);
     if (!binding) continue;
-    const seen = observed.get(handler);
-    if (seen) {
-      // A concrete observation (toggle / event-* / constant) refines the
-      // convention; a bare `first-arg` (e.g. the component forwards the whole
-      // event) only confirms — it must not downgrade a richer convention
-      // strategy like event-value/set/object.
-      if (seen !== "first-arg" || binding.strategy === "first-arg") binding.strategy = seen;
+    if (observed.has(handler)) {
+      // The call site confirms the handler↔prop relationship (source: static,
+      // promote medium→high). A concrete observed strategy refines the
+      // convention's guess; an ambiguous one (a forwarded event param) leaves
+      // the convention's event-value/checked strategy in place.
+      const seen = observed.get(handler);
+      if (seen) binding.strategy = seen;
       binding.source = "static";
       if (binding.confidence === "medium") binding.confidence = "high";
     }
