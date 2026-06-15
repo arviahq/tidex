@@ -2,7 +2,15 @@ import { coerceUnionValue, type PropSchema } from "@tide/core";
 
 export { coerceUnionValue };
 
-export type ControlKind = "boolean" | "string" | "number" | "union" | "object" | "array";
+export type ControlKind =
+  | "boolean"
+  | "string"
+  | "number"
+  | "union"
+  | "object"
+  | "array"
+  | "date"
+  | "set";
 
 export interface ControlDef {
   name: string;
@@ -29,6 +37,10 @@ export function propToControl(name: string, schema: PropSchema): ControlDef | nu
       return { name, kind: "object", schema };
     case "array":
       return { name, kind: "array", schema };
+    case "date":
+      return { name, kind: "date", schema };
+    case "set":
+      return { name, kind: "set", schema };
     default:
       return null;
   }
@@ -75,7 +87,11 @@ export function generateJsxSnippet(componentName: string, args: Record<string, u
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(args)) {
     if (value === undefined || value === null || value === "" || value === false) continue;
-    if (typeof value === "boolean") {
+    if (value instanceof Date) {
+      attrs.push(`${key}={new Date(${JSON.stringify(value.toISOString())})}`);
+    } else if (value instanceof Set) {
+      attrs.push(`${key}={new Set(${JSON.stringify([...value])})}`);
+    } else if (typeof value === "boolean") {
       attrs.push(key);
     } else if (typeof value === "number") {
       attrs.push(`${key}={${value}}`);

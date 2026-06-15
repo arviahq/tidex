@@ -170,6 +170,14 @@ function schemaFromTypeNode(
           element: arg ? schemaFromTypeNode(arg, file, resolver, depth + 1) : undefined,
         };
       }
+      if (name === "Date") return { type: "date" };
+      if (name === "Set" || name === "ReadonlySet") {
+        const arg = children(child(typeNode, "typeArguments"), "params")[0];
+        return {
+          type: "set",
+          element: arg ? schemaFromTypeNode(arg, file, resolver, depth + 1) : undefined,
+        };
+      }
       const resolved = resolver.resolveTypeReference(typeNode, file, depth);
       if (resolved) {
         return resolved.kind === "interface"

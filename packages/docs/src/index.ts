@@ -24,6 +24,10 @@ function propTypeLabel(schema: PropSchema): string {
       return "object";
     case "array":
       return schema.element ? `${propTypeLabel(schema.element)}[]` : "array";
+    case "date":
+      return "Date";
+    case "set":
+      return schema.element ? `Set<${propTypeLabel(schema.element)}>` : "Set";
     default:
       return schema.type;
   }

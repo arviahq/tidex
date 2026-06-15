@@ -106,6 +106,8 @@ export type PropSchema =
       description?: string;
     }
   | { type: "array"; element?: PropSchema; required?: boolean; description?: string }
+  | { type: "date"; required?: boolean; description?: string }
+  | { type: "set"; element?: PropSchema; required?: boolean; description?: string }
   | { type: "callback"; required?: boolean; description?: string }
   | {
       type: "unknown";
@@ -327,6 +329,10 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
       return schema.values.length > 0 ? coerceUnionValue(schema.values[0]!, schema.valueType) : "";
     case "array":
       return [];
+    case "date":
+      return new Date();
+    case "set":
+      return new Set();
     case "object": {
       const obj: Record<string, unknown> = {};
       for (const [key, prop] of Object.entries(schema.properties)) {

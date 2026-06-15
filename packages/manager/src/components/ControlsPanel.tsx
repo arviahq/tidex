@@ -12,6 +12,19 @@ interface ControlsPanelProps {
   onChange: (args: Record<string, unknown>) => void;
 }
 
+/** A date control's value as a `YYYY-MM-DD` string for `<input type="date">`. */
+function toIsoDate(value: unknown): string {
+  const date = value instanceof Date ? value : value ? new Date(value as string) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : "";
+}
+
+/** Coerce a set control's value to a Set for editing. */
+function toSet(value: unknown): Set<unknown> {
+  if (value instanceof Set) return value;
+  if (Array.isArray(value)) return new Set(value);
+  return new Set();
+}
+
 export function ControlsPanel({ componentName, props, args, onChange }: ControlsPanelProps) {
   const controls: ControlDef[] = useMemo(
     () =>
@@ -67,6 +80,30 @@ export function ControlsPanel({ componentName, props, args, onChange }: Controls
                   onChange={(event) =>
                     update(control.name, event.target.value === "" ? 0 : Number(event.target.value))
                   }
+                />
+              ) : control.kind === "date" ? (
+                <input
+                  type="date"
+                  className="bb-controls__input bb-controls__input--text"
+                  value={toIsoDate(args[control.name])}
+                  // Keep the value a real Date — postMessage's structured clone
+                  // preserves it, so the component receives a Date, not a string.
+                  onChange={(event) =>
+                    update(control.name, event.target.value ? new Date(event.target.value) : null)
+                  }
+                />
+              ) : control.kind === "set" ? (
+                <textarea
+                  className="bb-controls__input bb-controls__textarea"
+                  value={JSON.stringify([...toSet(args[control.name])], null, 2)}
+                  onChange={(event) => {
+                    try {
+                      const parsed = JSON.parse(event.target.value);
+                      if (Array.isArray(parsed)) update(control.name, new Set(parsed));
+                    } catch {
+                      // ignore invalid JSON while typing
+                    }
+                  }}
                 />
               ) : control.kind === "object" || control.kind === "array" ? (
                 <textarea

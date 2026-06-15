@@ -104,4 +104,17 @@ describe("extractProps", () => {
       required: true,
     });
   });
+
+  it("resolves Date and Set types", async () => {
+    const file = path.join(fixtures, "date-set-props.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const props = await extractProps(fixtures, components);
+    const id = getComponentId(components[0]!);
+    expect(props[id]?.when).toEqual({ type: "date", required: true });
+    expect(props[id]?.tags).toEqual({
+      type: "set",
+      element: { type: "string" },
+      required: true,
+    });
+  });
 });
