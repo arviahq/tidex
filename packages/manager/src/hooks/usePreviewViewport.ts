@@ -1,12 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-export type ViewportPresetId =
-  | "responsive"
-  | "mobile"
-  | "tablet"
-  | "desktop"
-  | "visual"
-  | "custom";
+export type ViewportPresetId = "responsive" | "mobile" | "tablet" | "desktop" | "visual" | "custom";
 
 export interface ViewportSize {
   width: number;

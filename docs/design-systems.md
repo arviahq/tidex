@@ -169,7 +169,7 @@ export default function TidexWrapper({ children }: { children: ReactNode }) {
 | ---------------------------------- | -------------------- | --------------------------- |
 | `src/components/**/*.tsx`          | Yes                  | Component catalog + stories |
 | `src/theme/`, `src/hooks/` (`.ts`) | No                   | Implementation details      |
-| `src/preview/TidexWrapper.tsx`      | Yes, unless excluded | Provider shell              |
+| `src/preview/TidexWrapper.tsx`     | Yes, unless excluded | Provider shell              |
 | `*.stories.tsx`, `*.test.tsx`      | Auto-excluded        | Legacy stories / tests      |
 | `src/index.ts`                     | No                   | Package exports             |
 

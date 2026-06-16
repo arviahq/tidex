@@ -93,8 +93,8 @@ Dev server ports. Defaults: `6006` / `6007`.
 
 ## Generated artifacts
 
-| File                         | Purpose                                                |
-| ---------------------------- | ------------------------------------------------------ |
+| File                          | Purpose                                                |
+| ----------------------------- | ------------------------------------------------------ |
 | `.tidex/manifest.json`        | Discovered components (with stable `id`)               |
 | `.tidex/props.json`           | Extracted prop schemas, keyed by id                    |
 | `.tidex/stories.generated.ts` | Lazy story modules                                     |

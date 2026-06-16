@@ -47,8 +47,8 @@ export default defineConfig({
           <code>scan.include</code>
         </h3>
         <p>
-          Glob patterns for <code>.tsx</code> files to scan. Default:{" "}
-          <code>["src/**/*.tsx"]</code>. Run Tidex from the package that owns these files.
+          Glob patterns for <code>.tsx</code> files to scan. Default: <code>["src/**/*.tsx"]</code>.
+          Run Tidex from the package that owns these files.
         </p>
 
         <h3>
@@ -82,7 +82,9 @@ export default defineConfig({
         <h3>
           <code>defaults</code>
         </h3>
-        <p>Per-component default arg overrides, keyed by <strong>component id</strong>:</p>
+        <p>
+          Per-component default arg overrides, keyed by <strong>component id</strong>:
+        </p>
         <CodeBlock
           code={`defaults: {
   Button: { variant: "secondary", children: "Click me" },
@@ -180,8 +182,8 @@ export default defineConfig({
           </table>
         </div>
         <p>
-          See the <Link to="/docs/tidex-folder">.tidex folder</Link> guide for the full directory layout,
-          manager-authored files, reports, and git rules.
+          See the <Link to="/docs/tidex-folder">.tidex folder</Link> guide for the full directory
+          layout, manager-authored files, reports, and git rules.
         </p>
       </section>
 

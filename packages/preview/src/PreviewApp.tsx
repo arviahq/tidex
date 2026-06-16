@@ -97,7 +97,9 @@ async function loadInferredCallbacks(storyId: string): Promise<CallbackMap> {
 type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
 
 function loadPreviewWrapper(): Promise<PreviewWrapper> {
-  return import("virtual:tidex-stories").then((mod) => mod.previewWrapper ?? null).catch(() => null);
+  return import("virtual:tidex-stories")
+    .then((mod) => mod.previewWrapper ?? null)
+    .catch(() => null);
 }
 
 // Wrap the rendered component in the user-configured provider/decorator (e.g. a

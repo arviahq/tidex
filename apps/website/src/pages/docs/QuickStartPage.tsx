@@ -113,8 +113,8 @@ pnpm exec tidex dev`}
       <section className="doc-section">
         <h2>Testing setup</h2>
         <p>
-          <code>tidex test</code> and <code>tidex visual</code> require Playwright. Install browsers once
-          per project:
+          <code>tidex test</code> and <code>tidex visual</code> require Playwright. Install browsers
+          once per project:
         </p>
         <CodeBlock code="pnpm exec playwright install chromium" />
       </section>

@@ -86,8 +86,8 @@ export function TidexFolderPage() {
                   <code>props.json</code>
                 </td>
                 <td>
-                  Extracted prop schemas keyed by component id — drives Props panel controls and Docs
-                  tables.
+                  Extracted prop schemas keyed by component id — drives Props panel controls and
+                  Docs tables.
                 </td>
               </tr>
               <tr>
@@ -158,8 +158,8 @@ export function TidexFolderPage() {
                 </td>
                 <td>Tests tab</td>
                 <td>
-                  Interaction test steps (click, type, assert). Run with <code>tidex test</code> in CI
-                  or from the manager.
+                  Interaction test steps (click, type, assert). Run with <code>tidex test</code> in
+                  CI or from the manager.
                 </td>
               </tr>
               <tr>
@@ -187,9 +187,7 @@ export function TidexFolderPage() {
                   <code>baselines/{"{componentId}"}.snapshot.json</code>
                 </td>
                 <td>Visual tab</td>
-                <td>
-                  Multi-layer snapshot metadata stored alongside the baseline PNG.
-                </td>
+                <td>Multi-layer snapshot metadata stored alongside the baseline PNG.</td>
               </tr>
             </tbody>
           </table>
@@ -199,8 +197,8 @@ export function TidexFolderPage() {
       <section className="doc-section">
         <h2>Reports (gitignored)</h2>
         <p>
-          Written by <code>tidex test</code>, <code>tidex visual</code>, and in-manager runs. Safe to
-          delete — they are recreated on the next run.
+          Written by <code>tidex test</code>, <code>tidex visual</code>, and in-manager runs. Safe
+          to delete — they are recreated on the next run.
         </p>
         <div className="doc-table-wrap">
           <table className="doc-table">
@@ -221,7 +219,9 @@ export function TidexFolderPage() {
                 <td>
                   <code>reports/interactions.json</code>
                 </td>
-                <td>Headless interaction test results from <code>tidex test</code>.</td>
+                <td>
+                  Headless interaction test results from <code>tidex test</code>.
+                </td>
               </tr>
               <tr>
                 <td>
@@ -303,13 +303,19 @@ export function TidexFolderPage() {
                 <td>
                   <code>tidex generate</code>
                 </td>
-                <td>All scan artifacts: manifest, props, bindings, stories, scan-report, config snapshot, tokens copy.</td>
+                <td>
+                  All scan artifacts: manifest, props, bindings, stories, scan-report, config
+                  snapshot, tokens copy.
+                </td>
               </tr>
               <tr>
                 <td>
                   <code>tidex dev</code>
                 </td>
-                <td>Re-scans when component source, <code>tidex.config.ts</code>, <code>tokens.json</code>, or the preview wrapper changes.</td>
+                <td>
+                  Re-scans when component source, <code>tidex.config.ts</code>,{" "}
+                  <code>tokens.json</code>, or the preview wrapper changes.
+                </td>
               </tr>
               <tr>
                 <td>Manager Tests tab</td>

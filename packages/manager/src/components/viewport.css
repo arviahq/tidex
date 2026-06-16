@@ -119,8 +119,11 @@
   overflow: auto;
   padding: 16px;
   background-color: var(--bb-surface-muted);
-  background-image:
-    radial-gradient(circle, color-mix(in srgb, var(--bb-border) 55%, transparent) 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--bb-border) 55%, transparent) 1px,
+    transparent 1px
+  );
   background-size: 12px 12px;
 }
 

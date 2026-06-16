@@ -29,7 +29,9 @@ export function MonorepoGuidePage() {
 
       <section className="doc-section">
         <h2>Setup</h2>
-        <p>From <code>packages/ui/</code>:</p>
+        <p>
+          From <code>packages/ui/</code>:
+        </p>
         <CodeBlock
           code={`pnpm exec tidex init        # once
 pnpm exec tidex generate
@@ -67,8 +69,8 @@ export default defineConfig({
         <p>
           Tidex walks up to the nearest <code>tsconfig.json</code> and uses{" "}
           <code>vite-tsconfig-paths</code> in the preview server, so aliases like{" "}
-          <code>@/components/Button</code> work in component source as long as they resolve in
-          your tsconfig.
+          <code>@/components/Button</code> work in component source as long as they resolve in your
+          tsconfig.
         </p>
       </section>
 
@@ -97,7 +99,9 @@ pnpm exec tidex visual`}
 
       <section className="doc-section">
         <h2>Multiple packages with components</h2>
-        <p>Each component library gets its own <code>tidex.config.ts</code> and dev server ports.</p>
+        <p>
+          Each component library gets its own <code>tidex.config.ts</code> and dev server ports.
+        </p>
         <p>Override if running two at once:</p>
         <CodeBlock
           code={`export default defineConfig({

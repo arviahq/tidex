@@ -10,7 +10,10 @@ export function ComponentAuthoringPage() {
     >
       <section className="doc-section">
         <h2>Stable component ids</h2>
-        <p>Each component gets a stable <strong>id</strong> used for stories, tests, baselines, and wiring:</p>
+        <p>
+          Each component gets a stable <strong>id</strong> used for stories, tests, baselines, and
+          wiring:
+        </p>
         <div className="doc-table-wrap">
           <table className="doc-table">
             <thead>
@@ -41,8 +44,8 @@ export function ComponentAuthoringPage() {
         </div>
         <p>
           Ids are <code>{"{folderPath}/{ComponentName}"}</code> relative to{" "}
-          <code>scan.componentsDir</code>. Two components named Button in different folders no longer
-          collide.
+          <code>scan.componentsDir</code>. Two components named Button in different folders no
+          longer collide.
         </p>
       </section>
 
@@ -112,7 +115,9 @@ export function Button({ variant, disabled }: ButtonProps) {
         />
 
         <h3>Local shared types (supported)</h3>
-        <p>Types imported from another file <strong>in the same package</strong> are resolved:</p>
+        <p>
+          Types imported from another file <strong>in the same package</strong> are resolved:
+        </p>
         <CodeBlock
           code={`// types/label.ts
 export type LabelProps = { label: string };
@@ -180,7 +185,8 @@ export type CheckboxProps = LabelProps & { checked: boolean };`}
               </tr>
               <tr>
                 <td>
-                  <code>children</code>, <code>className</code>, <code>style</code>, <code>ref</code>
+                  <code>children</code>, <code>className</code>, <code>style</code>,{" "}
+                  <code>ref</code>
                 </td>
                 <td>Skipped</td>
               </tr>

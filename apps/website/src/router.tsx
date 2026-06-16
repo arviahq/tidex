@@ -1,9 +1,4 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  redirect,
-} from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { RootLayout } from "./layouts/RootLayout";
 import { DocsLayout } from "./layouts/DocsLayout";
 import { HomePage } from "./pages/HomePage";

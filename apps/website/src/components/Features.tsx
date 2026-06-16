@@ -3,7 +3,8 @@ const FEATURES = [
     id: "scan",
     title: "Auto-scan",
     cli: "tidex generate",
-    description: "Drop components in a folder. Tidex discovers props, variants, and defaults automatically.",
+    description:
+      "Drop components in a folder. Tidex discovers props, variants, and defaults automatically.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -65,7 +66,12 @@ const FEATURES = [
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.75" />
         <circle cx="9" cy="11" r="2" stroke="currentColor" strokeWidth="1.75" />
-        <path d="M3 16l4.5-4.5 3 3L15 10l6 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+        <path
+          d="M3 16l4.5-4.5 3 3L15 10l6 6"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },

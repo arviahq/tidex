@@ -6,12 +6,12 @@ Tidex is a next-generation component explorer for React design systems. Scan you
 
 ## Why Tidex
 
-| Storybook | Tidex |
-| --- | --- |
-| Write `.stories.tsx` for every component | Scan `src/**/*.tsx` automatically |
-| Hand-written `argTypes` | Controls inferred from TypeScript types |
-| Addons for a11y, visual, interactions | Tests, Visual, and Interactions tabs built in |
-| Config sprawl (`main.ts`, `preview.ts`, addons) | One `tidex.config.ts` |
+| Storybook                                       | Tidex                                         |
+| ----------------------------------------------- | --------------------------------------------- |
+| Write `.stories.tsx` for every component        | Scan `src/**/*.tsx` automatically             |
+| Hand-written `argTypes`                         | Controls inferred from TypeScript types       |
+| Addons for a11y, visual, interactions           | Tests, Visual, and Interactions tabs built in |
+| Config sprawl (`main.ts`, `preview.ts`, addons) | One `tidex.config.ts`                         |
 
 Your components already know what they are. Tidex listens.
 
@@ -61,17 +61,17 @@ export default defineConfig({
 
 ## CLI
 
-| Command | Description |
-| --- | --- |
-| `tidex init` | Scaffold `tidex.config.ts`, preview wrapper, and `.gitignore` rules |
-| `tidex generate` | Scan components and write `.tidex/` artifacts |
-| `tidex generate --verbose` | Generate with scan diagnostics |
-| `tidex doctor` | Validate setup and scan health |
-| `tidex dev` | Start manager + preview servers |
-| `tidex build` | Generate build artifacts |
-| `tidex test` | Run accessibility and interaction tests |
-| `tidex visual` | Run visual regression tests |
-| `tidex visual --update` | Accept current UI as baseline |
+| Command                    | Description                                                         |
+| -------------------------- | ------------------------------------------------------------------- |
+| `tidex init`               | Scaffold `tidex.config.ts`, preview wrapper, and `.gitignore` rules |
+| `tidex generate`           | Scan components and write `.tidex/` artifacts                       |
+| `tidex generate --verbose` | Generate with scan diagnostics                                      |
+| `tidex doctor`             | Validate setup and scan health                                      |
+| `tidex dev`                | Start manager + preview servers                                     |
+| `tidex build`              | Generate build artifacts                                            |
+| `tidex test`               | Run accessibility and interaction tests                             |
+| `tidex visual`             | Run visual regression tests                                         |
+| `tidex visual --update`    | Accept current UI as baseline                                       |
 
 ## Manager
 
@@ -110,15 +110,15 @@ pnpm exec tidex visual --update  # refresh baselines
 
 `tidex generate` writes scan artifacts to `.tidex/` at the package root:
 
-| File | Purpose |
-| --- | --- |
-| `manifest.json` | Discovered components with stable ids |
-| `props.json` | Extracted prop schemas |
-| `bindings.json` | Inferred callback → state wiring |
-| `stories.generated.ts` | Lazy story modules for preview |
-| `scan-report.json` | Scan warnings and diagnostics |
-| `config.json` | Snapshot of config options |
-| `tokens.json` | Copy of your design tokens file |
+| File                   | Purpose                               |
+| ---------------------- | ------------------------------------- |
+| `manifest.json`        | Discovered components with stable ids |
+| `props.json`           | Extracted prop schemas                |
+| `bindings.json`        | Inferred callback → state wiring      |
+| `stories.generated.ts` | Lazy story modules for preview        |
+| `scan-report.json`     | Scan warnings and diagnostics         |
+| `config.json`          | Snapshot of config options            |
+| `tokens.json`          | Copy of your design tokens file       |
 
 Manager-authored files: `tests/`, `interactions/`, `baselines/`. Run output lands in `reports/`. See the [website docs](#documentation) or run `pnpm website:dev` for the full breakdown.
 
@@ -161,18 +161,18 @@ export default defineConfig({
 
 ## Packages
 
-| Package | Description |
-| --- | --- |
-| `tidex` (cli) | CLI entry point |
-| `@tidex/core` | Shared types, config, plugin API |
+| Package          | Description                                            |
+| ---------------- | ------------------------------------------------------ |
+| `tidex` (cli)    | CLI entry point                                        |
+| `@tidex/core`    | Shared types, config, plugin API                       |
 | `@tidex/scanner` | Component discovery, prop extraction, story generation |
-| `@tidex/manager` | Manager UI |
-| `@tidex/preview` | Preview iframe host |
-| `@tidex/runtime` | React preview renderer |
-| `@tidex/react` | Control helpers, variant computation |
-| `@tidex/docs` | Auto-documentation generator |
-| `@tidex/visual` | Visual diff testing (Playwright + pixelmatch) |
-| `@tidex/testing` | Accessibility and interaction testing |
+| `@tidex/manager` | Manager UI                                             |
+| `@tidex/preview` | Preview iframe host                                    |
+| `@tidex/runtime` | React preview renderer                                 |
+| `@tidex/react`   | Control helpers, variant computation                   |
+| `@tidex/docs`    | Auto-documentation generator                           |
+| `@tidex/visual`  | Visual diff testing (Playwright + pixelmatch)          |
+| `@tidex/testing` | Accessibility and interaction testing                  |
 
 ## Developing Tidex
 

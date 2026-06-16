@@ -13,7 +13,12 @@ const DEMO_COMPONENTS: DemoComponent[] = [
     group: "Inputs",
     name: "Button",
     props: [
-      { label: "variant", type: "select", value: "primary", options: ["primary", "secondary", "ghost"] },
+      {
+        label: "variant",
+        type: "select",
+        value: "primary",
+        options: ["primary", "secondary", "ghost"],
+      },
       { label: "children", type: "text", value: "Get started" },
     ],
   },
@@ -22,7 +27,12 @@ const DEMO_COMPONENTS: DemoComponent[] = [
     group: "Data",
     name: "Badge",
     props: [
-      { label: "variant", type: "select", value: "success", options: ["success", "warning", "danger"] },
+      {
+        label: "variant",
+        type: "select",
+        value: "success",
+        options: ["success", "warning", "danger"],
+      },
       { label: "children", type: "text", value: "Live" },
     ],
   },

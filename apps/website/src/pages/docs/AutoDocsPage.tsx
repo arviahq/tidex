@@ -11,9 +11,9 @@ export function AutoDocsPage() {
       <section className="doc-section">
         <h2>Docs panel</h2>
         <p>
-          Select any component in the manager and open the <strong>Docs</strong> tab. Tidex generates
-          documentation on the fly from your source — prop schemas, TSDoc descriptions, import paths,
-          and a live usage snippet reflecting the current control values.
+          Select any component in the manager and open the <strong>Docs</strong> tab. Tidex
+          generates documentation on the fly from your source — prop schemas, TSDoc descriptions,
+          import paths, and a live usage snippet reflecting the current control values.
         </p>
         <p>No separate doc files, no MDX stories, no maintain-a-second-source-of-truth.</p>
       </section>
@@ -86,7 +86,9 @@ export function AutoDocsPage() {
 
       <section className="doc-section">
         <h2>Union and complex types</h2>
-        <p>Union props render as a list of allowed values in the Docs panel. Unresolved types from</p>
+        <p>
+          Union props render as a list of allowed values in the Docs panel. Unresolved types from
+        </p>
         <p>
           <code>node_modules</code> appear as <code>unknown</code> and are omitted from the prop
           table — keep prop types local for the best documentation experience.

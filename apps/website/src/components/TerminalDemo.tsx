@@ -47,7 +47,9 @@ export function TerminalDemo() {
             <span className={`terminal__prompt${line.success ? " terminal__prompt--success" : ""}`}>
               {line.prompt}
             </span>
-            <span className={line.success ? "terminal__success" : "terminal__cmd"}>{line.text}</span>
+            <span className={line.success ? "terminal__success" : "terminal__cmd"}>
+              {line.text}
+            </span>
           </div>
         ))}
         {visibleLines < COMMANDS.length && (
