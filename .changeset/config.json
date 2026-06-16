@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.2/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@tidex/core",
+      "@tidex/scanner",
+      "@tidex/runtime",
+      "@tidex/testing",
+      "@tidex/visual",
+      "@tidex/docs",
+      "@tidex/react",
+      "tidex"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["website", "react-app", "@tidex/manager", "@tidex/preview"]
+}
