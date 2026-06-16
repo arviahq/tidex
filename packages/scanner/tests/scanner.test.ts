@@ -130,6 +130,14 @@ describe("extractProps", () => {
       required: true,
       meta: { min: 0, max: 100, step: 5, slider: true },
     });
+    // Tags inline after a description are still captured, and the description
+    // is cleaned of the tag text.
+    expect(p.fill).toEqual({
+      type: "number",
+      required: true,
+      description: "Fill level.",
+      meta: { min: 0, max: 100, slider: true },
+    });
     expect(p.accent).toEqual({ type: "string", required: true, meta: { format: "color" } });
     expect(p.bio).toEqual({
       type: "string",

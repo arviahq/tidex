@@ -14,7 +14,7 @@ describe("generateJsxSnippet", () => {
     );
   });
 
-  it("renders arrays and objects as JSX expressions, not [object Object]", () => {
+  it("pretty-prints object and array props", () => {
     const out = generateJsxSnippet("Picklist", {
       items: [
         { label: "A", value: "a" },
@@ -22,9 +22,39 @@ describe("generateJsxSnippet", () => {
       ],
     });
     expect(out).toBe(
-      '<Picklist\n  items={[{"label":"A","value":"a"},{"label":"B","value":"b"}]}\n/>',
+      `<Picklist
+  items={[
+    {
+      "label": "A",
+      "value": "a"
+    },
+    {
+      "label": "B",
+      "value": "b"
+    }
+  ]}
+/>`,
     );
     expect(out).not.toContain("[object Object]");
+  });
+
+  it("pretty-prints nested object props", () => {
+    expect(
+      generateJsxSnippet("Banner", {
+        message: "Review the latest updates and confirm your settings.",
+        action: { label: "Monthly revenue", href: "Example" },
+        tone: "info",
+      }),
+    ).toBe(
+      `<Banner
+  message="Review the latest updates and confirm your settings."
+  action={{
+    "label": "Monthly revenue",
+    "href": "Example"
+  }}
+  tone="info"
+/>`,
+    );
   });
 
   it("escapes strings containing double quotes", () => {

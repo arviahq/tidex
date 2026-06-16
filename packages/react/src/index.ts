@@ -201,28 +201,48 @@ export function generateJsxSnippet(componentName: string, args: Record<string, u
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(args)) {
     if (value === undefined || value === null || value === "" || value === false) continue;
-    if (value instanceof Date) {
-      attrs.push(`${key}={new Date(${JSON.stringify(value.toISOString())})}`);
-    } else if (value instanceof Set) {
-      attrs.push(`${key}={new Set(${JSON.stringify([...value])})}`);
-    } else if (value instanceof Map) {
-      attrs.push(`${key}={new Map(${JSON.stringify([...value])})}`);
-    } else if (typeof value === "boolean") {
-      attrs.push(key);
-    } else if (typeof value === "number") {
-      attrs.push(`${key}={${value}}`);
-    } else if (typeof value === "string") {
-      // Plain strings use the `="..."` form; quote-containing strings fall back
-      // to an expression so the snippet stays valid JSX.
-      attrs.push(value.includes('"') ? `${key}={${JSON.stringify(value)}}` : `${key}="${value}"`);
-    } else {
-      // Arrays/objects (and anything else) render as a JSX expression instead of
-      // the useless `[object Object]` from string coercion.
-      attrs.push(`${key}={${JSON.stringify(value)}}`);
-    }
+    attrs.push(formatJsxAttr(key, value));
   }
   if (attrs.length === 0) {
     return `<${componentName} />`;
   }
-  return `<${componentName}\n${attrs.map((attr) => `  ${attr}`).join("\n")}\n/>`;
+  return `<${componentName}\n${attrs.map((attr) => indentAttrLines(attr)).join("\n")}\n/>`;
+}
+
+function indentAttrLines(attr: string): string {
+  return attr
+    .split("\n")
+    .map((line) => `  ${line}`)
+    .join("\n");
+}
+
+function formatJsxAttr(key: string, value: unknown): string {
+  if (value instanceof Date) {
+    return `${key}={new Date(${JSON.stringify(value.toISOString())})}`;
+  }
+  if (value instanceof Set) {
+    return formatJsxExpressionAttr(key, `new Set(${JSON.stringify([...value])})`);
+  }
+  if (value instanceof Map) {
+    return formatJsxExpressionAttr(key, `new Map(${JSON.stringify([...value])})`);
+  }
+  if (typeof value === "boolean") {
+    return key;
+  }
+  if (typeof value === "number") {
+    return `${key}={${value}}`;
+  }
+  if (typeof value === "string") {
+    return value.includes('"') ? `${key}={${JSON.stringify(value)}}` : `${key}="${value}"`;
+  }
+  return formatJsxExpressionAttr(key, JSON.stringify(value, null, 2));
+}
+
+function formatJsxExpressionAttr(key: string, expression: string): string {
+  if (!expression.includes("\n")) {
+    return `${key}={${expression}}`;
+  }
+  const lines = expression.split("\n");
+  const [first, ...rest] = lines;
+  return `${key}={${first}\n${rest.join("\n")}}`;
 }

@@ -110,8 +110,14 @@ export function jsDocDescription(file: ParsedFile, nodeStart: number): string | 
   if (!c || c.type !== "Block") return undefined;
   const lines = c.value
     .split("\n")
-    .map((line) => line.replace(/^\s*\*?\s?/, "").trim())
-    .filter((line) => line && !line.startsWith("@"));
+    .map((line) => line.replace(/^\s*\*?\s?/, ""))
+    // Cut each line at its first `@tag` so inline metadata (`Foo. @min(0)`)
+    // doesn't leak into the description, and pure tag lines drop out entirely.
+    .map((line) => {
+      const tag = /(^|\s)@\w/.exec(line);
+      return (tag ? line.slice(0, tag.index) : line).trim();
+    })
+    .filter(Boolean);
   const desc = lines.join(" ").trim();
   return desc || undefined;
 }
@@ -127,12 +133,12 @@ export function jsDocTags(file: ParsedFile, nodeStart: number): Record<string, s
   const tags: Record<string, string | true> = {};
   for (const raw of c.value.split("\n")) {
     const line = raw.replace(/^\s*\*?\s?/, "").trim();
-    if (!line.startsWith("@")) continue;
     const matches = [...line.matchAll(/@(\w+)(?:\(([^)]*)\))?/g)];
-    // A lone tag with no parens takes the rest of the line as its value
-    // (`@pattern ^\d+$`); multiple tags on a line must use the `@tag(value)`
-    // form so they don't swallow each other.
-    if (matches.length === 1 && matches[0]![2] === undefined) {
+    if (matches.length === 0) continue;
+    // A line that is *only* a lone no-paren tag takes the rest as its value
+    // (`@pattern ^\d+$`). Inline tags after prose, or multiple tags, must use
+    // the `@tag(value)` form so they don't swallow each other or the prose.
+    if (line.startsWith("@") && matches.length === 1 && matches[0]![2] === undefined) {
       const m = matches[0]!;
       const rest = line.slice((m.index ?? 0) + m[0].length).trim();
       tags[m[1]!] = rest !== "" ? rest : true;

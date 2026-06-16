@@ -19,8 +19,13 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  /* Preserve the generator's newlines + indentation, but wrap long attribute
+     values instead of overflowing horizontally. A hanging indent keeps wrapped
+     continuation lines visually under their attribute. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  padding-left: 2ch;
+  text-indent: -2ch;
 }
 
 .hljs-comment,

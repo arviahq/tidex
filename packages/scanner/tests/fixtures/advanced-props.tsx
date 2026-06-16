@@ -8,6 +8,8 @@ type Avatar = { type: "image"; src: string } | { type: "initials"; text: string 
 export interface PanelProps {
   /** @min(0) @max(100) @step(5) @slider */
   opacity: number;
+  /** Fill level. @min(0) @max(100) @slider */
+  fill: number;
   /** @color */
   accent: string;
   /** @multiline @maxLength(280) */
