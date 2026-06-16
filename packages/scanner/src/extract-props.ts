@@ -3,6 +3,7 @@ import {
   getComponentId,
   isCallbackProp,
   shouldSkipProp,
+  type PropMeta,
   type PropSchema,
   type PropsMap,
   type ComponentEntry,
@@ -11,6 +12,7 @@ import {
   child,
   children,
   jsDocDescription,
+  jsDocTags,
   str,
   text,
   type AstNode,
@@ -39,6 +41,36 @@ function memberTypeNode(member: AstNode): AstNode | undefined {
   return child(child(member, "typeAnnotation"), "typeAnnotation");
 }
 
+function numericTag(value: string | true | undefined): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Build {@link PropMeta} from a member's JSDoc tags, or undefined if none apply. */
+function metaFromJsDoc(file: ParsedFile, nodeStart: number): PropMeta | undefined {
+  const tags = jsDocTags(file, nodeStart);
+  const meta: PropMeta = {};
+  if ("min" in tags) meta.min = numericTag(tags.min);
+  if ("max" in tags) meta.max = numericTag(tags.max);
+  if ("step" in tags) meta.step = numericTag(tags.step);
+  if ("slider" in tags) meta.slider = true;
+  if ("minLength" in tags) meta.minLength = numericTag(tags.minLength);
+  if ("maxLength" in tags) meta.maxLength = numericTag(tags.maxLength);
+  if ("pattern" in tags && typeof tags.pattern === "string") meta.pattern = tags.pattern;
+  if ("multiline" in tags) meta.format = "multiline";
+  if ("url" in tags) meta.format = "url";
+  if ("email" in tags) meta.format = "email";
+  if ("password" in tags) meta.format = "password";
+  if ("color" in tags) meta.format = "color";
+  if ("secret" in tags) meta.secret = true;
+  // Drop keys that parsed to undefined (e.g. a malformed `@min`).
+  for (const k of Object.keys(meta) as Array<keyof PropMeta>) {
+    if (meta[k] === undefined) delete meta[k];
+  }
+  return Object.keys(meta).length ? meta : undefined;
+}
+
 function addMember(
   properties: Record<string, PropSchema>,
   member: AstNode,
@@ -61,7 +93,13 @@ function addMember(
   if (shouldSkipProp(name, typeText)) return;
 
   const schema = schemaFromTypeNode(typeNode, file, resolver, depth + 1);
-  properties[name] = { ...schema, required: member.optional !== true, description };
+  const meta = metaFromJsDoc(file, member.start);
+  properties[name] = {
+    ...schema,
+    required: member.optional !== true,
+    description,
+    ...(meta ? { meta } : {}),
+  };
 }
 
 function schemaFromInterface(
@@ -121,6 +159,77 @@ function unionFromTypeNodes(nodes: AstNode[], file: ParsedFile): PropSchema | nu
   return { type: "union", values, valueType };
 }
 
+const DISCRIMINANT_KEYS = ["type", "kind", "variant", "mode"];
+
+/** Resolve a type node to the property members of the object it denotes, if any. */
+function objectMembers(
+  typeNode: AstNode,
+  file: ParsedFile,
+  resolver: ProjectTypeResolver,
+  depth: number,
+): { members: AstNode[]; file: ParsedFile } | null {
+  if (depth > 10) return null;
+  if (typeNode.type === "TSTypeLiteral") return { members: children(typeNode, "members"), file };
+  if (typeNode.type === "TSTypeReference") {
+    const resolved = resolver.resolveTypeReference(typeNode, file, depth);
+    if (resolved?.kind === "interface")
+      return { members: children(child(resolved.node, "body"), "body"), file: resolved.file };
+    if (resolved?.kind === "type")
+      return objectMembers(resolved.node, resolved.file, resolver, depth + 1);
+  }
+  return null;
+}
+
+/** The string-literal value of property `key` among `members`, if it is one. */
+function literalDiscriminant(members: AstNode[], key: string): string | undefined {
+  for (const m of members) {
+    if (m.type !== "TSPropertySignature" || memberName(m) !== key) continue;
+    const t = memberTypeNode(m);
+    if (t?.type === "TSLiteralType") {
+      const lit = child(t, "literal");
+      if (lit && typeof lit.value === "string") return lit.value;
+    }
+    return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Detect a discriminated union of object shapes — every member is an object
+ * with a shared literal property (`type`/`kind`/`variant`/`mode`) that is
+ * distinct across members — and build a `variant` schema for the picker.
+ */
+function variantFromUnion(
+  nodes: AstNode[],
+  file: ParsedFile,
+  resolver: ProjectTypeResolver,
+  depth: number,
+): PropSchema | null {
+  const members = nodes.filter(
+    (n) =>
+      n.type !== "TSUndefinedKeyword" && n.type !== "TSNullKeyword" && n.type !== "TSVoidKeyword",
+  );
+  if (members.length < 2) return null;
+
+  const bodies = members.map((n) => objectMembers(n, file, resolver, depth));
+  if (bodies.some((b) => b === null)) return null;
+
+  for (const key of DISCRIMINANT_KEYS) {
+    const labels = bodies.map((b) => literalDiscriminant(b!.members, key));
+    if (labels.every((l) => typeof l === "string") && new Set(labels).size === labels.length) {
+      return {
+        type: "variant",
+        discriminant: key,
+        variants: members.map((n, i) => ({
+          label: labels[i]!,
+          schema: schemaFromTypeNode(n, file, resolver, depth + 1),
+        })),
+      };
+    }
+  }
+  return null;
+}
+
 function schemaFromTypeNode(
   typeNode: AstNode,
   file: ParsedFile,
@@ -146,8 +255,11 @@ function schemaFromTypeNode(
       return { type: "object", properties };
     }
     case "TSUnionType": {
-      const union = unionFromTypeNodes(children(typeNode, "types"), file);
+      const members = children(typeNode, "types");
+      const union = unionFromTypeNodes(members, file);
       if (union) return union;
+      const variant = variantFromUnion(members, file, resolver, depth);
+      if (variant) return variant;
       break;
     }
     case "TSStringKeyword":
@@ -161,6 +273,23 @@ function schemaFromTypeNode(
         type: "array",
         element: schemaFromTypeNode(child(typeNode, "elementType")!, file, resolver, depth + 1),
       };
+    case "TSTupleType": {
+      const elementNodes = children(typeNode, "elementTypes");
+      const elements: PropSchema[] = [];
+      const labels: string[] = [];
+      let named = false;
+      for (const el of elementNodes) {
+        if (el.type === "TSNamedTupleMember") {
+          named = true;
+          labels.push(str(child(el, "label"), "name") ?? "");
+          elements.push(schemaFromTypeNode(child(el, "elementType")!, file, resolver, depth + 1));
+        } else {
+          labels.push("");
+          elements.push(schemaFromTypeNode(el, file, resolver, depth + 1));
+        }
+      }
+      return { type: "tuple", elements, ...(named ? { labels } : {}) };
+    }
     case "TSTypeReference": {
       const name = str(child(typeNode, "typeName"), "name");
       if (name === "Array" || name === "ReadonlyArray") {
@@ -176,6 +305,22 @@ function schemaFromTypeNode(
         return {
           type: "set",
           element: arg ? schemaFromTypeNode(arg, file, resolver, depth + 1) : undefined,
+        };
+      }
+      if (name === "Map" || name === "ReadonlyMap" || name === "WeakMap") {
+        const params = children(child(typeNode, "typeArguments"), "params");
+        return {
+          type: "map",
+          key: params[0] ? schemaFromTypeNode(params[0], file, resolver, depth + 1) : undefined,
+          value: params[1] ? schemaFromTypeNode(params[1], file, resolver, depth + 1) : undefined,
+        };
+      }
+      if (name === "Record") {
+        const params = children(child(typeNode, "typeArguments"), "params");
+        return {
+          type: "record",
+          key: params[0] ? schemaFromTypeNode(params[0], file, resolver, depth + 1) : undefined,
+          value: params[1] ? schemaFromTypeNode(params[1], file, resolver, depth + 1) : undefined,
         };
       }
       const resolved = resolver.resolveTypeReference(typeNode, file, depth);

@@ -117,4 +117,61 @@ describe("extractProps", () => {
       required: true,
     });
   });
+
+  it("resolves tuples, maps, records, variants, and JSDoc metadata", async () => {
+    const file = path.join(fixtures, "advanced-props.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const props = await extractProps(fixtures, components);
+    const id = getComponentId(components[0]!);
+    const p = props[id]!;
+
+    expect(p.opacity).toEqual({
+      type: "number",
+      required: true,
+      meta: { min: 0, max: 100, step: 5, slider: true },
+    });
+    expect(p.accent).toEqual({ type: "string", required: true, meta: { format: "color" } });
+    expect(p.bio).toEqual({
+      type: "string",
+      required: true,
+      meta: { format: "multiline", maxLength: 280 },
+    });
+
+    expect(p.position).toEqual({
+      type: "tuple",
+      elements: [{ type: "number" }, { type: "number" }],
+      required: true,
+    });
+    expect(p.named).toEqual({
+      type: "tuple",
+      elements: [{ type: "number" }, { type: "number" }],
+      labels: ["x", "y"],
+      required: true,
+    });
+
+    expect(p.theme).toEqual({
+      type: "map",
+      key: { type: "string" },
+      value: { type: "string" },
+      required: true,
+    });
+    expect(p.users).toEqual({
+      type: "record",
+      key: { type: "string" },
+      value: {
+        type: "object",
+        properties: {
+          name: { type: "string", required: true },
+          role: { type: "union", values: ["admin", "editor"], valueType: "string", required: true },
+        },
+      },
+      required: true,
+    });
+
+    expect(p.avatar?.type).toBe("variant");
+    if (p.avatar?.type === "variant") {
+      expect(p.avatar.discriminant).toBe("type");
+      expect(p.avatar.variants.map((v) => v.label)).toEqual(["image", "initials"]);
+    }
+  });
 });
