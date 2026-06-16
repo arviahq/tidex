@@ -1,0 +1,211 @@
+.bb-viewport-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bb-viewport-toolbar__presets {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-background);
+  gap: 0;
+}
+
+.bb-viewport-toolbar__indicator {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  border-radius: 6px;
+  background: var(--bb-surface);
+  box-shadow: var(--bb-shadow-sm);
+  transition:
+    transform 180ms ease,
+    width 180ms ease,
+    opacity 120ms ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bb-viewport-toolbar__indicator[data-visible="true"] {
+  opacity: 1;
+}
+
+.bb-viewport-toolbar__preset {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  color: var(--bb-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.bb-viewport-toolbar__preset:hover {
+  color: var(--bb-text);
+}
+
+.bb-viewport-toolbar__preset[data-active="true"] {
+  color: var(--bb-text);
+}
+
+.bb-viewport-toolbar__preset:focus-visible {
+  outline: 2px solid var(--bb-accent);
+  outline-offset: 1px;
+}
+
+.bb-viewport-toolbar__size-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 8.75rem;
+  flex-shrink: 0;
+}
+
+.bb-viewport-toolbar__size {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--bb-font-mono, ui-monospace, monospace);
+  color: var(--bb-muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.bb-viewport-toolbar__size-slot[aria-hidden="true"] .bb-viewport-toolbar__size {
+  visibility: hidden;
+}
+
+.bb-viewport-toolbar__custom-label {
+  flex-shrink: 0;
+  width: 3.25rem;
+  padding: 1px 0;
+  border-radius: var(--bb-radius-sm);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--bb-accent);
+  background: color-mix(in srgb, var(--bb-accent) 12%, transparent);
+  visibility: hidden;
+}
+
+.bb-viewport-toolbar__custom-label[data-visible="true"] {
+  visibility: visible;
+}
+
+.bb-preview-canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.bb-preview-canvas--fixed {
+  overflow: auto;
+  padding: 16px;
+  background-color: var(--bb-surface-muted);
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--bb-border) 55%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.bb-preview-frame {
+  position: relative;
+  margin: 0 auto;
+  flex-shrink: 0;
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface);
+  box-shadow:
+    0 0 0 1px var(--bb-border),
+    0 8px 24px color-mix(in srgb, var(--bb-text) 8%, transparent);
+}
+
+.bb-preview-frame .bb-layout__preview-frame {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: var(--bb-radius-md);
+}
+
+.bb-preview-handle {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.bb-preview-handle--e {
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.bb-preview-handle--s {
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 8px;
+  cursor: row-resize;
+}
+
+.bb-preview-handle--se {
+  right: -6px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+}
+
+.bb-preview-handle--se::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--bb-muted);
+  border-bottom: 2px solid var(--bb-muted);
+  opacity: 0.7;
+}
+
+body.bb-is-resizing-viewport {
+  user-select: none;
+}
+
+body.bb-is-resizing-viewport * {
+  cursor: inherit !important;
+}
+
+body.bb-is-resizing-viewport[data-viewport-axis="e"] {
+  cursor: col-resize !important;
+}
+
+body.bb-is-resizing-viewport[data-viewport-axis="s"] {
+  cursor: row-resize !important;
+}
+
+body.bb-is-resizing-viewport[data-viewport-axis="se"] {
+  cursor: se-resize !important;
+}
+
+body.bb-is-resizing-viewport iframe {
+  pointer-events: none;
+}

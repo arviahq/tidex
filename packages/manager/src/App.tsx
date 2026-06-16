@@ -20,6 +20,7 @@ import { computeVariants, propToControl } from "@tide/react";
 import { useTideData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
+import { usePreviewViewport } from "./hooks/usePreviewViewport";
 import { ControlsPanel } from "./components/ControlsPanel";
 import { VariantsPanel } from "./components/VariantsPanel";
 import { DocsPanel } from "./components/DocsPanel";
@@ -35,6 +36,8 @@ import {
   DEFAULT_PREVIEW_VIEW,
   type PreviewView,
 } from "./components/PreviewToolbar";
+import { ViewportToolbar } from "./components/ViewportToolbar";
+import { PreviewViewport } from "./components/PreviewViewport";
 import { Tabs } from "./components/Tabs";
 import { SidebarTree } from "./components/SidebarTree";
 import { CommandPalette } from "./components/CommandPalette";
@@ -152,6 +155,7 @@ export function App() {
   const [visualNotice, setVisualNotice] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { theme: previewTheme, toggle: togglePreviewTheme } = usePreviewTheme();
+  const viewport = usePreviewViewport();
   const [previewView, setPreviewView] = useState<PreviewView>(DEFAULT_PREVIEW_VIEW);
 
   const sidebar = useResize({
@@ -778,13 +782,16 @@ export function App() {
                 />
                 <div className="bb-layout__preview-actions">
                   {previewTab === "preview" && components.length > 0 ? (
-                    <PreviewToolbar
-                      view={previewView}
-                      onChange={setPreviewView}
-                      onReload={reloadStory}
-                      onFullscreen={enterFullscreen}
-                      onOpenStandalone={openStandalone}
-                    />
+                    <>
+                      <ViewportToolbar viewport={viewport} />
+                      <PreviewToolbar
+                        view={previewView}
+                        onChange={setPreviewView}
+                        onReload={reloadStory}
+                        onFullscreen={enterFullscreen}
+                        onOpenStandalone={openStandalone}
+                      />
+                    </>
                   ) : null}
                   <ThemeToggle theme={previewTheme} onToggle={togglePreviewTheme} />
                 </div>
@@ -805,18 +812,20 @@ export function App() {
                   No components found. Run <code>tide generate</code>.
                 </p>
               ) : previewTab === "preview" ? (
-                <iframe
-                  ref={iframeRef}
-                  className="bb-layout__preview-frame"
-                  src={PREVIEW_URL}
-                  title="Preview"
-                  onLoad={() => {
-                    previewReadyRef.current = true;
-                    syncPreview();
-                    syncPreviewTheme();
-                    syncPreviewView();
-                  }}
-                />
+                <PreviewViewport viewport={viewport}>
+                  <iframe
+                    ref={iframeRef}
+                    className="bb-layout__preview-frame"
+                    src={PREVIEW_URL}
+                    title="Preview"
+                    onLoad={() => {
+                      previewReadyRef.current = true;
+                      syncPreview();
+                      syncPreviewTheme();
+                      syncPreviewView();
+                    }}
+                  />
+                </PreviewViewport>
               ) : selected && selectedComponent ? (
                 <VariantsPanel
                   storyId={selected}
