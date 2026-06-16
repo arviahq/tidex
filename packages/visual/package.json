@@ -34,5 +34,8 @@
   "peerDependencies": {
     "playwright": ">=1.40.0",
     "vite": ">=5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -13,7 +13,7 @@ export function GetStarted() {
         <div className="cta__commands">
           <div className="cta__command">
             <span className="cta__step">1</span>
-            <code>pnpm add -D tidex</code>
+            <code>pnpm add -D @tidex/cli</code>
           </div>
           <div className="cta__command">
             <span className="cta__step">2</span>

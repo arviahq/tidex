@@ -1,6 +1,16 @@
 {
-  "name": "tidex",
+  "name": "@tidex/cli",
   "version": "0.0.1",
+  "description": "Zero-boilerplate component explorer for React design systems",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arviahq/tidex.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "tidex": "./bin/tidex.js"
   },

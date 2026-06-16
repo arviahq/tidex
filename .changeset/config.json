@@ -11,7 +11,7 @@
       "@tidex/visual",
       "@tidex/docs",
       "@tidex/react",
-      "tidex"
+      "@tidex/cli"
     ]
   ],
   "linked": [],

@@ -11,7 +11,7 @@ export function QuickStartPage() {
       <section className="doc-section">
         <h2>Install</h2>
         <p>Add Tidex to the package that owns your components:</p>
-        <CodeBlock code="pnpm add -D tidex" />
+        <CodeBlock code="pnpm add -D @tidex/cli" />
       </section>
 
       <section className="doc-section">

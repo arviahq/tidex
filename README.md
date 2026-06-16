@@ -20,7 +20,7 @@ Your components already know what they are. Tidex listens.
 Add Tidex to the package that owns your components:
 
 ```bash
-pnpm add -D tidex
+pnpm add -D @tidex/cli
 pnpm exec tidex init
 pnpm exec tidex generate
 pnpm exec tidex dev
@@ -163,7 +163,7 @@ export default defineConfig({
 
 | Package          | Description                                            |
 | ---------------- | ------------------------------------------------------ |
-| `tidex` (cli)    | CLI entry point                                        |
+| `@tidex/cli`     | CLI entry point (`tidex` binary)                       |
 | `@tidex/core`    | Shared types, config, plugin API                       |
 | `@tidex/scanner` | Component discovery, prop extraction, story generation |
 | `@tidex/manager` | Manager UI                                             |

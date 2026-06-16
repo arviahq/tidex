@@ -30,5 +30,8 @@
   },
   "peerDependencies": {
     "playwright": ">=1.40.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
