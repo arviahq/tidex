@@ -10,16 +10,16 @@ export function QuickStartPage() {
     >
       <section className="doc-section">
         <h2>Install</h2>
-        <p>Add Tide to the package that owns your components:</p>
-        <CodeBlock code="pnpm add -D tide" />
+        <p>Add Tidex to the package that owns your components:</p>
+        <CodeBlock code="pnpm add -D tidex" />
       </section>
 
       <section className="doc-section">
         <h2>Initialize</h2>
         <p>
-          Scaffold <code>tide.config.ts</code>, preview wrapper folders, and gitignore rules:
+          Scaffold <code>tidex.config.ts</code>, preview wrapper folders, and gitignore rules:
         </p>
-        <CodeBlock code="pnpm exec tide init" />
+        <CodeBlock code="pnpm exec tidex init" />
       </section>
 
       <section className="doc-section">
@@ -27,8 +27,8 @@ export function QuickStartPage() {
         <p>Scan components, write artifacts, and start the manager + preview servers:</p>
         <CodeBlock
           filename="terminal"
-          code={`pnpm exec tide generate
-pnpm exec tide dev`}
+          code={`pnpm exec tidex generate
+pnpm exec tidex dev`}
         />
         <p>
           Manager runs at <code>http://localhost:6006</code>, preview at{" "}
@@ -38,11 +38,11 @@ pnpm exec tide dev`}
 
       <section className="doc-section">
         <h2>Try the example app</h2>
-        <p>From the Tide monorepo, the React example is ready to go:</p>
+        <p>From the Tidex monorepo, the React example is ready to go:</p>
         <CodeBlock
           code={`cd examples/react-app
-pnpm exec tide generate
-pnpm exec tide dev`}
+pnpm exec tidex generate
+pnpm exec tidex dev`}
         />
       </section>
 
@@ -59,49 +59,49 @@ pnpm exec tide dev`}
             <tbody>
               <tr>
                 <td>
-                  <code>tide init</code>
+                  <code>tidex init</code>
                 </td>
                 <td>Initialize config, scaffold folders, and gitignore</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide generate</code>
+                  <code>tidex generate</code>
                 </td>
                 <td>Scan components and generate artifacts</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide generate --verbose</code>
+                  <code>tidex generate --verbose</code>
                 </td>
                 <td>Generate with scan diagnostics</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide doctor</code>
+                  <code>tidex doctor</code>
                 </td>
                 <td>Validate setup and scan health</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide dev</code>
+                  <code>tidex dev</code>
                 </td>
                 <td>Start manager (6006) + preview (6007)</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide test</code>
+                  <code>tidex test</code>
                 </td>
                 <td>Run accessibility and interaction tests</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide visual</code>
+                  <code>tidex visual</code>
                 </td>
                 <td>Run visual regression tests</td>
               </tr>
               <tr>
                 <td>
-                  <code>tide visual --update</code>
+                  <code>tidex visual --update</code>
                 </td>
                 <td>Refresh visual baselines</td>
               </tr>
@@ -113,7 +113,7 @@ pnpm exec tide dev`}
       <section className="doc-section">
         <h2>Testing setup</h2>
         <p>
-          <code>tide test</code> and <code>tide visual</code> require Playwright. Install browsers once
+          <code>tidex test</code> and <code>tidex visual</code> require Playwright. Install browsers once
           per project:
         </p>
         <CodeBlock code="pnpm exec playwright install chromium" />
@@ -124,18 +124,18 @@ pnpm exec tide dev`}
         <ul>
           <li>
             <Link to="/docs/config-reference">Configuration reference</Link> — every{" "}
-            <code>tide.config.ts</code> option
+            <code>tidex.config.ts</code> option
           </li>
           <li>
             <Link to="/docs/component-authoring">Component authoring</Link> — exports, props, and
             controls
           </li>
           <li>
-            <Link to="/docs/tide-folder">.tide folder</Link> — generated artifacts, baselines,
+            <Link to="/docs/tidex-folder">.tidex folder</Link> — generated artifacts, baselines,
             tests, and git rules
           </li>
           <li>
-            <Link to="/docs/monorepo">Monorepo guide</Link> — running Tide in a workspace package
+            <Link to="/docs/monorepo">Monorepo guide</Link> — running Tidex in a workspace package
           </li>
         </ul>
       </section>

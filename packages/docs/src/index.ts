@@ -1,5 +1,5 @@
-import type { ComponentEntry, PropSchema, PropsMap } from "@tide/core";
-import { generateJsxSnippet } from "@tide/react";
+import type { ComponentEntry, PropSchema, PropsMap } from "@tidex/core";
+import { generateJsxSnippet } from "@tidex/react";
 
 export interface PropDoc {
   name: string;

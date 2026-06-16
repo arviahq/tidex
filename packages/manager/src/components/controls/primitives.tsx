@@ -1,4 +1,4 @@
-import { coerceUnionValue } from "@tide/react";
+import { coerceUnionValue } from "@tidex/react";
 import { Switch } from "../Switch";
 import type { ControlNodeProps } from "./types";
 import { toIsoDate } from "./helpers";

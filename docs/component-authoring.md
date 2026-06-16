@@ -1,6 +1,6 @@
 # Component authoring
 
-How to write components so Tide discovers them, extracts props, and builds controls.
+How to write components so Tidex discovers them, extracts props, and builds controls.
 
 ## Stable component ids
 
@@ -37,10 +37,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(pro
 
 ## Opt out of discovery
 
-Add `@tide-skip` in a JSDoc comment on the export:
+Add `@tidex-skip` in a JSDoc comment on the export:
 
 ```tsx
-/** @tide-skip — internal layout shell, not a catalog component */
+/** @tidex-skip — internal layout shell, not a catalog component */
 export function TideShell({ children }: { children: React.ReactNode }) {
   return <div className="shell">{children}</div>;
 }
@@ -48,7 +48,7 @@ export function TideShell({ children }: { children: React.ReactNode }) {
 
 ## Props naming
 
-Tide looks for, in order:
+Tidex looks for, in order:
 
 1. `{ComponentName}Props` (e.g. `ButtonProps`)
 2. `Props`
@@ -119,7 +119,7 @@ export type AlertProps = {
 
 ## Default args
 
-Tide generates sensible defaults (first union value, heuristic strings for `label`/`title`, etc.).
+Tidex generates sensible defaults (first union value, heuristic strings for `label`/`title`, etc.).
 
 Override per component in config:
 

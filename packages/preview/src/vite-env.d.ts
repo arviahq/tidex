@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
-declare module "virtual:tide-stories" {
+declare module "virtual:tidex-stories" {
   import type { ComponentType, ReactNode } from "react";
-  import type { StoryModule } from "@tide/runtime";
+  import type { StoryModule } from "@tidex/runtime";
   export const stories: Record<string, StoryModule>;
   export const previewWrapper: ComponentType<{ children?: ReactNode }> | null;
 }

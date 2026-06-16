@@ -6,13 +6,13 @@ export function ConfigReferencePage() {
   return (
     <DocPage
       title="Configuration reference"
-      description="All options live in tide.config.ts at the package root where you run Tide commands."
+      description="All options live in tidex.config.ts at the package root where you run Tidex commands."
     >
       <section className="doc-section">
         <h2>Full example</h2>
         <CodeBlock
-          filename="tide.config.ts"
-          code={`import { defineConfig } from "@tide/core";
+          filename="tidex.config.ts"
+          code={`import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   root: process.cwd(),
@@ -27,7 +27,7 @@ export default defineConfig({
   },
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
     vite: {
       plugins: [],
     },
@@ -48,16 +48,16 @@ export default defineConfig({
         </h3>
         <p>
           Glob patterns for <code>.tsx</code> files to scan. Default:{" "}
-          <code>["src/**/*.tsx"]</code>. Run Tide from the package that owns these files.
+          <code>["src/**/*.tsx"]</code>. Run Tidex from the package that owns these files.
         </p>
 
         <h3>
           <code>scan.exclude</code>
         </h3>
         <p>
-          Additional globs excluded from discovery. Tide always excludes <code>*.stories.*</code>,{" "}
+          Additional globs excluded from discovery. Tidex always excludes <code>*.stories.*</code>,{" "}
           <code>*.test.*</code>, <code>*.spec.*</code>, and <code>*.d.ts</code>. Default in{" "}
-          <code>tide init</code>: <code>["**/preview/**"]</code>.
+          <code>tidex init</code>: <code>["**/preview/**"]</code>.
         </p>
 
         <h3>
@@ -94,7 +94,7 @@ export default defineConfig({
           <code>tokens</code>
         </h3>
         <p>
-          Path to a JSON token file, copied to <code>.tide/tokens.json</code> on generate. Shown
+          Path to a JSON token file, copied to <code>.tidex/tokens.json</code> on generate. Shown
           under <strong>Foundations → Tokens</strong>.
         </p>
 
@@ -142,37 +142,37 @@ export default defineConfig({
             <tbody>
               <tr>
                 <td>
-                  <code>.tide/manifest.json</code>
+                  <code>.tidex/manifest.json</code>
                 </td>
                 <td>Discovered components (with stable id)</td>
               </tr>
               <tr>
                 <td>
-                  <code>.tide/props.json</code>
+                  <code>.tidex/props.json</code>
                 </td>
                 <td>Extracted prop schemas, keyed by id</td>
               </tr>
               <tr>
                 <td>
-                  <code>.tide/stories.generated.ts</code>
+                  <code>.tidex/stories.generated.ts</code>
                 </td>
                 <td>Lazy story modules</td>
               </tr>
               <tr>
                 <td>
-                  <code>.tide/config.json</code>
+                  <code>.tidex/config.json</code>
                 </td>
                 <td>Snapshot of packageName, defaults, componentsDir</td>
               </tr>
               <tr>
                 <td>
-                  <code>.tide/scan-report.json</code>
+                  <code>.tidex/scan-report.json</code>
                 </td>
                 <td>Warnings and diagnostics</td>
               </tr>
               <tr>
                 <td>
-                  <code>.tide/tokens.json</code>
+                  <code>.tidex/tokens.json</code>
                 </td>
                 <td>Copy of your tokens file</td>
               </tr>
@@ -180,7 +180,7 @@ export default defineConfig({
           </table>
         </div>
         <p>
-          See the <Link to="/docs/tide-folder">.tide folder</Link> guide for the full directory layout,
+          See the <Link to="/docs/tidex-folder">.tidex folder</Link> guide for the full directory layout,
           manager-authored files, reports, and git rules.
         </p>
       </section>
@@ -188,11 +188,11 @@ export default defineConfig({
       <section className="doc-section">
         <h2>CLI</h2>
         <CodeBlock
-          code={`tide init                  # scaffold config + folders
-tide generate              # scan and write artifacts
-tide generate --verbose    # print diagnostics
-tide doctor                # validate setup
-tide dev                   # start manager + preview`}
+          code={`tidex init                  # scaffold config + folders
+tidex generate              # scan and write artifacts
+tidex generate --verbose    # print diagnostics
+tidex doctor                # validate setup
+tidex dev                   # start manager + preview`}
         />
       </section>
     </DocPage>

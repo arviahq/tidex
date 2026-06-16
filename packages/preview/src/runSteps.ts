@@ -1,6 +1,6 @@
 import { within } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
-import type { InteractionStep, StepResult, StepTarget } from "@tide/core";
+import type { InteractionStep, StepResult, StepTarget } from "@tidex/core";
 
 /** Human-readable description of a target, for result messages. */
 function describe(target: StepTarget): string {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ExtractStrategy, InteractionRecord } from "@tide/core";
+import type { ExtractStrategy, InteractionRecord } from "@tidex/core";
 
 export type { InteractionRecord };
 
@@ -8,7 +8,7 @@ export type { InteractionRecord };
  * it updates (`updates`) and how to extract the next value from the handler's
  * arguments (`strategy`, default `first-arg`). `{}` (no `updates`) means
  * action-only and is wired to a no-op so the component never calls `undefined`.
- * Entries are inferred by Tide and/or authored in the Interactions tab.
+ * Entries are inferred by Tidex and/or authored in the Interactions tab.
  */
 export type CallbackMap = Record<string, { updates?: string; strategy?: ExtractStrategy }>;
 

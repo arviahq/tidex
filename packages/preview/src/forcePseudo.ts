@@ -10,7 +10,7 @@
  */
 export type ForcedStates = { hover: boolean; focus: boolean; active: boolean };
 
-const STYLE_ID = "tide-forced-states";
+const STYLE_ID = "tidex-forced-states";
 
 // Each toggle expands to the pseudo-classes it should pin on.
 const EXPAND: Record<keyof ForcedStates, string[]> = {

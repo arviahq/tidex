@@ -1,6 +1,6 @@
 import { CodeBlock } from "./docs/CodeBlock";
 
-const CONFIG_CODE = `import { defineConfig } from "@tide/core";
+const CONFIG_CODE = `import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -10,7 +10,7 @@ export default defineConfig({
   packageName: "@myorg/ui",
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
   },
   visual: { threshold: 0.1 },
   plugins: [myPlugin],
@@ -22,10 +22,10 @@ export function ConfigExample() {
       <div className="section__inner config__inner">
         <div className="config__copy">
           <p className="section__eyebrow">One config file</p>
-          <h2 className="section__title">Everything in tide.config.ts</h2>
+          <h2 className="section__title">Everything in tidex.config.ts</h2>
           <p className="section__subtitle">
             Scan paths, package name, design tokens, preview wrapper, visual thresholds, and plugins
-            — all in one place. Run <code>tide doctor</code> to validate your setup.
+            — all in one place. Run <code>tidex doctor</code> to validate your setup.
           </p>
           <ul className="config__list">
             <li>Auto-discovers components from globs</li>
@@ -35,7 +35,7 @@ export function ConfigExample() {
           </ul>
         </div>
 
-        <CodeBlock code={CONFIG_CODE} filename="tide.config.ts" />
+        <CodeBlock code={CONFIG_CODE} filename="tidex.config.ts" />
       </div>
     </section>
   );

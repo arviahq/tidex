@@ -1,5 +1,5 @@
-import type { ComponentEntry } from "@tide/core";
-import { formatDisplayName, getComponentId } from "@tide/core";
+import type { ComponentEntry } from "@tidex/core";
+import { formatDisplayName, getComponentId } from "@tidex/core";
 
 export type ComponentTreeFolder = {
   kind: "folder";

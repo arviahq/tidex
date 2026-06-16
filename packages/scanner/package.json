@@ -1,5 +1,5 @@
 {
-  "name": "@tide/scanner",
+  "name": "@tidex/scanner",
   "version": "0.0.1",
   "files": [
     "dist"
@@ -19,10 +19,10 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --config ../../vitest.config.ts packages/scanner/tests"
+    "test": "vitest run --config ../../vitest.config.ts tests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*",
+    "@tidex/core": "workspace:*",
     "fast-glob": "^3.3.2",
     "oxc-parser": "^0.136.0",
     "oxc-resolver": "^11.20.0"

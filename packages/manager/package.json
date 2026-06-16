@@ -1,5 +1,5 @@
 {
-  "name": "@tide/manager",
+  "name": "@tidex/manager",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,9 +14,9 @@
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.91.0",
-    "@tide/core": "workspace:*",
-    "@tide/docs": "workspace:*",
-    "@tide/react": "workspace:*",
+    "@tidex/core": "workspace:*",
+    "@tidex/docs": "workspace:*",
+    "@tidex/react": "workspace:*",
     "highlight.js": "^11.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

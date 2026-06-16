@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getReportsDir, getComponentId, type Manifest } from "@tide/core";
+import { getReportsDir, getComponentId, type Manifest } from "@tidex/core";
 
 export {
   runInteractionTests,

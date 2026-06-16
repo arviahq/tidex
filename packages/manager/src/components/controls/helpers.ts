@@ -1,5 +1,5 @@
 import type { PropSchema } from "../../api";
-import { defaultArgsForProp } from "@tide/core";
+import { defaultArgsForProp } from "@tidex/core";
 
 /** A date control's value as a `YYYY-MM-DD` string for `<input type="date">`. */
 export function toIsoDate(value: unknown): string {

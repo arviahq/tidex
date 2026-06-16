@@ -5,18 +5,18 @@ import { runDoctor } from "./doctor.js";
 
 const program = new Command();
 
-program.name("tide").description("Tide — zero-boilerplate component explorer").version("0.0.1");
+program.name("tidex").description("Tidex — zero-boilerplate component explorer").version("0.0.1");
 
 program
   .command("init")
-  .description("Initialize Tide in the current project")
+  .description("Initialize Tidex in the current project")
   .action(async () => {
     await runInit();
   });
 
 program
   .command("dev")
-  .description("Start the Tide dev server")
+  .description("Start the Tidex dev server")
   .action(async () => {
     await startDevServer();
   });
@@ -31,7 +31,7 @@ program
 
 program
   .command("doctor")
-  .description("Validate Tide setup and scan health")
+  .description("Validate Tidex setup and scan health")
   .action(async () => {
     const result = await runDoctor();
     for (const message of result.messages) {

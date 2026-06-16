@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { TideLogo } from "./TideLogo";
+import { TidexLogo } from "./TidexLogo";
 import { ThemeToggle } from "./ThemeToggle";
 import type { Theme } from "../hooks/useTheme";
 
@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { href: "/#testing", label: "Testing" },
   { href: "/#compare", label: "Compare" },
   { to: "/docs/quick-start", label: "Docs" },
-  { href: "https://github.com/arviahq/tide", label: "GitHub", external: true },
+  { href: "https://github.com/arviahq/tidex", label: "GitHub", external: true },
 ] as const;
 
 export function Header({ theme, onToggleTheme }: HeaderProps) {
@@ -22,9 +22,9 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
       <div className="header__inner">
         <Link to="/" className="header__brand">
           <span className="header__logo" aria-hidden="true">
-            <TideLogo size={16} />
+            <TidexLogo size={16} />
           </span>
-          <span className="header__name">Tide</span>
+          <span className="header__name">Tidex</span>
         </Link>
 
         <nav className="header__nav" aria-label="Main">

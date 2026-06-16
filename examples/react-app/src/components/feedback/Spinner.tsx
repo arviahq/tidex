@@ -32,11 +32,11 @@ export function Spinner({ size, speed, color, label }: SpinnerProps) {
           borderRadius: "50%",
           border: `${Math.max(2, dim / 9)}px solid ${ui.colors.bgSubtle}`,
           borderTopColor: ring,
-          animation: `tide-spin ${Math.max(0.4, speed)}s linear infinite`,
+          animation: `tidex-spin ${Math.max(0.4, speed)}s linear infinite`,
         }}
       />
       {label ? <span style={{ fontSize: 13, color: ui.colors.textMuted }}>{label}</span> : null}
-      <style>{`@keyframes tide-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes tidex-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -6,45 +6,45 @@ import type {
   InteractionRecord,
   InteractionTest,
   InteractionWiring,
-} from "@tide/core";
+} from "@tidex/core";
 
 export type CallbackMap = Record<string, { updates?: string; strategy?: ExtractStrategy }>;
 export type { ExtractStrategy, InteractionBinding, InteractionRecord, BindingsMap };
 
-declare const __TIDE_PREVIEW_URL__: string;
+declare const __TIDEX_PREVIEW_URL__: string;
 
 export const PREVIEW_URL =
-  typeof __TIDE_PREVIEW_URL__ !== "undefined" ? __TIDE_PREVIEW_URL__ : "http://localhost:6007";
+  typeof __TIDEX_PREVIEW_URL__ !== "undefined" ? __TIDEX_PREVIEW_URL__ : "http://localhost:6007";
 
 export const PREVIEW_MESSAGE = {
-  UPDATE_ARGS: "TIDE_UPDATE_ARGS",
-  SELECT_STORY: "TIDE_SELECT_STORY",
-  READY: "TIDE_READY",
-  SET_THEME: "TIDE_SET_THEME",
+  UPDATE_ARGS: "TIDEX_UPDATE_ARGS",
+  SELECT_STORY: "TIDEX_SELECT_STORY",
+  READY: "TIDEX_READY",
+  SET_THEME: "TIDEX_SET_THEME",
   // Variant tiles report their natural content size to the manager (iframe -> parent),
   // which replies with the shared fit bounds so every tile uses one scale factor.
-  CONTENT_SIZE: "TIDE_CONTENT_SIZE",
-  SET_FIT_BOUNDS: "TIDE_SET_FIT_BOUNDS",
+  CONTENT_SIZE: "TIDEX_CONTENT_SIZE",
+  SET_FIT_BOUNDS: "TIDEX_SET_FIT_BOUNDS",
   // Interaction tests: manager -> preview to run a list of steps; preview -> manager
   // with the result of each step (live) and a final done signal.
-  RUN_TEST: "TIDE_RUN_TEST",
-  TEST_STEP: "TIDE_TEST_STEP",
-  TEST_DONE: "TIDE_TEST_DONE",
+  RUN_TEST: "TIDEX_RUN_TEST",
+  TEST_STEP: "TIDEX_TEST_STEP",
+  TEST_DONE: "TIDEX_TEST_DONE",
   // manager -> preview: explicit callback→state wiring for the current story.
-  SET_CALLBACKS: "TIDE_SET_CALLBACKS",
-  INTERACTION: "TIDE_INTERACTION",
+  SET_CALLBACKS: "TIDEX_SET_CALLBACKS",
+  INTERACTION: "TIDEX_INTERACTION",
   // manager -> preview: canvas view state (zoom, forced pseudo-states, element
   // outlines, background grid) from the preview toolbar.
-  SET_VIEW: "TIDE_SET_VIEW",
+  SET_VIEW: "TIDEX_SET_VIEW",
   // manager -> preview: re-mount the current story from scratch (resets state).
-  RELOAD: "TIDE_RELOAD",
+  RELOAD: "TIDEX_RELOAD",
 } as const;
 
 export interface Manifest {
   components: ComponentEntry[];
 }
 
-export interface TideConfigSnapshot {
+export interface TidexConfigSnapshot {
   packageName: string | null;
   defaults: Record<string, Record<string, unknown>>;
   componentsDir: string | null;
@@ -65,16 +65,16 @@ export interface ScanReport {
 
 // Re-export the canonical prop schema types from core so the manager never
 // drifts from the scanner's output.
-import type { PropSchema, PropsMap } from "@tide/core";
+import type { PropSchema, PropsMap } from "@tidex/core";
 export type { PropSchema, PropsMap };
 
 function tideArtifactPath(kind: string, componentId: string, ext: string): string {
   const segments = componentId.split("/").map(encodeURIComponent).join("/");
-  return `/__tide/${kind}/${segments}.${ext}`;
+  return `/__tidex/${kind}/${segments}.${ext}`;
 }
 
 export async function fetchManifest(): Promise<Manifest> {
-  const res = await fetch("/__tide/manifest.json");
+  const res = await fetch("/__tidex/manifest.json");
   if (!res.ok) throw new Error("Failed to load manifest");
   const data = (await res.json()) as Manifest;
   return {
@@ -86,14 +86,14 @@ export async function fetchManifest(): Promise<Manifest> {
 }
 
 export async function fetchProps(): Promise<PropsMap> {
-  const res = await fetch("/__tide/props.json");
+  const res = await fetch("/__tidex/props.json");
   if (!res.ok) throw new Error("Failed to load props");
   return res.json();
 }
 
 export async function fetchTokens(): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch("/__tide/tokens.json");
+    const res = await fetch("/__tidex/tokens.json");
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -101,9 +101,9 @@ export async function fetchTokens(): Promise<Record<string, unknown> | null> {
   }
 }
 
-export async function fetchConfigSnapshot(): Promise<TideConfigSnapshot | null> {
+export async function fetchConfigSnapshot(): Promise<TidexConfigSnapshot | null> {
   try {
-    const res = await fetch("/__tide/config.json");
+    const res = await fetch("/__tidex/config.json");
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -113,7 +113,7 @@ export async function fetchConfigSnapshot(): Promise<TideConfigSnapshot | null> 
 
 export async function fetchScanReport(): Promise<ScanReport | null> {
   try {
-    const res = await fetch("/__tide/scan-report.json");
+    const res = await fetch("/__tidex/scan-report.json");
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -121,10 +121,10 @@ export async function fetchScanReport(): Promise<ScanReport | null> {
   }
 }
 
-/** Tide's inferred interaction bindings (state prop ↔ change handler), per component id. */
+/** Tidex's inferred interaction bindings (state prop ↔ change handler), per component id. */
 export async function fetchBindings(): Promise<BindingsMap> {
   try {
-    const res = await fetch("/__tide/bindings.json");
+    const res = await fetch("/__tidex/bindings.json");
     if (!res.ok) return {};
     return res.json();
   } catch {
@@ -150,7 +150,7 @@ export async function fetchTest(componentId: string): Promise<InteractionTest | 
 }
 
 export async function saveTest(component: string, test: InteractionTest): Promise<void> {
-  const res = await fetch("/__tide/tests", {
+  const res = await fetch("/__tidex/tests", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ component, test }),
@@ -171,7 +171,7 @@ export async function fetchInteractions(componentId: string): Promise<CallbackMa
 
 export async function saveInteractions(component: string, callbacks: CallbackMap): Promise<void> {
   const wiring: InteractionWiring = { component, callbacks };
-  const res = await fetch("/__tide/interactions", {
+  const res = await fetch("/__tidex/interactions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ component, wiring }),
@@ -303,7 +303,7 @@ export function buildVisualPreviewUrl(
 export async function fetchVisualReport(): Promise<VisualReport> {
   try {
     // never serve a stale report — it drives which images the panel shows.
-    const res = await fetch("/__tide/visual/report.json", { cache: "no-store" });
+    const res = await fetch("/__tidex/visual/report.json", { cache: "no-store" });
     if (!res.ok) return {};
     return res.json();
   } catch {
@@ -314,7 +314,7 @@ export async function fetchVisualReport(): Promise<VisualReport> {
 export async function fetchVisualDiffDetail(componentId: string): Promise<VisualDiffDetail | null> {
   try {
     const encoded = componentId.split("/").map(encodeURIComponent).join("/");
-    const res = await fetch(`/__tide/reports/${encoded}-diff.json`, { cache: "no-store" });
+    const res = await fetch(`/__tidex/reports/${encoded}-diff.json`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as VisualDiffDetail;
   } catch {
@@ -335,7 +335,7 @@ export async function checkVisualBaseline(componentId: string): Promise<boolean>
 }
 
 async function postVisual(
-  path: "/__tide/visual/run" | "/__tide/visual/update",
+  path: "/__tidex/visual/run" | "/__tidex/visual/update",
   component: string,
   args: Record<string, unknown>,
   theme: "light" | "dark",
@@ -350,7 +350,7 @@ async function postVisual(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : "Network error — is tide dev running?",
+      error: err instanceof Error ? err.message : "Network error — is tidex dev running?",
     };
   }
 
@@ -371,7 +371,7 @@ async function postVisual(
       ok: false,
       error:
         res.status === 404
-          ? "Visual API not found — restart tide dev to load the latest version"
+          ? "Visual API not found — restart tidex dev to load the latest version"
           : `Visual test failed (${res.status})`,
     };
   }
@@ -391,7 +391,7 @@ export async function runVisualTest(
   args: Record<string, unknown>,
   theme: "light" | "dark",
 ): Promise<VisualTestResponse> {
-  return postVisual("/__tide/visual/run", component, args, theme);
+  return postVisual("/__tidex/visual/run", component, args, theme);
 }
 
 export async function updateVisualBaseline(
@@ -399,5 +399,5 @@ export async function updateVisualBaseline(
   args: Record<string, unknown>,
   theme: "light" | "dark",
 ): Promise<VisualTestResponse> {
-  return postVisual("/__tide/visual/update", component, args, theme);
+  return postVisual("/__tidex/visual/update", component, args, theme);
 }

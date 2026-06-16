@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 export type Theme = "light" | "dark";
 
-const STORAGE_KEY = "tide:theme";
+const STORAGE_KEY = "tidex:theme";
 
 function getStoredTheme(): Theme {
   if (typeof window === "undefined") return "light";

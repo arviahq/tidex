@@ -5,7 +5,7 @@ export function MonorepoGuidePage() {
   return (
     <DocPage
       title="Monorepo guide"
-      description="Run Tide from the package that owns the components, not the monorepo root."
+      description="Run Tidex from the package that owns the components, not the monorepo root."
     >
       <section className="doc-section">
         <h2>Typical layout</h2>
@@ -13,16 +13,16 @@ export function MonorepoGuidePage() {
           language="text"
           code={`my-monorepo/
 ├── packages/
-│   ├── ui/                      ← tide.config.ts here
-│   │   ├── tide.config.ts
+│   ├── ui/                      ← tidex.config.ts here
+│   │   ├── tidex.config.ts
 │   │   ├── tokens.json
 │   │   ├── package.json         ← name: "@myorg/ui"
 │   │   └── src/
 │   │       ├── components/
 │   │       ├── preview/
-│   │       │   └── TideWrapper.tsx
+│   │       │   └── TidexWrapper.tsx
 │   │       └── index.ts
-│   └── app/                     ← consumes @myorg/ui, no Tide config needed
+│   └── app/                     ← consumes @myorg/ui, no Tidex config needed
 └── pnpm-workspace.yaml`}
         />
       </section>
@@ -31,17 +31,17 @@ export function MonorepoGuidePage() {
         <h2>Setup</h2>
         <p>From <code>packages/ui/</code>:</p>
         <CodeBlock
-          code={`pnpm exec tide init        # once
-pnpm exec tide generate
-pnpm exec tide dev`}
+          code={`pnpm exec tidex init        # once
+pnpm exec tidex generate
+pnpm exec tidex dev`}
         />
       </section>
 
       <section className="doc-section">
         <h2>Config for a workspace package</h2>
         <CodeBlock
-          filename="tide.config.ts"
-          code={`import { defineConfig } from "@tide/core";
+          filename="tidex.config.ts"
+          code={`import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -52,7 +52,7 @@ export default defineConfig({
   packageName: "@myorg/ui",
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
   },
 });`}
         />
@@ -65,7 +65,7 @@ export default defineConfig({
       <section className="doc-section">
         <h2>Path aliases</h2>
         <p>
-          Tide walks up to the nearest <code>tsconfig.json</code> and uses{" "}
+          Tidex walks up to the nearest <code>tsconfig.json</code> and uses{" "}
           <code>vite-tsconfig-paths</code> in the preview server, so aliases like{" "}
           <code>@/components/Button</code> work in component source as long as they resolve in
           your tsconfig.
@@ -85,19 +85,19 @@ export default defineConfig({
         <h2>CI</h2>
         <p>In the UI package:</p>
         <CodeBlock
-          code={`pnpm exec tide generate
-pnpm exec tide test
-pnpm exec tide visual`}
+          code={`pnpm exec tidex generate
+pnpm exec tidex test
+pnpm exec tidex visual`}
         />
         <p>
-          Commit <code>.tide/baselines/</code> for visual regression; other <code>.tide/*</code>{" "}
+          Commit <code>.tidex/baselines/</code> for visual regression; other <code>.tidex/*</code>{" "}
           artifacts are gitignored by default.
         </p>
       </section>
 
       <section className="doc-section">
         <h2>Multiple packages with components</h2>
-        <p>Each component library gets its own <code>tide.config.ts</code> and dev server ports.</p>
+        <p>Each component library gets its own <code>tidex.config.ts</code> and dev server ports.</p>
         <p>Override if running two at once:</p>
         <CodeBlock
           code={`export default defineConfig({

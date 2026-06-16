@@ -12,11 +12,11 @@ import {
   type Manifest,
   type PropSchema,
   type PropsMap,
-} from "@tide/core";
+} from "@tidex/core";
 import type { Page } from "playwright";
 
 /** The preview's rendered component root (always present on the canvas). */
-const ROOT_SELECTOR = "[data-tide-visual]";
+const ROOT_SELECTOR = "[data-tidex-visual]";
 const ACTION_TIMEOUT = 3000;
 
 /** Canonical state-prop → display name; falls back to a capitalized prop. */
@@ -201,7 +201,7 @@ export interface VerifyInteractionsResult {
  * - **Generated states** — render the binding's interesting state via args and
  *   record its aria snapshot as a checkpoint for visual/a11y review.
  *
- * Writes `.tide/reports/interactions-verify.json` and returns tuned bindings.
+ * Writes `.tidex/reports/interactions-verify.json` and returns tuned bindings.
  */
 export async function verifyInteractions(
   options: VerifyInteractionsOptions,

@@ -1,22 +1,22 @@
 # Monorepo guide
 
-Run Tide from the **package that owns the components**, not the monorepo root.
+Run Tidex from the **package that owns the components**, not the monorepo root.
 
 ## Typical layout
 
 ```
 my-monorepo/
 ├── packages/
-│   ├── ui/                      ← tide.config.ts here
-│   │   ├── tide.config.ts
+│   ├── ui/                      ← tidex.config.ts here
+│   │   ├── tidex.config.ts
 │   │   ├── tokens.json
 │   │   ├── package.json         ← name: "@myorg/ui"
 │   │   └── src/
 │   │       ├── components/
 │   │       ├── preview/
-│   │       │   └── TideWrapper.tsx
+│   │       │   └── TidexWrapper.tsx
 │   │       └── index.ts
-│   └── app/                     ← consumes @myorg/ui, no Tide config needed
+│   └── app/                     ← consumes @myorg/ui, no Tidex config needed
 └── pnpm-workspace.yaml
 ```
 
@@ -25,15 +25,15 @@ my-monorepo/
 From `packages/ui/`:
 
 ```bash
-pnpm exec tide init        # once
-pnpm exec tide generate
-pnpm exec tide dev
+pnpm exec tidex init        # once
+pnpm exec tidex generate
+pnpm exec tidex dev
 ```
 
 ## Config for a workspace package
 
 ```ts
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -44,7 +44,7 @@ export default defineConfig({
   packageName: "@myorg/ui",
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
   },
 });
 ```
@@ -57,7 +57,7 @@ import { Button } from "@myorg/ui";
 
 ## Path aliases
 
-Tide walks up to the nearest `tsconfig.json` and uses `vite-tsconfig-paths` in the preview server, so aliases like `@/components/Button` work in component source as long as they resolve in your tsconfig.
+Tidex walks up to the nearest `tsconfig.json` and uses `vite-tsconfig-paths` in the preview server, so aliases like `@/components/Button` work in component source as long as they resolve in your tsconfig.
 
 ## Workspace dependencies
 
@@ -68,16 +68,16 @@ If components import other workspace packages, add them to `packages/ui/package.
 In the UI package:
 
 ```bash
-pnpm exec tide generate
-pnpm exec tide test
-pnpm exec tide visual
+pnpm exec tidex generate
+pnpm exec tidex test
+pnpm exec tidex visual
 ```
 
-Commit `.tide/baselines/` for visual regression; other `.tide/*` artifacts are gitignored by default.
+Commit `.tidex/baselines/` for visual regression; other `.tidex/*` artifacts are gitignored by default.
 
 ## Multiple packages with components
 
-Each component library gets its own `tide.config.ts` and dev server ports. Override if running two at once:
+Each component library gets its own `tidex.config.ts` and dev server ports. Override if running two at once:
 
 ```ts
 export default defineConfig({

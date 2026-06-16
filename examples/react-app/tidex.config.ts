@@ -1,4 +1,4 @@
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -23,7 +23,7 @@ export default defineConfig({
     "typography/Prose": {
       title: "What's new",
       content:
-        "Tide turns your component library into a living, explorable catalog.\n\nEvery prop gets a control that matches its shape — no JSON editing required.",
+        "Tidex turns your component library into a living, explorable catalog.\n\nEvery prop gets a control that matches its shape — no JSON editing required.",
       size: "md",
       align: "left",
     },
@@ -166,7 +166,7 @@ export default defineConfig({
       ],
     },
     "navigation/Navbar": {
-      brand: "Tide",
+      brand: "Tidex",
       links: ["Product", "Components", "Docs", "Pricing"],
       activeIndex: 1,
       cta: "Sign in",
@@ -207,7 +207,7 @@ export default defineConfig({
     },
     "composite/Testimonial": {
       quote:
-        "Tide changed how our team reviews UI. Every prop is just there, ready to tweak — no more digging through Storybook stories.",
+        "Tidex changed how our team reviews UI. Every prop is just there, ready to tweak — no more digging through Storybook stories.",
       author: "Jane Cooper",
       role: "Head of Design, Acme",
       avatarColor: "#4f46e5",

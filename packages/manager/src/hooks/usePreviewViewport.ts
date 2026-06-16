@@ -23,7 +23,7 @@ export const VIEWPORT_PRESET_SIZES: Record<
   visual: { width: 800, height: 600 },
 };
 
-const STORAGE_KEY = "tide:preview-viewport";
+const STORAGE_KEY = "tidex:preview-viewport";
 const DEFAULT_CUSTOM_SIZE: ViewportSize = { width: 800, height: 600 };
 
 const VALID_PRESETS = new Set<ViewportPresetId>([

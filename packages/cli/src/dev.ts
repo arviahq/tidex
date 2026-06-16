@@ -6,15 +6,15 @@ import { createServer, mergeConfig, type ViteDevServer, type PluginOption } from
 import tsconfigPaths from "vite-tsconfig-paths";
 import {
   applyPlugins,
-  tideVitePlugin,
-  getTideDir,
+  tidexVitePlugin,
+  getTidexDir,
   getBindingsPath,
   getPropsPath,
   type BindingsMap,
   type PropsMap,
-} from "@tide/core";
-import { tideVisualPlugin } from "@tide/visual";
-import { generateArtifacts } from "@tide/scanner";
+} from "@tidex/core";
+import { tidexVisualPlugin } from "@tidex/visual";
+import { generateArtifacts } from "@tidex/scanner";
 import { loadConfig } from "./config.js";
 import { startProgress } from "./progress.js";
 
@@ -31,7 +31,7 @@ function readJson<T>(file: string): T | null {
 }
 
 // Walk up from the run directory to the nearest tsconfig.json so we honor the
-// user project's path aliases (e.g. `src/*`) even when tide is run from a
+// user project's path aliases (e.g. `src/*`) even when tidex is run from a
 // subdirectory like `src/`.
 function findProjectRoot(cwd: string): string {
   let dir = cwd;
@@ -58,7 +58,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   const cwd = options.cwd ?? process.cwd();
   const config = await loadConfig(cwd);
   const pluginCtx = applyPlugins(config);
-  const tideDir = getTideDir(cwd);
+  const tidexDir = getTidexDir(cwd);
   const projectRoot = findProjectRoot(cwd);
 
   await generateArtifacts(config);
@@ -71,7 +71,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
 
   const sharedPluginOptions = {
     root: cwd,
-    tideDir,
+    tidexDir,
   };
 
   const visualPluginOptions = {
@@ -91,10 +91,10 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
       strictPort: true,
     },
     define: {
-      __TIDE_ROOT__: JSON.stringify(cwd),
-      __TIDE_PREVIEW_URL__: JSON.stringify(`http://localhost:${config.previewPort ?? 6007}`),
+      __TIDEX_ROOT__: JSON.stringify(cwd),
+      __TIDEX_PREVIEW_URL__: JSON.stringify(`http://localhost:${config.previewPort ?? 6007}`),
     },
-    plugins: [tideVitePlugin(sharedPluginOptions), tideVisualPlugin(visualPluginOptions)],
+    plugins: [tidexVitePlugin(sharedPluginOptions), tidexVisualPlugin(visualPluginOptions)],
   });
 
   previewServer = await createServer(
@@ -107,17 +107,17 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
           strictPort: true,
           cors: true,
           fs: {
-            allow: [previewRoot, cwd, tideDir, projectRoot],
+            allow: [previewRoot, cwd, tidexDir, projectRoot],
           },
         },
         define: {
-          __TIDE_ROOT__: JSON.stringify(cwd),
+          __TIDEX_ROOT__: JSON.stringify(cwd),
         },
-        plugins: [tideVitePlugin(sharedPluginOptions), userPathsPlugin(projectRoot)],
+        plugins: [tidexVitePlugin(sharedPluginOptions), userPathsPlugin(projectRoot)],
         resolve: {
           alias: {
             "@user": cwd,
-            "virtual:tide-stories": path.join(tideDir, "stories.generated.ts"),
+            "virtual:tidex-stories": path.join(tidexDir, "stories.generated.ts"),
           },
           dedupe: ["react", "react-dom"],
         },
@@ -132,15 +132,15 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   const managerPort = managerServer.config.server.port;
   const previewPort = previewServer.config.server.port;
 
-  console.log(`\n  Tide Manager:  http://localhost:${managerPort}`);
-  console.log(`  Tide Preview:  http://localhost:${previewPort}\n`);
+  console.log(`\n  Tidex Manager:  http://localhost:${managerPort}`);
+  console.log(`  Tidex Preview:  http://localhost:${previewPort}\n`);
 
   const watcher = chokidar.watch(
     [
       ...config.scan.include.map((p) => path.join(cwd, p)),
-      path.join(cwd, "tide.config.ts"),
-      path.join(cwd, "tide.config.js"),
-      path.join(cwd, "tide.config.mjs"),
+      path.join(cwd, "tidex.config.ts"),
+      path.join(cwd, "tidex.config.js"),
+      path.join(cwd, "tidex.config.mjs"),
       ...(config.tokens
         ? [path.isAbsolute(config.tokens) ? config.tokens : path.join(cwd, config.tokens)]
         : []),
@@ -159,7 +159,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   watcher.on("all", () => {
     if (debounce) clearTimeout(debounce);
     debounce = setTimeout(async () => {
-      console.log("  [tide] Re-scanning components...");
+      console.log("  [tidex] Re-scanning components...");
       const latestConfig = await loadConfig(cwd);
       await generateArtifacts(latestConfig);
       // Tell the manager to refetch its data in place rather than full-reloading
@@ -167,7 +167,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
       // values, and the preview handshake state on every save. The preview still
       // full-reloads so the edited component code re-enters its module graph; the
       // manager re-syncs the preserved story + args once the preview re-announces.
-      managerServer?.ws.send({ type: "custom", event: "tide:data-changed" });
+      managerServer?.ws.send({ type: "custom", event: "tidex:data-changed" });
       await previewServer?.ws.send({ type: "full-reload" });
     }, 300);
   });
@@ -187,24 +187,24 @@ export async function runGenerate(cwd?: string, verbose?: boolean): Promise<void
     progress.stop();
   }
   console.log(`Generated ${result.manifest.components.length} components`);
-  console.log(`  manifest: ${getTideDir(root)}/manifest.json`);
-  console.log(`  props:    ${getTideDir(root)}/props.json`);
+  console.log(`  manifest: ${getTidexDir(root)}/manifest.json`);
+  console.log(`  props:    ${getTidexDir(root)}/props.json`);
   console.log(`  stories:  ${result.storiesPath}`);
   if (result.diagnostics.warnings.length > 0 && !verbose) {
     console.log(
-      `  warnings: ${result.diagnostics.warnings.length} (run \`tide generate --verbose\`)`,
+      `  warnings: ${result.diagnostics.warnings.length} (run \`tidex generate --verbose\`)`,
     );
   }
 }
 
 export async function runInit(cwd?: string): Promise<void> {
   const root = cwd ?? process.cwd();
-  const configPath = path.join(root, "tide.config.ts");
+  const configPath = path.join(root, "tidex.config.ts");
 
   if (!fs.existsSync(configPath)) {
     fs.writeFileSync(
       configPath,
-      `import { defineConfig } from "@tide/core";
+      `import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -214,20 +214,20 @@ export default defineConfig({
   },
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
   },
 });
 `,
     );
-    console.log("Created tide.config.ts");
+    console.log("Created tidex.config.ts");
   }
 
   const scaffoldFiles: Array<{ file: string; content: string }> = [
     {
-      file: "src/preview/TideWrapper.tsx",
+      file: "src/preview/TidexWrapper.tsx",
       content: `import type { ReactNode } from "react";
 
-export default function TideWrapper({ children }: { children: ReactNode }) {
+export default function TidexWrapper({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 `,
@@ -264,22 +264,22 @@ export default function TideWrapper({ children }: { children: ReactNode }) {
   }
 
   const gitignorePath = path.join(root, ".gitignore");
-  const tideGitignoreBlock = `# Tide generated artifacts (commit baselines + interaction wiring)
-.tide/*
-!.tide/baselines/
-!.tide/baselines/**
-!.tide/interactions/
-!.tide/interactions/**
+  const tidexGitignoreBlock = `# Tidex generated artifacts (commit baselines + interaction wiring)
+.tidex/*
+!.tidex/baselines/
+!.tidex/baselines/**
+!.tidex/interactions/
+!.tidex/interactions/**
 `;
 
   if (fs.existsSync(gitignorePath)) {
     const content = fs.readFileSync(gitignorePath, "utf-8");
-    if (!content.includes(".tide")) {
-      fs.appendFileSync(gitignorePath, `\n${tideGitignoreBlock}`);
-      console.log("Added .tide/ rules to .gitignore (baselines are tracked)");
+    if (!content.includes(".tidex")) {
+      fs.appendFileSync(gitignorePath, `\n${tidexGitignoreBlock}`);
+      console.log("Added .tidex/ rules to .gitignore (baselines are tracked)");
     }
   } else {
-    fs.writeFileSync(gitignorePath, tideGitignoreBlock);
+    fs.writeFileSync(gitignorePath, tidexGitignoreBlock);
   }
 
   const pkgPath = path.join(root, "package.json");
@@ -288,17 +288,17 @@ export default function TideWrapper({ children }: { children: ReactNode }) {
       scripts?: Record<string, string>;
     };
     pkg.scripts ??= {};
-    if (!pkg.scripts["tide"]) {
-      pkg.scripts["tide"] = "tide dev";
+    if (!pkg.scripts["tidex"]) {
+      pkg.scripts["tidex"] = "tidex dev";
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-      console.log('Added "tide" script to package.json');
+      console.log('Added "tidex" script to package.json');
     }
   }
 
   console.log("");
   console.log("Next steps:");
   console.log("  1. Add components under src/components/");
-  console.log("  2. Run tide generate && tide dev");
+  console.log("  2. Run tidex generate && tidex dev");
   console.log("  See docs/design-systems.md for folder structure guidance.");
 }
 
@@ -308,11 +308,11 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   await generateArtifacts(config);
   const { readManifest } = await import("./config.js");
   const manifest = readManifest(root);
-  const { runVisualTests, hasVisualDiffs, formatVisualSummary } = await import("@tide/visual");
+  const { runVisualTests, hasVisualDiffs, formatVisualSummary } = await import("@tidex/visual");
 
   // Start preview server temporarily for visual tests
   const previewRoot = path.resolve(__dirname, "../../preview");
-  const tideDir = getTideDir(root);
+  const tidexDir = getTidexDir(root);
   const previewPort = config.previewPort ?? 6007;
   const projectRoot = findProjectRoot(root);
   const previewServer = await createServer(
@@ -325,8 +325,8 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
           strictPort: false,
           fs: { allow: [previewRoot, root, projectRoot] },
         },
-        define: { __TIDE_ROOT__: JSON.stringify(root) },
-        plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
+        define: { __TIDEX_ROOT__: JSON.stringify(root) },
+        plugins: [tidexVitePlugin({ root, tidexDir }), userPathsPlugin(projectRoot)],
       },
       config.preview?.vite ?? {},
     ),
@@ -370,10 +370,10 @@ export async function runTest(cwd?: string): Promise<number> {
     formatInteractionSummary,
     verifyInteractions,
     formatVerifySummary,
-  } = await import("@tide/testing");
+  } = await import("@tidex/testing");
 
   const previewRoot = path.resolve(__dirname, "../../preview");
-  const tideDir = getTideDir(root);
+  const tidexDir = getTidexDir(root);
   const previewPort = config.previewPort ?? 6007;
   const projectRoot = findProjectRoot(root);
   const previewServer = await createServer(
@@ -386,8 +386,8 @@ export async function runTest(cwd?: string): Promise<number> {
           strictPort: false,
           fs: { allow: [previewRoot, root, projectRoot] },
         },
-        define: { __TIDE_ROOT__: JSON.stringify(root) },
-        plugins: [tideVitePlugin({ root, tideDir }), userPathsPlugin(projectRoot)],
+        define: { __TIDEX_ROOT__: JSON.stringify(root) },
+        plugins: [tidexVitePlugin({ root, tidexDir }), userPathsPlugin(projectRoot)],
       },
       config.preview?.vite ?? {},
     ),
@@ -470,5 +470,5 @@ export async function runBuild(cwd?: string): Promise<void> {
   const root = cwd ?? process.cwd();
   const config = await loadConfig(root);
   await generateArtifacts(config);
-  console.log("Build artifacts generated in .tide/");
+  console.log("Build artifacts generated in .tidex/");
 }

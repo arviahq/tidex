@@ -2,8 +2,8 @@ const FEATURES = [
   {
     id: "scan",
     title: "Auto-scan",
-    cli: "tide generate",
-    description: "Drop components in a folder. Tide discovers props, variants, and defaults automatically.",
+    cli: "tidex generate",
+    description: "Drop components in a folder. Tidex discovers props, variants, and defaults automatically.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -59,7 +59,7 @@ const FEATURES = [
   {
     id: "visual",
     title: "Visual regression",
-    cli: "tide visual",
+    cli: "tidex visual",
     description: "Capture baselines, compare screenshots, review diffs in the manager.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -72,7 +72,7 @@ const FEATURES = [
   {
     id: "interactions",
     title: "Interaction tests",
-    cli: "tide test",
+    cli: "tidex test",
     description: "Author steps in the Tests tab. Run headlessly in CI.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -125,7 +125,7 @@ export function Features() {
           <p className="section__eyebrow">Everything built in</p>
           <h2 className="section__title">No stories. No ceremony. Just your components.</h2>
           <p className="section__subtitle">
-            Tide scans your source, generates artifacts, and gives you a full explorer with docs,
+            Tidex scans your source, generates artifacts, and gives you a full explorer with docs,
             tokens, and testing — without maintaining parallel story files.
           </p>
         </div>

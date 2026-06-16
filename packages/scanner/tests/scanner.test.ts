@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { getComponentId } from "@tide/core";
+import { getComponentId } from "@tidex/core";
 import { discoverComponents, deriveComponentId } from "../src/discover.js";
 import { extractProps } from "../src/extract-props.js";
 

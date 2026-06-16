@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { InteractionBinding, PropSchema } from "@tide/core";
+import type { InteractionBinding, PropSchema } from "@tidex/core";
 import { stateArgsFor } from "../src/verify-interactions.js";
 
 const binding = (over: Partial<InteractionBinding>): InteractionBinding => ({

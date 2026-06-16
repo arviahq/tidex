@@ -22,7 +22,7 @@ export function TokensPanel({ tokens }: TokensPanelProps) {
       <div className="bb-tokens__empty-state">
         <p>No tokens.json found.</p>
         <p className="bb-tokens__empty-hint">
-          Add a <code>tokens</code> path in <code>tide.config.ts</code>.
+          Add a <code>tokens</code> path in <code>tidex.config.ts</code>.
         </p>
       </div>
     );

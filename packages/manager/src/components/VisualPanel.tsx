@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { formatDisplayName } from "@tide/core";
+import { formatDisplayName } from "@tidex/core";
 import type { PropsDiff, VisualDiffDetail, VisualDiffSummary, VisualLayerKey } from "../api";
 import { CodeBlock } from "./CodeBlock";
 import { IconButton } from "./IconButton";
@@ -37,8 +37,8 @@ interface VisualPanelProps {
 
 type ViewMode = "side" | "baseline" | "current" | "diff";
 
-const CLI_COMMANDS = `tide visual           # compare against baselines
-tide visual --update  # refresh baselines`;
+const CLI_COMMANDS = `tidex visual           # compare against baselines
+tidex visual --update  # refresh baselines`;
 
 const LAYER_ORDER: VisualLayerKey[] = ["styles", "layout", "dom", "a11y"];
 
@@ -47,7 +47,7 @@ function imageUrl(relativePath: string, version: number): string {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  return `/__tide/${encoded}?v=${version}`;
+  return `/__tidex/${encoded}?v=${version}`;
 }
 
 function layerKind(key: VisualLayerKey, summary: VisualDiffSummary): StatusKind {
@@ -159,7 +159,7 @@ export function VisualPanel({
           <div className="bb-visual__title-block">
             <h2 className="bb-visual__name">{formatDisplayName(componentName)}</h2>
             <p className="bb-visual__subtitle">
-              Visual snapshot · .tide/baselines/{storyId} · {theme} theme
+              Visual snapshot · .tidex/baselines/{storyId} · {theme} theme
             </p>
           </div>
           <div className="bb-visual__actions">

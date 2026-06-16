@@ -1,5 +1,5 @@
 {
-  "name": "@tide/testing",
+  "name": "@tidex/testing",
   "version": "0.0.1",
   "files": [
     "dist"
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@axe-core/playwright": "^4.10.0",
-    "@tide/core": "workspace:*"
+    "@tidex/core": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

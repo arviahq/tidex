@@ -9,7 +9,7 @@ import {
   getBaselineSnapshotPath,
   getCurrentSnapshotPath,
   type Manifest,
-} from "@tide/core";
+} from "@tidex/core";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { captureComponent } from "./capture.js";
 import { computeVisualDiff } from "./diff/summarize.js";
@@ -53,7 +53,7 @@ export interface VisualComponentTestOptions {
 
 export const VISUAL_VIEWPORT = { width: 800, height: 600 };
 export const VISUAL_DEVICE_SCALE_FACTOR = 2;
-export const VISUAL_SELECTOR = "[data-tide-visual]";
+export const VISUAL_SELECTOR = "[data-tidex-visual]";
 const DEFAULT_THRESHOLD = 0.1;
 
 export function buildVisualPreviewUrl(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ComponentEntry } from "@tide/core";
+import type { ComponentEntry } from "@tidex/core";
 import { buildComponentTree, collectFolderIds, getComponentFolderSegments } from "./componentTree";
 
 function entry(name: string, path: string, title: string, id?: string): ComponentEntry {

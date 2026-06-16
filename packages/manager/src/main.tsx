@@ -6,7 +6,7 @@ import { applyTheme } from "./hooks/useTheme";
 import "./fonts.ts";
 import "./global.css";
 
-const storedTheme = localStorage.getItem("tide:theme");
+const storedTheme = localStorage.getItem("tidex:theme");
 applyTheme(storedTheme === "dark" ? "dark" : "light");
 
 const queryClient = new QueryClient();

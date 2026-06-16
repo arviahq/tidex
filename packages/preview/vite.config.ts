@@ -3,27 +3,27 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 import fs from "node:fs";
 
-declare const __TIDE_ROOT__: string;
+declare const __TIDEX_ROOT__: string;
 
 export default defineConfig(() => {
   const userRoot =
-    typeof __TIDE_ROOT__ !== "undefined" && __TIDE_ROOT__
-      ? __TIDE_ROOT__
-      : (process.env.TIDE_ROOT ?? "");
+    typeof __TIDEX_ROOT__ !== "undefined" && __TIDEX_ROOT__
+      ? __TIDEX_ROOT__
+      : (process.env.TIDEX_ROOT ?? "");
 
   const alias: Record<string, string> = {};
   if (userRoot) {
     alias["@user"] = userRoot;
-    const storiesPath = path.join(userRoot, ".tide", "stories.generated.ts");
+    const storiesPath = path.join(userRoot, ".tidex", "stories.generated.ts");
     if (fs.existsSync(storiesPath)) {
-      alias["virtual:tide-stories"] = storiesPath;
+      alias["virtual:tidex-stories"] = storiesPath;
     }
   }
 
   return {
     plugins: [react()],
     define: {
-      __TIDE_ROOT__: JSON.stringify(userRoot),
+      __TIDEX_ROOT__: JSON.stringify(userRoot),
     },
     resolve: { alias },
     server: {
@@ -36,7 +36,7 @@ export default defineConfig(() => {
       },
     },
     optimizeDeps: {
-      exclude: ["virtual:tide-stories"],
+      exclude: ["virtual:tidex-stories"],
     },
   };
 });

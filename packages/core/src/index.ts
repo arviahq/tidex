@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { InlineConfig } from "vite";
 
-export interface TideConfig {
+export interface TidexConfig {
   root: string;
   scan: {
     include: string[];
@@ -14,7 +14,7 @@ export interface TideConfig {
   /** Per-component default arg overrides, keyed by component id. */
   defaults?: Record<string, Record<string, unknown>>;
   tokens?: string;
-  plugins?: TidePlugin[];
+  plugins?: TidexPlugin[];
   managerPort?: number;
   previewPort?: number;
   visual?: { threshold?: number };
@@ -25,7 +25,7 @@ export interface TideConfig {
    *   wrapped in it (e.g. a theme/ChakraProvider/i18n provider).
    * - `vite`: extra Vite config merged into the preview/visual/test servers.
    *   Use it to add build plugins your components need (e.g. vanilla-extract,
-   *   svgr). Tide already provides React, so add only the extra plugins.
+   *   svgr). Tidex already provides React, so add only the extra plugins.
    */
   preview?: { wrapper?: string; vite?: InlineConfig };
 }
@@ -45,7 +45,7 @@ export const DEFAULT_SCAN_EXCLUDE = [
   "**/*.d.ts",
 ];
 
-export interface TidePlugin {
+export interface TidexPlugin {
   name: string;
   setup(ctx: TideContext): void;
 }
@@ -185,7 +185,7 @@ export type PropSchema =
       required?: boolean;
       description?: string;
       meta?: PropMeta;
-      /** The source type text Tide couldn't resolve (e.g. an imported type). */
+      /** The source type text Tidex couldn't resolve (e.g. an imported type). */
       typeText?: string;
     };
 
@@ -224,7 +224,7 @@ export interface InteractionBinding {
   source: "convention" | "static" | "runtime" | "user";
 }
 
-/** Inferred bindings per component id, written to `.tide/bindings.json`. */
+/** Inferred bindings per component id, written to `.tidex/bindings.json`. */
 export type BindingsMap = Record<string, InteractionBinding[]>;
 
 /**
@@ -269,7 +269,7 @@ export interface InteractionVerifyEntry {
   states: GeneratedState[];
 }
 
-/** Per-component runtime verification + generated states, at `.tide/reports/interactions-verify.json`. */
+/** Per-component runtime verification + generated states, at `.tidex/reports/interactions-verify.json`. */
 export type InteractionVerifyReport = Record<string, InteractionVerifyEntry>;
 
 /** A wired-handler fire reported by the preview (drives the log + controls sync). */
@@ -293,9 +293,9 @@ export interface CallbackBinding {
 
 /**
  * Persisted callback→state wiring for a component, stored at
- * `.tide/interactions/<Component>.json`. A callback mapped with `updates`
+ * `.tidex/interactions/<Component>.json`. A callback mapped with `updates`
  * re-renders the preview with the extracted value; an empty `{}` means
- * action-only (wired to a no-op). User-authored entries override Tide's
+ * action-only (wired to a no-op). User-authored entries override Tidex's
  * inferred bindings.
  */
 export interface InteractionWiring {
@@ -344,7 +344,7 @@ export interface StepResult {
   message?: string;
 }
 
-export const TIDE_DIR = ".tide";
+export const TIDEX_DIR = ".tidex";
 
 export function formatDisplayName(name: string): string {
   if (!name) return name;
@@ -352,29 +352,29 @@ export function formatDisplayName(name: string): string {
   return name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
 }
 
-export function getTideDir(root: string): string {
-  return path.join(root, TIDE_DIR);
+export function getTidexDir(root: string): string {
+  return path.join(root, TIDEX_DIR);
 }
 
 export function getManifestPath(root: string): string {
-  return path.join(getTideDir(root), "manifest.json");
+  return path.join(getTidexDir(root), "manifest.json");
 }
 
 export function getPropsPath(root: string): string {
-  return path.join(getTideDir(root), "props.json");
+  return path.join(getTidexDir(root), "props.json");
 }
 
 export function getStoriesPath(root: string): string {
-  return path.join(getTideDir(root), "stories.generated.ts");
+  return path.join(getTidexDir(root), "stories.generated.ts");
 }
 
 /** Inferred interaction bindings, keyed by component id. */
 export function getBindingsPath(root: string): string {
-  return path.join(getTideDir(root), "bindings.json");
+  return path.join(getTidexDir(root), "bindings.json");
 }
 
 export function getReportsDir(root: string): string {
-  return path.join(getTideDir(root), "reports");
+  return path.join(getTidexDir(root), "reports");
 }
 
 /** Runtime interaction-verification report (confidence tuning + generated states). */
@@ -383,7 +383,7 @@ export function getVerifyReportPath(root: string): string {
 }
 
 export function getBaselinesDir(root: string): string {
-  return path.join(getTideDir(root), "baselines");
+  return path.join(getTidexDir(root), "baselines");
 }
 
 /** Committed multi-layer snapshot stored alongside the baseline PNG. */
@@ -397,7 +397,7 @@ export function getCurrentSnapshotPath(root: string, componentId: string): strin
 }
 
 export function getTestsDir(root: string): string {
-  return path.join(getTideDir(root), "tests");
+  return path.join(getTidexDir(root), "tests");
 }
 
 export function getTestPath(root: string, componentId: string): string {
@@ -405,22 +405,22 @@ export function getTestPath(root: string, componentId: string): string {
 }
 
 export function getConfigSnapshotPath(root: string): string {
-  return path.join(getTideDir(root), "config.json");
+  return path.join(getTidexDir(root), "config.json");
 }
 
 export function getScanReportPath(root: string): string {
-  return path.join(getTideDir(root), "scan-report.json");
+  return path.join(getTidexDir(root), "scan-report.json");
 }
 
 export function getInteractionsDir(root: string): string {
-  return path.join(getTideDir(root), "interactions");
+  return path.join(getTidexDir(root), "interactions");
 }
 
 export function getInteractionPath(root: string, componentId: string): string {
   return path.join(getInteractionsDir(root), `${componentId}.json`);
 }
 
-export function defaultConfig(root: string): TideConfig {
+export function defaultConfig(root: string): TidexConfig {
   return {
     root,
     scan: {
@@ -433,7 +433,7 @@ export function defaultConfig(root: string): TideConfig {
   };
 }
 
-export function defineConfig(config: Partial<TideConfig> & { root?: string }): TideConfig {
+export function defineConfig(config: Partial<TidexConfig> & { root?: string }): TidexConfig {
   const root = config.root ?? process.cwd();
   const base = defaultConfig(root);
   return { ...base, ...config, root, scan: { ...base.scan, ...config.scan } };
@@ -463,7 +463,7 @@ export function createPluginContext(): PluginContext {
   };
 }
 
-export function applyPlugins(config: TideConfig): PluginContext {
+export function applyPlugins(config: TidexConfig): PluginContext {
   const ctx = createPluginContext();
   for (const plugin of config.plugins ?? []) {
     plugin.setup(ctx);
@@ -593,24 +593,24 @@ export function shouldSkipProp(name: string, typeText?: string): boolean {
 import fs from "node:fs";
 import type { Plugin } from "vite";
 
-export interface TideVitePluginOptions {
+export interface TidexVitePluginOptions {
   root: string;
-  tideDir: string;
+  tidexDir: string;
 }
 
-export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
-  const virtualStoriesId = "virtual:tide-stories";
+export function tidexVitePlugin(options: TidexVitePluginOptions): Plugin {
+  const virtualStoriesId = "virtual:tidex-stories";
   const resolvedVirtualStoriesId = "\0" + virtualStoriesId;
 
   return {
-    name: "tide",
+    name: "tidex",
     resolveId(id) {
       if (id === virtualStoriesId) return resolvedVirtualStoriesId;
       return null;
     },
     load(id) {
       if (id === resolvedVirtualStoriesId) {
-        const storiesPath = path.join(options.tideDir, "stories.generated.ts");
+        const storiesPath = path.join(options.tidexDir, "stories.generated.ts");
         return `export * from ${JSON.stringify(storiesPath)};`;
       }
       return null;
@@ -618,13 +618,13 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0] ?? "";
-        if (!url.startsWith("/__tide/")) {
+        if (!url.startsWith("/__tidex/")) {
           next();
           return;
         }
 
-        // Save an interaction test to .tide/tests/<Component>.json.
-        if (url === "/__tide/tests" && req.method === "POST") {
+        // Save an interaction test to .tidex/tests/<Component>.json.
+        if (url === "/__tidex/tests" && req.method === "POST") {
           let body = "";
           req.on("data", (chunk) => {
             body += chunk;
@@ -656,8 +656,8 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
           return;
         }
 
-        // Save callback→state wiring to .tide/interactions/<Component>.json.
-        if (url === "/__tide/interactions" && req.method === "POST") {
+        // Save callback→state wiring to .tidex/interactions/<Component>.json.
+        if (url === "/__tidex/interactions" && req.method === "POST") {
           let body = "";
           req.on("data", (chunk) => {
             body += chunk;
@@ -690,7 +690,7 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
         }
 
         // List components that have a saved interaction test.
-        if (url === "/__tide/tests" && req.method === "GET") {
+        if (url === "/__tidex/tests" && req.method === "GET") {
           const testsDir = getTestsDir(options.root);
           const names: string[] = [];
           const walk = (dir: string, prefix = "") => {
@@ -710,14 +710,14 @@ export function tideVitePlugin(options: TideVitePluginOptions): Plugin {
           return;
         }
 
-        // Otherwise serve a static artifact from the .tide directory.
-        const file = decodeURIComponent(url.replace("/__tide/", ""));
+        // Otherwise serve a static artifact from the .tidex directory.
+        const file = decodeURIComponent(url.replace("/__tidex/", ""));
         if (file.includes("..")) {
           res.statusCode = 400;
           res.end();
           return;
         }
-        const filePath = path.join(options.tideDir, file);
+        const filePath = path.join(options.tidexDir, file);
         if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
           // Artifacts (baselines, current/diff captures, generated JSON) are
           // rewritten in place during a dev session — never let the browser

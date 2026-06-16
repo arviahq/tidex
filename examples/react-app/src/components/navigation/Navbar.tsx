@@ -44,10 +44,10 @@ export function Navbar({ brand, links, activeIndex, cta }: NavbarProps) {
             fontSize: 14,
           }}
         >
-          {text(brand, "Tide").charAt(0).toUpperCase()}
+          {text(brand, "Tidex").charAt(0).toUpperCase()}
         </span>
         <span style={{ fontSize: 15, fontWeight: 700, color: ui.colors.text }}>
-          {text(brand, "Tide")}
+          {text(brand, "Tidex")}
         </span>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, flex: 1, minWidth: 0 }}>

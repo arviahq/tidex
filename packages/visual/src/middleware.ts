@@ -2,11 +2,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
-import { isValidComponentId } from "@tide/core";
+import { isValidComponentId } from "@tidex/core";
 import { runSingleVisualTest } from "./engine.js";
-import { getReportsDir } from "@tide/core";
+import { getReportsDir } from "@tidex/core";
 
-export interface TideVisualPluginOptions {
+export interface TidexVisualPluginOptions {
   root: string;
   previewUrl: string;
   threshold?: number;
@@ -33,18 +33,18 @@ function sendJson(res: ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
-export function tideVisualPlugin(options: TideVisualPluginOptions): Plugin {
+export function tidexVisualPlugin(options: TidexVisualPluginOptions): Plugin {
   return {
-    name: "tide-visual",
+    name: "tidex-visual",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0] ?? "";
-        if (!url.startsWith("/__tide/visual")) {
+        if (!url.startsWith("/__tidex/visual")) {
           next();
           return;
         }
 
-        if (url === "/__tide/visual/report.json" && req.method === "GET") {
+        if (url === "/__tidex/visual/report.json" && req.method === "GET") {
           const reportPath = path.join(getReportsDir(options.root), "visual.json");
           res.setHeader("Cache-Control", "no-store");
           if (!fs.existsSync(reportPath)) {
@@ -90,12 +90,12 @@ export function tideVisualPlugin(options: TideVisualPluginOptions): Plugin {
           }
         };
 
-        if (url === "/__tide/visual/run" && req.method === "POST") {
+        if (url === "/__tidex/visual/run" && req.method === "POST") {
           void handleVisual(false);
           return;
         }
 
-        if (url === "/__tide/visual/update" && req.method === "POST") {
+        if (url === "/__tidex/visual/update" && req.method === "POST") {
           void handleVisual(true);
           return;
         }

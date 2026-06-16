@@ -5,7 +5,7 @@
     "correctness": "error"
   },
   "rules": {},
-  "ignorePatterns": ["dist/**", "node_modules/**", ".turbo/**", ".tide/**", "**/*.generated.ts"],
+  "ignorePatterns": ["dist/**", "node_modules/**", ".turbo/**", ".tidex/**", "**/*.generated.ts"],
   "env": {
     "builtin": true
   }

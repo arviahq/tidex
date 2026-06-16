@@ -36,7 +36,7 @@ export function inferLanguage(code: string, filename?: string, explicit?: string
   if (filename?.endsWith(".ts")) return "typescript";
 
   const trimmed = code.trim();
-  if (/^(pnpm|npm|cd |tide )/.test(trimmed)) return "bash";
+  if (/^(pnpm|npm|cd |tidex )/.test(trimmed)) return "bash";
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) return "json";
   if (trimmed.includes("import ") || trimmed.includes("export ")) {
     return trimmed.includes("<") ? "tsx" : "typescript";

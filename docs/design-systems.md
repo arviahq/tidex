@@ -1,6 +1,6 @@
 # Design system folder structure
 
-Tide is convention-driven: it scans `.tsx` files, discovers exported React components, extracts props from the same file, and builds the sidebar from folder paths. This guide describes a folder layout that works with Tide out of the box.
+Tidex is convention-driven: it scans `.tsx` files, discovers exported React components, extracts props from the same file, and builds the sidebar from folder paths. This guide describes a folder layout that works with Tidex out of the box.
 
 See also: [examples/react-app](../examples/react-app) for a working reference.
 
@@ -8,12 +8,12 @@ See also: [examples/react-app](../examples/react-app) for a working reference.
 
 ```
 my-design-system/
-├── tide.config.ts          # run tide from this package root
+├── tidex.config.ts          # run tidex from this package root
 ├── tokens.json             # optional — shows in Foundations → Tokens
 ├── package.json
 └── src/
     ├── preview/
-    │   └── TideWrapper.tsx # ThemeProvider / context — not a “story”
+    │   └── TidexWrapper.tsx # ThemeProvider / context — not a “story”
     ├── theme/              # tokens, CSS vars, utilities (.ts — not scanned)
     │   └── tokens.ts
     ├── hooks/              # (.ts — not scanned)
@@ -41,7 +41,7 @@ my-design-system/
 
 ### Sidebar folders come from `src/components/`
 
-Tide looks for a `components` segment in the file path and uses everything after it as folder groups in the manager sidebar.
+Tidex looks for a `components` segment in the file path and uses everything after it as folder groups in the manager sidebar.
 
 | File path                           | Sidebar                |
 | ----------------------------------- | ---------------------- |
@@ -66,7 +66,7 @@ Two levels is usually enough (`forms/Checkbox.tsx`). Deeper nesting works but ca
 
 ### One previewable component per file
 
-Tide discovers components that:
+Tidex discovers components that:
 
 - Are **exported** (`export function`, `export const`, or `export default`)
 - Have a **PascalCase** name (e.g. `Button`, not `button`)
@@ -108,7 +108,7 @@ export function Button({ variant, size, disabled, onClick }: ButtonProps) {
 }
 ```
 
-Tide looks for `{Name}Props`, `Props`, or `I{Name}Props`, or reads the first parameter type directly.
+Tidex looks for `{Name}Props`, `Props`, or `I{Name}Props`, or reads the first parameter type directly.
 
 | Prop shape                                        | Controls support                    |
 | ------------------------------------------------- | ----------------------------------- |
@@ -128,12 +128,12 @@ export { Button } from "./Button";
 export { Checkbox } from "./forms/Checkbox";
 ```
 
-Tide scans `.tsx` only (per `scan.include`), so barrel files won’t create duplicate or phantom components.
+Tidex scans `.tsx` only (per `scan.include`), so barrel files won’t create duplicate or phantom components.
 
-### Minimal `tide.config.ts`
+### Minimal `tidex.config.ts`
 
 ```ts
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -146,7 +146,7 @@ export default defineConfig({
   },
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx", // default export with { children }
+    wrapper: "src/preview/TidexWrapper.tsx", // default export with { children }
   },
 });
 ```
@@ -154,11 +154,11 @@ export default defineConfig({
 The preview **wrapper** is important for design systems that need `ThemeProvider`, a CSS reset, i18n, or other global context. Every story renders inside it:
 
 ```tsx
-// src/preview/TideWrapper.tsx
+// src/preview/TidexWrapper.tsx
 import type { ReactNode } from "react";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
-export default function TideWrapper({ children }: { children: ReactNode }) {
+export default function TidexWrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
 }
 ```
@@ -169,11 +169,11 @@ export default function TideWrapper({ children }: { children: ReactNode }) {
 | ---------------------------------- | -------------------- | --------------------------- |
 | `src/components/**/*.tsx`          | Yes                  | Component catalog + stories |
 | `src/theme/`, `src/hooks/` (`.ts`) | No                   | Implementation details      |
-| `src/preview/TideWrapper.tsx`      | Yes, unless excluded | Provider shell              |
+| `src/preview/TidexWrapper.tsx`      | Yes, unless excluded | Provider shell              |
 | `*.stories.tsx`, `*.test.tsx`      | Auto-excluded        | Legacy stories / tests      |
 | `src/index.ts`                     | No                   | Package exports             |
 
-Tide always excludes these patterns on top of any `scan.exclude` you set:
+Tidex always excludes these patterns on top of any `scan.exclude` you set:
 
 - `**/*.stories.*`
 - `**/*.story.*`
@@ -183,11 +183,11 @@ Tide always excludes these patterns on top of any `scan.exclude` you set:
 
 ## Monorepos
 
-Run Tide from the **package that owns the components**, not the monorepo root:
+Run Tidex from the **package that owns the components**, not the monorepo root:
 
 ```
 packages/
-  ui/                 ← tide.config.ts + tide dev here
+  ui/                 ← tidex.config.ts + tidex dev here
     src/components/…
   docs-site/          ← consumes @myorg/ui; no separate scan needed
 ```
@@ -199,11 +199,11 @@ Point `scan.include` at that package’s source. The default `src/**/*.tsx` is c
 1. **Multiple PascalCase components in one `.tsx`** — each export with JSX becomes its own story. Sometimes fine for compound APIs (`Dialog` + `DialogContent`), often noisy.
 2. **Props imported from another package or file** — controls won’t work. Keep a slim `{Name}Props` in the component file when needed.
 3. **Providers mixed into `components/`** — they’ll show up as stories unless you add them to `scan.exclude`.
-4. **Running tide from a subdirectory** — Tide can fall back to scanning the whole cwd, but you lose predictable `src/**` matching. Keep `tide.config.ts` at the package root and run commands from there.
+4. **Running tidex from a subdirectory** — Tidex can fall back to scanning the whole cwd, but you lose predictable `src/**` matching. Keep `tidex.config.ts` at the package root and run commands from there.
 
 ## Quick checklist
 
-- [ ] `tide.config.ts` at the design-system package root
+- [ ] `tidex.config.ts` at the design-system package root
 - [ ] Components under `scan.componentsDir` (default `src/components/`) with category subfolders
 - [ ] One exported PascalCase component per `.tsx` file
 - [ ] `{Component}Props` (or inline param types) in the same file or a local types module
@@ -211,11 +211,11 @@ Point `scan.include` at that package’s source. The default `src/**/*.tsx` is c
 - [ ] Preview wrapper for theme/context providers
 - [ ] `scan.exclude` for preview shell and internal building blocks
 - [ ] Public API barrels in `.ts` files only
-- [ ] Run `tide doctor` after setup
+- [ ] Run `tidex doctor` after setup
 
 ## Related docs
 
-- [Component authoring](./component-authoring.md) — exports, props, `forwardRef`, `@tide-skip`
+- [Component authoring](./component-authoring.md) — exports, props, `forwardRef`, `@tidex-skip`
 - [Configuration reference](./config-reference.md) — all config options
 - [Monorepo guide](./monorepo.md) — workspace packages
 - [Troubleshooting](./troubleshooting.md) — when something doesn't work

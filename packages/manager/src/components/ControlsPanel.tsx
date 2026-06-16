@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { PropSchema } from "../api";
-import { generateJsxSnippet } from "@tide/react";
+import { generateJsxSnippet } from "@tidex/react";
 import { CodeBlock } from "./CodeBlock";
 import { ControlField } from "./controls/Control";
 import { matchesQuery } from "./controls/search";

@@ -1,5 +1,5 @@
 {
-  "name": "@tide/docs",
+  "name": "@tidex/docs",
   "version": "0.0.1",
   "files": [
     "dist"
@@ -21,8 +21,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*",
-    "@tide/react": "workspace:*"
+    "@tidex/core": "workspace:*",
+    "@tidex/react": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

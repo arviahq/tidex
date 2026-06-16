@@ -99,9 +99,9 @@ function leadingComment(file: ParsedFile, nodeStart: number): Comment | undefine
   return best;
 }
 
-export function hasTideSkip(file: ParsedFile, nodeStart: number): boolean {
+export function hasTidexSkip(file: ParsedFile, nodeStart: number): boolean {
   const c = leadingComment(file, nodeStart);
-  return !!c && /@tide-skip\b/.test(c.value);
+  return !!c && /@tidex-skip\b/.test(c.value);
 }
 
 /** First non-tag line of the leading JSDoc block, mirroring ts-morph's getDescription. */

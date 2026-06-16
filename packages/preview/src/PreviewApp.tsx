@@ -9,8 +9,8 @@ import React, {
   type ReactNode,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
-import { bindingsToCallbacks, type BindingsMap, type InteractionStep } from "@tide/core";
+import { PREVIEW_MESSAGE, type StoryModule } from "@tidex/runtime";
+import { bindingsToCallbacks, type BindingsMap, type InteractionStep } from "@tidex/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
 import { applyForcedStates, type ForcedStates } from "./forcePseudo";
 import { isCompactMode } from "./isCompactMode";
@@ -74,18 +74,18 @@ class PreviewErrorBoundary extends Component<
 }
 
 function loadStories(): Promise<Record<string, StoryModule>> {
-  return import("virtual:tide-stories").then((mod) => mod.stories as Record<string, StoryModule>);
+  return import("virtual:tidex-stories").then((mod) => mod.stories as Record<string, StoryModule>);
 }
 
 /**
- * Tide's inferred callback wiring for a story, read straight from
- * `.tide/bindings.json`. Lets a standalone preview (opened with `?bindings=1`,
+ * Tidex's inferred callback wiring for a story, read straight from
+ * `.tidex/bindings.json`. Lets a standalone preview (opened with `?bindings=1`,
  * e.g. by the headless interaction verifier) be interactive without the manager
  * — the manager itself always sends the merged wiring via SET_CALLBACKS instead.
  */
 async function loadInferredCallbacks(storyId: string): Promise<CallbackMap> {
   try {
-    const res = await fetch("/__tide/bindings.json");
+    const res = await fetch("/__tidex/bindings.json");
     if (!res.ok) return {};
     const map = (await res.json()) as BindingsMap;
     return bindingsToCallbacks(map[storyId] ?? []) as CallbackMap;
@@ -97,7 +97,7 @@ async function loadInferredCallbacks(storyId: string): Promise<CallbackMap> {
 type PreviewWrapper = ComponentType<{ children?: ReactNode }> | null;
 
 function loadPreviewWrapper(): Promise<PreviewWrapper> {
-  return import("virtual:tide-stories").then((mod) => mod.previewWrapper ?? null).catch(() => null);
+  return import("virtual:tidex-stories").then((mod) => mod.previewWrapper ?? null).catch(() => null);
 }
 
 // Wrap the rendered component in the user-configured provider/decorator (e.g. a
@@ -307,7 +307,7 @@ export function PreviewApp() {
         const stories = await loadStories();
         const entry = stories[name];
         if (!entry) {
-          fail(`Story "${name}" not found. Run \`tide generate\`.`);
+          fail(`Story "${name}" not found. Run \`tidex generate\`.`);
           return;
         }
         // Surface the story so the canvas container mounts.
@@ -367,7 +367,7 @@ export function PreviewApp() {
       const entry = stories[name];
       if (!entry) {
         setWaiting(false);
-        setError(`Story "${name}" not found. Run \`tide generate\`.`);
+        setError(`Story "${name}" not found. Run \`tidex generate\`.`);
         setStory(null);
         return;
       }
@@ -380,7 +380,7 @@ export function PreviewApp() {
       setWaiting(false);
       setStory(null);
       setError(
-        `Failed to load stories: ${formatError(err)}. Run \`tide generate\` from your project root.`,
+        `Failed to load stories: ${formatError(err)}. Run \`tidex generate\` from your project root.`,
       );
     }
   };
@@ -455,7 +455,7 @@ export function PreviewApp() {
         }
       }
       void selectStory(name, initialArgs);
-      // Self-wire Tide's inferred bindings so a directly-opened preview is
+      // Self-wire Tidex's inferred bindings so a directly-opened preview is
       // interactive (used by the headless interaction verifier).
       if (params.get("bindings") === "1") {
         void loadInferredCallbacks(name).then((cb) => setCallbacks(cb));
@@ -541,8 +541,8 @@ export function PreviewApp() {
   // Element outlines + background grid are plain html classes (see preview.css).
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("tide-outline", view.outline);
-    root.classList.toggle("tide-grid", view.grid);
+    root.classList.toggle("tidex-outline", view.outline);
+    root.classList.toggle("tidex-grid", view.grid);
   }, [view.outline, view.grid]);
 
   // Re-pin forced pseudo-states after each (re)mount, since a freshly loaded
@@ -579,7 +579,7 @@ export function PreviewApp() {
     <div
       ref={containerRef}
       className={compact ? "bb-preview-canvas" : undefined}
-      data-tide-visual=""
+      data-tidex-visual=""
       style={transform ? { transform } : undefined}
     />
   );

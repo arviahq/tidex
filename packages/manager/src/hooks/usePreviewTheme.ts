@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { Theme } from "./useTheme";
 
-const STORAGE_KEY = "tide:preview-theme";
+const STORAGE_KEY = "tidex:preview-theme";
 
 export function getStoredPreviewTheme(): Theme {
   if (typeof window === "undefined") return "light";

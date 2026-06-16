@@ -95,7 +95,7 @@ export interface PropsDiff {
   changed: PropChange[];
 }
 
-/** Full per-layer detail — written to .tide/reports/{id}-diff.json, fetched on demand. */
+/** Full per-layer detail — written to .tidex/reports/{id}-diff.json, fetched on demand. */
 export interface VisualDiffDetail {
   storyId: string;
   summary: VisualDiffSummary;

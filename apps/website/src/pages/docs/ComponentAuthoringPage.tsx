@@ -6,7 +6,7 @@ export function ComponentAuthoringPage() {
   return (
     <DocPage
       title="Component authoring"
-      description="How to write components so Tide discovers them, extracts props, and builds controls."
+      description="How to write components so Tidex discovers them, extracts props, and builds controls."
     >
       <section className="doc-section">
         <h2>Stable component ids</h2>
@@ -73,10 +73,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(pro
       <section className="doc-section">
         <h2>Opt out of discovery</h2>
         <p>
-          Add <code>@tide-skip</code> in a JSDoc comment on the export:
+          Add <code>@tidex-skip</code> in a JSDoc comment on the export:
         </p>
         <CodeBlock
-          code={`/** @tide-skip — internal layout shell, not a catalog component */
+          code={`/** @tidex-skip — internal layout shell, not a catalog component */
 export function TideShell({ children }: { children: React.ReactNode }) {
   return <div className="shell">{children}</div>;
 }`}
@@ -85,7 +85,7 @@ export function TideShell({ children }: { children: React.ReactNode }) {
 
       <section className="doc-section">
         <h2>Props naming</h2>
-        <p>Tide looks for, in order:</p>
+        <p>Tidex looks for, in order:</p>
         <ol>
           <li>
             <code>{"{ComponentName}Props"}</code> (e.g. <code>ButtonProps</code>)
@@ -198,7 +198,7 @@ export type CheckboxProps = LabelProps & { checked: boolean };`}
       <section className="doc-section">
         <h2>Default args</h2>
         <p>
-          Tide generates sensible defaults (first union value, heuristic strings for{" "}
+          Tidex generates sensible defaults (first union value, heuristic strings for{" "}
           <code>label</code>/<code>title</code>, etc.).
         </p>
         <p>Override per component in config:</p>

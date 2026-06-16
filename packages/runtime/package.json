@@ -1,5 +1,5 @@
 {
-  "name": "@tide/runtime",
+  "name": "@tidex/runtime",
   "version": "0.0.1",
   "files": [
     "dist"
@@ -21,7 +21,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*"
+    "@tidex/core": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

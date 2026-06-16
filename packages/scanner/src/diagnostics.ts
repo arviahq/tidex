@@ -1,5 +1,5 @@
-import type { ComponentEntry, PropsMap } from "@tide/core";
-import { getComponentId } from "@tide/core";
+import type { ComponentEntry, PropsMap } from "@tidex/core";
+import { getComponentId } from "@tidex/core";
 
 export interface ScanDiagnostics {
   warnings: string[];

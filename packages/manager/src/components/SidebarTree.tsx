@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import type { ComponentEntry } from "@tide/core";
-import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tide/core";
-import type { PropsMap } from "@tide/core";
+import type { ComponentEntry } from "@tidex/core";
+import { buildDefaultArgs, formatDisplayName, getComponentId } from "@tidex/core";
+import type { PropsMap } from "@tidex/core";
 import {
   buildComponentSections,
   collectFolderIds,

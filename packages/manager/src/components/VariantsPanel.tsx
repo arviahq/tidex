@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { buildDefaultArgs, formatDisplayName } from "@tide/core";
-import { computeVariants, formatVariantLabel } from "@tide/react";
+import { buildDefaultArgs, formatDisplayName } from "@tidex/core";
+import { computeVariants, formatVariantLabel } from "@tidex/react";
 import type { PropSchema } from "../api";
 import { PREVIEW_URL, PREVIEW_MESSAGE } from "../api";
 import type { Theme } from "../hooks/useTheme";

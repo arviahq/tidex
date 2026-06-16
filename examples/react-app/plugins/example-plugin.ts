@@ -1,6 +1,6 @@
-import type { TidePlugin } from "@tide/core";
+import type { TidexPlugin } from "@tidex/core";
 
-const examplePlugin: TidePlugin = {
+const examplePlugin: TidexPlugin = {
   name: "example-plugin",
   setup(ctx) {
     ctx.addPanel({

@@ -50,7 +50,7 @@ function UnresolvedTypes({ entries }: { entries: UnresolvedEntry[] }) {
       {open ? (
         <div className="bb-diag__body">
           <p className="bb-diag__hint">
-            These props reference types Tide couldn&apos;t resolve — usually a type imported from
+            These props reference types Tidex couldn&apos;t resolve — usually a type imported from
             another module. Move the type into the component file (or a local types module) so its
             controls appear.
           </p>

@@ -45,7 +45,7 @@ export function Hero() {
               Start in 60 seconds
             </Link>
             <a
-              href="https://github.com/arviahq/tide"
+              href="https://github.com/arviahq/tidex"
               className="btn btn--ghost"
               target="_blank"
               rel="noreferrer"

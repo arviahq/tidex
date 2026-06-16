@@ -3,7 +3,7 @@ const PILLARS = [
     id: "accessibility",
     step: "01",
     title: "Accessibility",
-    cli: "tide test",
+    cli: "tidex test",
     description:
       "Run accessibility checks against every component. Catch violations before they ship to production.",
     status: "passing",
@@ -14,14 +14,14 @@ const PILLARS = [
     title: "Interactions",
     cli: "Tests tab",
     description:
-      "Record click, type, and assert steps in the manager. Saved to .tide/tests/ and runnable in CI.",
+      "Record click, type, and assert steps in the manager. Saved to .tidex/tests/ and runnable in CI.",
     status: "recording",
   },
   {
     id: "visual",
     step: "03",
     title: "Visual",
-    cli: "tide visual",
+    cli: "tidex visual",
     description:
       "Capture baselines, compare pixel diffs, and review changes in-app. Threshold configurable in config.",
     status: "diff",

@@ -12,7 +12,7 @@ import { ConfigReferencePage } from "./pages/docs/ConfigReferencePage";
 import { MonorepoGuidePage } from "./pages/docs/MonorepoGuidePage";
 import { ComponentAuthoringPage } from "./pages/docs/ComponentAuthoringPage";
 import { AutoDocsPage } from "./pages/docs/AutoDocsPage";
-import { TideFolderPage } from "./pages/docs/TideFolderPage";
+import { TidexFolderPage } from "./pages/docs/TidexFolderPage";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -62,10 +62,10 @@ const componentAuthoringRoute = createRoute({
   component: ComponentAuthoringPage,
 });
 
-const tideFolderRoute = createRoute({
+const tidexFolderRoute = createRoute({
   getParentRoute: () => docsLayoutRoute,
-  path: "tide-folder",
-  component: TideFolderPage,
+  path: "tidex-folder",
+  component: TidexFolderPage,
 });
 
 const autoDocsRoute = createRoute({
@@ -82,7 +82,7 @@ const routeTree = rootRoute.addChildren([
     configReferenceRoute,
     monorepoRoute,
     componentAuthoringRoute,
-    tideFolderRoute,
+    tidexFolderRoute,
     autoDocsRoute,
   ]),
 ]);

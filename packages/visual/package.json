@@ -1,5 +1,5 @@
 {
-  "name": "@tide/visual",
+  "name": "@tidex/visual",
   "version": "0.0.1",
   "files": [
     "dist"
@@ -21,7 +21,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*",
+    "@tidex/core": "workspace:*",
     "pixelmatch": "^6.0.0",
     "pngjs": "^7.0.0"
   },

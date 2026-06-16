@@ -1,5 +1,5 @@
 {
-  "name": "@tide/preview",
+  "name": "@tidex/preview",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -12,8 +12,8 @@
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/user-event": "^14.5.2",
-    "@tide/core": "workspace:*",
-    "@tide/runtime": "workspace:*",
+    "@tidex/core": "workspace:*",
+    "@tidex/runtime": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

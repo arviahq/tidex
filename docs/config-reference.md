@@ -1,11 +1,11 @@
 # Configuration reference
 
-All options live in `tide.config.ts` at the package root (where you run Tide commands).
+All options live in `tidex.config.ts` at the package root (where you run Tidex commands).
 
 ## Full example
 
 ```ts
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   root: process.cwd(),
@@ -20,7 +20,7 @@ export default defineConfig({
   },
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
     vite: {
       plugins: [],
     },
@@ -38,13 +38,13 @@ export default defineConfig({
 
 Glob patterns for `.tsx` files to scan. Default: `["src/**/*.tsx"]`.
 
-Run Tide from the package that owns these files.
+Run Tidex from the package that owns these files.
 
 ### `scan.exclude`
 
-Additional globs excluded from discovery. Tide always excludes `*.stories.*`, `*.test.*`, `*.spec.*`, and `*.d.ts`.
+Additional globs excluded from discovery. Tidex always excludes `*.stories.*`, `*.test.*`, `*.spec.*`, and `*.d.ts`.
 
-Default in `tide init`: `["**/preview/**"]`.
+Default in `tidex init`: `["**/preview/**"]`.
 
 ### `scan.componentsDir`
 
@@ -73,7 +73,7 @@ defaults: {
 
 ### `tokens`
 
-Path to a JSON token file, copied to `.tide/tokens.json` on generate. Shown under **Foundations → Tokens**.
+Path to a JSON token file, copied to `.tidex/tokens.json` on generate. Shown under **Foundations → Tokens**.
 
 ### `preview.wrapper`
 
@@ -95,19 +95,19 @@ Dev server ports. Defaults: `6006` / `6007`.
 
 | File                         | Purpose                                                |
 | ---------------------------- | ------------------------------------------------------ |
-| `.tide/manifest.json`        | Discovered components (with stable `id`)               |
-| `.tide/props.json`           | Extracted prop schemas, keyed by id                    |
-| `.tide/stories.generated.ts` | Lazy story modules                                     |
-| `.tide/config.json`          | Snapshot of `packageName`, `defaults`, `componentsDir` |
-| `.tide/scan-report.json`     | Warnings and diagnostics                               |
-| `.tide/tokens.json`          | Copy of your tokens file                               |
+| `.tidex/manifest.json`        | Discovered components (with stable `id`)               |
+| `.tidex/props.json`           | Extracted prop schemas, keyed by id                    |
+| `.tidex/stories.generated.ts` | Lazy story modules                                     |
+| `.tidex/config.json`          | Snapshot of `packageName`, `defaults`, `componentsDir` |
+| `.tidex/scan-report.json`     | Warnings and diagnostics                               |
+| `.tidex/tokens.json`          | Copy of your tokens file                               |
 
 ## CLI
 
 ```bash
-tide init                  # scaffold config + folders
-tide generate              # scan and write artifacts
-tide generate --verbose    # print diagnostics
-tide doctor                # validate setup
-tide dev                   # start manager + preview
+tidex init                  # scaffold config + folders
+tidex generate              # scan and write artifacts
+tidex generate --verbose    # print diagnostics
+tidex doctor                # validate setup
+tidex dev                   # start manager + preview
 ```

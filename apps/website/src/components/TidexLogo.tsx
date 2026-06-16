@@ -1,4 +1,4 @@
-export function TideLogo({ size = 16 }: { size?: number }) {
+export function TidexLogo({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path

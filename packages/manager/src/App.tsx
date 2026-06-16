@@ -5,7 +5,7 @@ import {
   buildDefaultArgs,
   formatDisplayName,
   getComponentId,
-} from "@tide/core";
+} from "@tidex/core";
 import type {
   ComponentEntry,
   InteractionBinding,
@@ -15,9 +15,9 @@ import type {
   PropSchema,
   PropsMap,
   StepResult,
-} from "@tide/core";
-import { computeVariants, propToControl } from "@tide/react";
-import { useTideData } from "./hooks";
+} from "@tidex/core";
+import { computeVariants, propToControl } from "@tidex/react";
+import { useTidexData } from "./hooks";
 import { useResize } from "./hooks/useResize";
 import { usePreviewTheme } from "./hooks/usePreviewTheme";
 import { usePreviewViewport } from "./hooks/usePreviewViewport";
@@ -94,7 +94,7 @@ function bindingsToCallbackMap(bindings: InteractionBinding[]): CallbackMap {
   return bindingsToCallbacks(bindings) as CallbackMap;
 }
 
-function TideLogo() {
+function TidexLogo() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path
@@ -117,7 +117,7 @@ function TideLogo() {
 
 export function App() {
   const queryClient = useQueryClient();
-  const { manifest, props, tokens, config, scanReport, bindings } = useTideData();
+  const { manifest, props, tokens, config, scanReport, bindings } = useTidexData();
 
   // The dev server regenerates artifacts and signals a data change instead of
   // full-reloading the manager (see packages/cli/src/dev.ts). Refetch in place
@@ -127,9 +127,9 @@ export function App() {
     const refetch = () => {
       void queryClient.invalidateQueries();
     };
-    import.meta.hot.on("tide:data-changed", refetch);
+    import.meta.hot.on("tidex:data-changed", refetch);
     return () => {
-      import.meta.hot?.off("tide:data-changed", refetch);
+      import.meta.hot?.off("tidex:data-changed", refetch);
     };
   }, [queryClient]);
   const [search, setSearch] = useState("");
@@ -139,7 +139,7 @@ export function App() {
   const [tab, setTab] = useState<PanelTab>("props");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("preview");
   const [args, setArgs] = useState<Record<string, unknown>>({});
-  // User-authored wiring (overrides inferred bindings); persisted to .tide/interactions.
+  // User-authored wiring (overrides inferred bindings); persisted to .tidex/interactions.
   const [callbacks, setCallbacks] = useState<CallbackMap>({});
   // Live interaction records reported by the preview (most-recent first).
   const [interactionLog, setInteractionLog] = useState<InteractionRecord[]>([]);
@@ -163,7 +163,7 @@ export function App() {
     min: 220,
     max: 420,
     axis: "horizontal",
-    storageKey: "tide:sidebar-width",
+    storageKey: "tidex:sidebar-width",
     bodyClass: "bb-is-resizing-sidebar",
   });
 
@@ -172,7 +172,7 @@ export function App() {
     min: 160,
     max: () => window.innerHeight * 0.78,
     axis: "vertical",
-    storageKey: "tide:panel-height",
+    storageKey: "tidex:panel-height",
     bodyClass: "bb-is-resizing-panel",
   });
 
@@ -629,7 +629,7 @@ export function App() {
       <div className="bb-layout__center">
         <div className="bb-splash">
           <span className="bb-splash__logo bb-splash__logo--pulse" aria-hidden="true">
-            <TideLogo />
+            <TidexLogo />
           </span>
           <p className="bb-splash__title">Loading your design system…</p>
         </div>
@@ -642,11 +642,11 @@ export function App() {
       <div className="bb-layout__center">
         <div className="bb-splash">
           <span className="bb-splash__logo bb-splash__logo--error" aria-hidden="true">
-            <TideLogo />
+            <TidexLogo />
           </span>
           <h1 className="bb-splash__heading">Couldn’t load your design system</h1>
           <p className="bb-splash__text">No manifest was found. Generate one to get started:</p>
-          <code className="bb-splash__code">tide generate</code>
+          <code className="bb-splash__code">tidex generate</code>
         </div>
       </div>
     );
@@ -658,9 +658,9 @@ export function App() {
         <div className="bb-appbar__left">
           <div className="bb-brand">
             <span className="bb-brand__logo" aria-hidden="true">
-              <TideLogo />
+              <TidexLogo />
             </span>
-            <span className="bb-brand__name">Tide</span>
+            <span className="bb-brand__name">Tidex</span>
             <span className="bb-brand__tag">Design</span>
           </div>
           <span className="bb-appbar__divider" aria-hidden="true" />
@@ -809,7 +809,7 @@ export function App() {
                 <TokensPanel tokens={tokens.data ?? null} />
               ) : components.length === 0 ? (
                 <p className="bb-layout__empty">
-                  No components found. Run <code>tide generate</code>.
+                  No components found. Run <code>tidex generate</code>.
                 </p>
               ) : previewTab === "preview" ? (
                 <PreviewViewport viewport={viewport}>

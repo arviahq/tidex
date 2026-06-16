@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { TideLogo } from "./TideLogo";
+import { TidexLogo } from "./TidexLogo";
 import { DOC_NAV } from "../docs/nav";
 
 export function Footer() {
@@ -8,10 +8,10 @@ export function Footer() {
       <div className="footer__inner">
         <div className="footer__brand">
           <span className="footer__logo" aria-hidden="true">
-            <TideLogo size={16} />
+            <TidexLogo size={16} />
           </span>
           <div>
-            <span className="footer__name">Tide</span>
+            <span className="footer__name">Tidex</span>
             <p className="footer__tagline">Zero-boilerplate component explorer</p>
           </div>
         </div>

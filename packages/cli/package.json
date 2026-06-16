@@ -1,8 +1,8 @@
 {
-  "name": "tide",
+  "name": "tidex",
   "version": "0.0.1",
   "bin": {
-    "tide": "./bin/tide.js"
+    "tidex": "./bin/tidex.js"
   },
   "files": [
     "dist"
@@ -18,7 +18,7 @@
       "types": "./dist/index.d.ts"
     },
     "./core": {
-      "import": "@tide/core"
+      "import": "@tidex/core"
     }
   },
   "scripts": {
@@ -27,11 +27,11 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tide/core": "workspace:*",
-    "@tide/docs": "workspace:*",
-    "@tide/scanner": "workspace:*",
-    "@tide/testing": "workspace:*",
-    "@tide/visual": "workspace:*",
+    "@tidex/core": "workspace:*",
+    "@tidex/docs": "workspace:*",
+    "@tidex/scanner": "workspace:*",
+    "@tidex/testing": "workspace:*",
+    "@tidex/visual": "workspace:*",
     "chokidar": "^4.0.0",
     "commander": "^12.1.0",
     "ink": "^7.0.0",

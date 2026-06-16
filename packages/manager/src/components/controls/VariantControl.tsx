@@ -1,4 +1,4 @@
-import { defaultArgsForProp } from "@tide/core";
+import { defaultArgsForProp } from "@tidex/core";
 import type { ControlNodeProps } from "./types";
 import { ControlField } from "./Control";
 

@@ -1,4 +1,4 @@
-import { coerceUnionValue, type PropSchema } from "@tide/core";
+import { coerceUnionValue, type PropSchema } from "@tidex/core";
 
 export { coerceUnionValue };
 

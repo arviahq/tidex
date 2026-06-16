@@ -1,6 +1,6 @@
-import { formatDisplayName, type ComponentEntry } from "@tide/core";
-import { generateComponentDoc } from "@tide/docs";
-import { generateJsxSnippet } from "@tide/react";
+import { formatDisplayName, type ComponentEntry } from "@tidex/core";
+import { generateComponentDoc } from "@tidex/docs";
+import { generateJsxSnippet } from "@tidex/react";
 import { useState } from "react";
 import type { PropSchema } from "../api";
 import { CodeBlock } from "./CodeBlock";

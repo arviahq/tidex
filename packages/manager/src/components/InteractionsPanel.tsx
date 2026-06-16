@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatDisplayName } from "@tide/core";
+import { formatDisplayName } from "@tidex/core";
 import type {
   CallbackMap,
   ExtractStrategy,
@@ -14,7 +14,7 @@ interface InteractionsPanelProps {
   props: Record<string, PropSchema>;
   /** User-authored wiring (overrides inferred). */
   callbacks: CallbackMap;
-  /** Tide's inferred bindings for this component. */
+  /** Tidex's inferred bindings for this component. */
   bindings: InteractionBinding[];
   /** Live interaction records (most-recent first). */
   log: InteractionRecord[];
@@ -102,7 +102,7 @@ export function InteractionsPanel({
   );
 
   // The effective wiring for a handler: the user's override if present,
-  // otherwise Tide's inferred binding.
+  // otherwise Tidex's inferred binding.
   const resolve = (name: string) => {
     const userEntry = Object.prototype.hasOwnProperty.call(callbacks, name)
       ? callbacks[name]
@@ -148,7 +148,7 @@ export function InteractionsPanel({
         <div className="bb-interactions__title-block">
           <h2 className="bb-interactions__name-title">{formatDisplayName(componentName)}</h2>
           <p className="bb-interactions__subtitle">
-            Auto-wired interactions · overrides saved to .tide/interactions/{componentName}.json
+            Auto-wired interactions · overrides saved to .tidex/interactions/{componentName}.json
           </p>
         </div>
         {callbackNames.length > 0 && (
@@ -174,7 +174,7 @@ export function InteractionsPanel({
             <span className="bb-interactions__section-count">{callbackNames.length}</span>
           </div>
           <p className="bb-interactions__hint">
-            Tide wires these automatically. Change the target prop or extraction strategy to
+            Tidex wires these automatically. Change the target prop or extraction strategy to
             override, or set a handler to <em>action only</em> to disconnect it.
           </p>
           <div className="bb-interactions__list">

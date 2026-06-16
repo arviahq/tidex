@@ -11,7 +11,7 @@ export function AutoDocsPage() {
       <section className="doc-section">
         <h2>Docs panel</h2>
         <p>
-          Select any component in the manager and open the <strong>Docs</strong> tab. Tide generates
+          Select any component in the manager and open the <strong>Docs</strong> tab. Tidex generates
           documentation on the fly from your source — prop schemas, TSDoc descriptions, import paths,
           and a live usage snippet reflecting the current control values.
         </p>
@@ -40,12 +40,12 @@ export function AutoDocsPage() {
       <section className="doc-section">
         <h2>Import lines</h2>
         <p>
-          Set <code>packageName</code> in <code>tide.config.ts</code> so the Docs panel shows how
+          Set <code>packageName</code> in <code>tidex.config.ts</code> so the Docs panel shows how
           consumers import your library:
         </p>
         <CodeBlock code={`import { Button } from "@myorg/ui";`} />
         <p>
-          Without <code>packageName</code>, Tide falls back to a relative path from the component
+          Without <code>packageName</code>, Tidex falls back to a relative path from the component
           file.
         </p>
       </section>
@@ -73,8 +73,8 @@ export function AutoDocsPage() {
       <section className="doc-section">
         <h2>Live usage snippets</h2>
         <p>
-          The example snippet updates as you tweak controls in the Props panel. Tide uses{" "}
-          <code>@tide/docs</code> and <code>@tide/react</code> under the hood to generate import
+          The example snippet updates as you tweak controls in the Props panel. Tidex uses{" "}
+          <code>@tidex/docs</code> and <code>@tidex/react</code> under the hood to generate import
           lines and JSX from the current arg values — the same output you&apos;d copy into an app.
         </p>
         <CodeBlock
@@ -97,7 +97,7 @@ export function AutoDocsPage() {
         <h2>Design tokens</h2>
         <p>
           Component docs cover your API. For design foundations, point <code>tokens</code> in config
-          at a JSON file — Tide surfaces it under <strong>Foundations → Tokens</strong> in the
+          at a JSON file — Tidex surfaces it under <strong>Foundations → Tokens</strong> in the
           manager sidebar.
         </p>
       </section>

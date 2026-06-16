@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 const COMMANDS = [
-  { prompt: "$", text: "pnpm exec tide init" },
-  { prompt: "$", text: "pnpm exec tide generate" },
-  { prompt: "$", text: "pnpm exec tide dev" },
+  { prompt: "$", text: "pnpm exec tidex init" },
+  { prompt: "$", text: "pnpm exec tidex generate" },
+  { prompt: "$", text: "pnpm exec tidex dev" },
   { prompt: "✓", text: "Manager ready at http://localhost:6006", success: true },
 ];
 

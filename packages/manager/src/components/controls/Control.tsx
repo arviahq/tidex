@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { validateValue } from "@tide/react";
+import { validateValue } from "@tidex/react";
 import type { ControlNodeProps } from "./types";
 import { isComplexSchema, summarize } from "./helpers";
 import {

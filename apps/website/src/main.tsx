@@ -7,7 +7,7 @@ import "./fonts";
 import "./global.css";
 import "./site.css";
 
-const storedTheme = localStorage.getItem("tide:website-theme");
+const storedTheme = localStorage.getItem("tidex:website-theme");
 applyTheme(storedTheme === "light" ? "light" : storedTheme === "dark" ? "dark" : "dark");
 
 createRoot(document.getElementById("root")!).render(

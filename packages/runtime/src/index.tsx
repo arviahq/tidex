@@ -68,28 +68,28 @@ export function unmountPreview(): void {
 }
 
 export const PREVIEW_MESSAGE = {
-  UPDATE_ARGS: "TIDE_UPDATE_ARGS",
-  SELECT_STORY: "TIDE_SELECT_STORY",
-  READY: "TIDE_READY",
-  SET_THEME: "TIDE_SET_THEME",
+  UPDATE_ARGS: "TIDEX_UPDATE_ARGS",
+  SELECT_STORY: "TIDEX_SELECT_STORY",
+  READY: "TIDEX_READY",
+  SET_THEME: "TIDEX_SET_THEME",
   // Variant tiles report their natural content size to the manager (iframe -> parent),
   // which replies with the shared fit bounds so every tile uses one scale factor.
-  CONTENT_SIZE: "TIDE_CONTENT_SIZE",
-  SET_FIT_BOUNDS: "TIDE_SET_FIT_BOUNDS",
+  CONTENT_SIZE: "TIDEX_CONTENT_SIZE",
+  SET_FIT_BOUNDS: "TIDEX_SET_FIT_BOUNDS",
   // Interaction tests: manager -> preview to run a list of steps; preview -> manager
   // with the result of each step (live) and a final done signal.
-  RUN_TEST: "TIDE_RUN_TEST",
-  TEST_STEP: "TIDE_TEST_STEP",
-  TEST_DONE: "TIDE_TEST_DONE",
+  RUN_TEST: "TIDEX_RUN_TEST",
+  TEST_STEP: "TIDEX_TEST_STEP",
+  TEST_DONE: "TIDEX_TEST_DONE",
   // manager -> preview: explicit callback→state wiring for the current story,
   // sent with SELECT_STORY and pushed live when edited in the Interactions tab.
-  SET_CALLBACKS: "TIDE_SET_CALLBACKS",
+  SET_CALLBACKS: "TIDEX_SET_CALLBACKS",
   // preview -> manager: a wired callback fired. Drives the interaction log and
   // two-way controls sync (the manager applies the new controlled value).
-  INTERACTION: "TIDE_INTERACTION",
+  INTERACTION: "TIDEX_INTERACTION",
   // manager -> preview: canvas view state from the preview toolbar — zoom level,
   // forced pseudo-states (:hover/:focus/:active), element outlines, background grid.
-  SET_VIEW: "TIDE_SET_VIEW",
+  SET_VIEW: "TIDEX_SET_VIEW",
   // manager -> preview: re-mount the current story from scratch (resets state).
-  RELOAD: "TIDE_RELOAD",
+  RELOAD: "TIDEX_RELOAD",
 } as const;

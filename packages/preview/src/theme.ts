@@ -1,6 +1,6 @@
 export type PreviewTheme = "light" | "dark";
 
-const STORAGE_KEY = "tide:preview-theme";
+const STORAGE_KEY = "tidex:preview-theme";
 
 export function applyPreviewTheme(theme: PreviewTheme) {
   document.documentElement.setAttribute("data-theme", theme);

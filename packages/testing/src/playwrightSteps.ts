@@ -1,5 +1,5 @@
 import type { Locator, Page } from "playwright";
-import type { InteractionStep, StepResult, StepTarget } from "@tide/core";
+import type { InteractionStep, StepResult, StepTarget } from "@tidex/core";
 
 const TIMEOUT = 3000;
 

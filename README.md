@@ -1,29 +1,29 @@
-# Tide
+# Tidex
 
 **Components in. Explorer out.**
 
-Tide is a next-generation component explorer for React design systems. Scan your source, get a full manager with live controls, auto-generated docs, design tokens, and built-in accessibility, interaction, and visual testing — without maintaining `.stories.tsx` files.
+Tidex is a next-generation component explorer for React design systems. Scan your source, get a full manager with live controls, auto-generated docs, design tokens, and built-in accessibility, interaction, and visual testing — without maintaining `.stories.tsx` files.
 
-## Why Tide
+## Why Tidex
 
-| Storybook | Tide |
+| Storybook | Tidex |
 | --- | --- |
 | Write `.stories.tsx` for every component | Scan `src/**/*.tsx` automatically |
 | Hand-written `argTypes` | Controls inferred from TypeScript types |
 | Addons for a11y, visual, interactions | Tests, Visual, and Interactions tabs built in |
-| Config sprawl (`main.ts`, `preview.ts`, addons) | One `tide.config.ts` |
+| Config sprawl (`main.ts`, `preview.ts`, addons) | One `tidex.config.ts` |
 
-Your components already know what they are. Tide listens.
+Your components already know what they are. Tidex listens.
 
 ## Quick start
 
-Add Tide to the package that owns your components:
+Add Tidex to the package that owns your components:
 
 ```bash
-pnpm add -D tide
-pnpm exec tide init
-pnpm exec tide generate
-pnpm exec tide dev
+pnpm add -D tidex
+pnpm exec tidex init
+pnpm exec tidex generate
+pnpm exec tidex dev
 ```
 
 Manager runs at `http://localhost:6006`, preview at `http://localhost:6007`.
@@ -36,14 +36,14 @@ From this repo:
 pnpm install
 pnpm build
 cd examples/react-app
-pnpm exec tide generate
-pnpm exec tide dev
+pnpm exec tidex generate
+pnpm exec tidex dev
 ```
 
 ### Minimal config
 
 ```ts
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 
 export default defineConfig({
   scan: {
@@ -54,7 +54,7 @@ export default defineConfig({
   packageName: "@myorg/ui",
   tokens: "tokens.json",
   preview: {
-    wrapper: "src/preview/TideWrapper.tsx",
+    wrapper: "src/preview/TidexWrapper.tsx",
   },
 });
 ```
@@ -63,15 +63,15 @@ export default defineConfig({
 
 | Command | Description |
 | --- | --- |
-| `tide init` | Scaffold `tide.config.ts`, preview wrapper, and `.gitignore` rules |
-| `tide generate` | Scan components and write `.tide/` artifacts |
-| `tide generate --verbose` | Generate with scan diagnostics |
-| `tide doctor` | Validate setup and scan health |
-| `tide dev` | Start manager + preview servers |
-| `tide build` | Generate build artifacts |
-| `tide test` | Run accessibility and interaction tests |
-| `tide visual` | Run visual regression tests |
-| `tide visual --update` | Accept current UI as baseline |
+| `tidex init` | Scaffold `tidex.config.ts`, preview wrapper, and `.gitignore` rules |
+| `tidex generate` | Scan components and write `.tidex/` artifacts |
+| `tidex generate --verbose` | Generate with scan diagnostics |
+| `tidex doctor` | Validate setup and scan health |
+| `tidex dev` | Start manager + preview servers |
+| `tidex build` | Generate build artifacts |
+| `tidex test` | Run accessibility and interaction tests |
+| `tidex visual` | Run visual regression tests |
+| `tidex visual --update` | Accept current UI as baseline |
 
 ## Manager
 
@@ -93,22 +93,22 @@ Install Playwright browsers once per project:
 pnpm exec playwright install chromium
 ```
 
-**Interaction tests** — author in the Tests tab, saved to `.tide/tests/<Component>.json`:
+**Interaction tests** — author in the Tests tab, saved to `.tidex/tests/<Component>.json`:
 
 ```bash
-pnpm exec tide test
+pnpm exec tidex test
 ```
 
-**Visual regression** — capture baselines in the Visual tab. Commit `.tide/baselines/` to git (`tide init` gitignores `.tide/*` but tracks baselines and interaction wiring):
+**Visual regression** — capture baselines in the Visual tab. Commit `.tidex/baselines/` to git (`tidex init` gitignores `.tidex/*` but tracks baselines and interaction wiring):
 
 ```bash
-pnpm exec tide visual           # compare against baselines
-pnpm exec tide visual --update  # refresh baselines
+pnpm exec tidex visual           # compare against baselines
+pnpm exec tidex visual --update  # refresh baselines
 ```
 
-## `.tide/` folder
+## `.tidex/` folder
 
-`tide generate` writes scan artifacts to `.tide/` at the package root:
+`tidex generate` writes scan artifacts to `.tidex/` at the package root:
 
 | File | Purpose |
 | --- | --- |
@@ -125,8 +125,8 @@ Manager-authored files: `tests/`, `interactions/`, `baselines/`. Run output land
 ## Documentation
 
 - [Component authoring](./docs/component-authoring.md) — exports, props, and controls
-- [Configuration reference](./docs/config-reference.md) — every `tide.config.ts` option
-- [Monorepo guide](./docs/monorepo.md) — running Tide in a workspace package
+- [Configuration reference](./docs/config-reference.md) — every `tidex.config.ts` option
+- [Monorepo guide](./docs/monorepo.md) — running Tidex in a workspace package
 - [Design system folder structure](./docs/design-systems.md) — layout conventions for component libraries
 - [Troubleshooting](./docs/troubleshooting.md) — common issues and fixes
 
@@ -135,7 +135,7 @@ The marketing site and extended docs live in `apps/website` (`pnpm website:dev`)
 ## Plugin API
 
 ```ts
-import type { TidePlugin } from "@tide/core";
+import type { TidexPlugin } from "@tidex/core";
 
 export default {
   name: "my-plugin",
@@ -145,13 +145,13 @@ export default {
       /* hook */
     });
   },
-} satisfies TidePlugin;
+} satisfies TidexPlugin;
 ```
 
-Register in `tide.config.ts`:
+Register in `tidex.config.ts`:
 
 ```ts
-import { defineConfig } from "@tide/core";
+import { defineConfig } from "@tidex/core";
 import myPlugin from "./my-plugin";
 
 export default defineConfig({
@@ -163,18 +163,18 @@ export default defineConfig({
 
 | Package | Description |
 | --- | --- |
-| `tide` (cli) | CLI entry point |
-| `@tide/core` | Shared types, config, plugin API |
-| `@tide/scanner` | Component discovery, prop extraction, story generation |
-| `@tide/manager` | Manager UI |
-| `@tide/preview` | Preview iframe host |
-| `@tide/runtime` | React preview renderer |
-| `@tide/react` | Control helpers, variant computation |
-| `@tide/docs` | Auto-documentation generator |
-| `@tide/visual` | Visual diff testing (Playwright + pixelmatch) |
-| `@tide/testing` | Accessibility and interaction testing |
+| `tidex` (cli) | CLI entry point |
+| `@tidex/core` | Shared types, config, plugin API |
+| `@tidex/scanner` | Component discovery, prop extraction, story generation |
+| `@tidex/manager` | Manager UI |
+| `@tidex/preview` | Preview iframe host |
+| `@tidex/runtime` | React preview renderer |
+| `@tidex/react` | Control helpers, variant computation |
+| `@tidex/docs` | Auto-documentation generator |
+| `@tidex/visual` | Visual diff testing (Playwright + pixelmatch) |
+| `@tidex/testing` | Accessibility and interaction testing |
 
-## Developing Tide
+## Developing Tidex
 
 ```bash
 pnpm install

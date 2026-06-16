@@ -77,7 +77,7 @@ export function filterAttrs(attrs: Record<string, string>): Record<string, strin
   const out: Record<string, string> = {};
   for (const [name, value] of Object.entries(attrs)) {
     if (DROP_ATTRS.has(name)) continue;
-    if (name.startsWith("data-tide")) continue;
+    if (name.startsWith("data-tidex")) continue;
     out[name] = value;
   }
   return out;

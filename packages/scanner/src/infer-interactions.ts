@@ -6,7 +6,7 @@ import {
   type ExtractStrategy,
   type InteractionBinding,
   type PropsMap,
-} from "@tide/core";
+} from "@tidex/core";
 import {
   child,
   children,

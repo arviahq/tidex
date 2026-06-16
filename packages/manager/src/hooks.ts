@@ -8,7 +8,7 @@ import {
   fetchTokens,
 } from "./api";
 
-export function useTideData() {
+export function useTidexData() {
   const manifest = useQuery({ queryKey: ["manifest"], queryFn: fetchManifest });
   const props = useQuery({ queryKey: ["props"], queryFn: fetchProps });
   const tokens = useQuery({ queryKey: ["tokens"], queryFn: fetchTokens });

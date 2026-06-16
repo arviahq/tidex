@@ -15,7 +15,7 @@ export function Prose({ title, content, size, align }: ProseProps) {
   const heading = text(title, "Release notes");
   const body = text(
     content,
-    "Tide turns your components into a living catalog.\n\nEdit any prop and watch the preview update instantly.",
+    "Tidex turns your components into a living catalog.\n\nEdit any prop and watch the preview update instantly.",
   );
   return (
     <article

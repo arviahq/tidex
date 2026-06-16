@@ -1,11 +1,11 @@
 import path from "node:path";
-import type { ComponentEntry } from "@tide/core";
+import type { ComponentEntry } from "@tidex/core";
 import {
   child,
   children,
   containsJsx,
   createFileParser,
-  hasTideSkip,
+  hasTidexSkip,
   str,
   text,
   type AstNode,
@@ -172,7 +172,7 @@ export function discoverComponents(
     };
 
     for (const stmt of parsed.body) {
-      if (hasTideSkip(parsed, stmt.start)) continue;
+      if (hasTidexSkip(parsed, stmt.start)) continue;
 
       if (stmt.type === "ExportDefaultDeclaration") {
         const decl = child(stmt, "declaration");

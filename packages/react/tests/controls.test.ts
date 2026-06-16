@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getAtPath, setAtPath, validateValue } from "../src/index.js";
-import type { PropSchema } from "@tide/core";
+import type { PropSchema } from "@tidex/core";
 
 describe("setAtPath / getAtPath", () => {
   it("sets a nested object value immutably", () => {

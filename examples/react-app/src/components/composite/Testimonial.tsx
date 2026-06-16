@@ -45,7 +45,7 @@ export function Testimonial({ quote, author, role, avatarColor, rating }: Testim
         “
         {text(
           quote,
-          "Tide changed how our team reviews UI. Every prop is just there, ready to tweak.",
+          "Tidex changed how our team reviews UI. Every prop is just there, ready to tweak.",
         )}
         ”
       </blockquote>

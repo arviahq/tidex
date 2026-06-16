@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { defaultConfig, getManifestPath, type TideConfig } from "@tide/core";
+import { defaultConfig, getManifestPath, type TidexConfig } from "@tidex/core";
 
-export async function loadConfig(cwd: string): Promise<TideConfig> {
-  const configFiles = ["tide.config.ts", "tide.config.js", "tide.config.mjs"];
+export async function loadConfig(cwd: string): Promise<TidexConfig> {
+  const configFiles = ["tidex.config.ts", "tidex.config.js", "tidex.config.mjs"];
 
   for (const file of configFiles) {
     const configPath = path.join(cwd, file);
@@ -20,9 +20,9 @@ export async function loadConfig(cwd: string): Promise<TideConfig> {
 export function readManifest(root: string) {
   const manifestPath = getManifestPath(root);
   if (!fs.existsSync(manifestPath)) {
-    throw new Error("No manifest found. Run `tide generate` first.");
+    throw new Error("No manifest found. Run `tidex generate` first.");
   }
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
 }
 
-export type { TideConfig };
+export type { TidexConfig };

@@ -7,7 +7,7 @@ import {
   type PropSchema,
   type PropsMap,
   type ComponentEntry,
-} from "@tide/core";
+} from "@tidex/core";
 import {
   child,
   children,

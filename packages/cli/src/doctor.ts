@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getManifestPath, getTideDir } from "@tide/core";
-import { formatScanDiagnostics, generateArtifacts } from "@tide/scanner";
+import { getManifestPath, getTidexDir } from "@tidex/core";
+import { formatScanDiagnostics, generateArtifacts } from "@tidex/scanner";
 import { loadConfig } from "./config.js";
 
 export interface DoctorResult {
@@ -14,13 +14,13 @@ export async function runDoctor(cwd?: string): Promise<DoctorResult> {
   const messages: string[] = [];
   let ok = true;
 
-  const configPath = ["tide.config.ts", "tide.config.js", "tide.config.mjs"].find((file) =>
+  const configPath = ["tidex.config.ts", "tidex.config.js", "tidex.config.mjs"].find((file) =>
     fs.existsSync(path.join(root, file)),
   );
 
   if (!configPath) {
     ok = false;
-    messages.push("✗ No tide.config.ts found — run `tide init`");
+    messages.push("✗ No tidex.config.ts found — run `tidex init`");
     return { ok, messages };
   }
   messages.push(`✓ Found ${configPath}`);
@@ -67,7 +67,7 @@ export async function runDoctor(cwd?: string): Promise<DoctorResult> {
 
   const manifestPath = getManifestPath(root);
   if (fs.existsSync(manifestPath)) {
-    messages.push(`✓ Artifacts in ${getTideDir(root)}/`);
+    messages.push(`✓ Artifacts in ${getTidexDir(root)}/`);
   }
 
   try {

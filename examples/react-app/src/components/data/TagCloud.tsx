@@ -17,14 +17,14 @@ const FALLBACK_TAGS = new Set([
   "tokens",
   "a11y",
   "preview",
-  "tide",
+  "tidex",
   "props",
   "variants",
 ]);
 
 export function TagCloud({ tags, selected, max, interactive }: TagCloudProps) {
   const all = tags instanceof Set && tags.size ? Array.from(tags) : Array.from(FALLBACK_TAGS);
-  const picked = new Set(Array.isArray(selected) ? selected : ["react", "tide"]);
+  const picked = new Set(Array.isArray(selected) ? selected : ["react", "tidex"]);
   const limit = max > 0 ? max : all.length;
   const shown = all.slice(0, limit);
 

@@ -7,7 +7,7 @@ import {
   type InteractionTest,
   type Manifest,
   type StepResult,
-} from "@tide/core";
+} from "@tidex/core";
 import { runStepsPlaywright } from "./playwrightSteps.js";
 
 export interface InteractionReportEntry {
@@ -26,8 +26,8 @@ export interface InteractionTestOptions {
 }
 
 /**
- * Run every saved interaction test (`.tide/tests/<Component>.json`) headlessly
- * against the preview, writing a report to `.tide/reports/interactions.json`.
+ * Run every saved interaction test (`.tidex/tests/<Component>.json`) headlessly
+ * against the preview, writing a report to `.tidex/reports/interactions.json`.
  */
 export async function runInteractionTests(
   options: InteractionTestOptions,

@@ -5,7 +5,7 @@ export function GetStarted() {
     <section id="start" className="section cta">
       <div className="cta__glow" aria-hidden="true" />
       <div className="section__inner cta__inner">
-        <h2 className="cta__title">Ride the tide.</h2>
+        <h2 className="cta__title">Ship with Tidex.</h2>
         <p className="cta__subtitle">
           Three commands from zero to a full component explorer with docs and testing.
         </p>
@@ -13,15 +13,15 @@ export function GetStarted() {
         <div className="cta__commands">
           <div className="cta__command">
             <span className="cta__step">1</span>
-            <code>pnpm add -D tide</code>
+            <code>pnpm add -D tidex</code>
           </div>
           <div className="cta__command">
             <span className="cta__step">2</span>
-            <code>pnpm exec tide init</code>
+            <code>pnpm exec tidex init</code>
           </div>
           <div className="cta__command">
             <span className="cta__step">3</span>
-            <code>pnpm exec tide dev</code>
+            <code>pnpm exec tidex dev</code>
           </div>
         </div>
 
@@ -30,7 +30,7 @@ export function GetStarted() {
             Read the docs
           </Link>
           <a
-            href="https://github.com/arviahq/tide"
+            href="https://github.com/arviahq/tidex"
             className="btn btn--ghost btn--lg"
             target="_blank"
             rel="noreferrer"

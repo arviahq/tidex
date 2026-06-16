@@ -6,7 +6,7 @@ import {
   type InteractionTest,
   type StepResult,
   type StepTarget,
-} from "@tide/core";
+} from "@tidex/core";
 import { CodeBlock } from "./CodeBlock";
 import { IconButton } from "./IconButton";
 import { StatusBadge } from "./StatusBadge";
@@ -28,7 +28,7 @@ const STEP_TYPES: InteractionStep["type"][] = ["click", "type", "wait", "assert"
 const TARGET_BYS: StepTarget["by"][] = ["role", "text", "testid", "css"];
 const MATCHERS: AssertMatcher[] = ["exists", "absent", "text", "value", "checked", "disabled"];
 
-const CLI_COMMANDS = `tide test    # runs a11y + interaction tests`;
+const CLI_COMMANDS = `tidex test    # runs a11y + interaction tests`;
 
 function defaultStep(type: InteractionStep["type"]): InteractionStep {
   const target: StepTarget = { by: "role", value: "" };
@@ -101,7 +101,7 @@ export function TestsPanel({
           <div className="bb-tests__title-block">
             <h2 className="bb-tests__name">{formatDisplayName(componentName)}</h2>
             <p className="bb-tests__subtitle">
-              Interaction test · saved to .tide/tests/{componentName}.json
+              Interaction test · saved to .tidex/tests/{componentName}.json
             </p>
           </div>
           <div className="bb-tests__actions">
