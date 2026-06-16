@@ -4,10 +4,14 @@ import {
   getReportsDir,
   getTestPath,
   getComponentId,
+  type ComponentEntry,
   type InteractionTest,
   type Manifest,
   type StepResult,
 } from "@tidex/core";
+import { createTestBrowser, createTestPage, type TestBrowser } from "./browser.js";
+import { gotoStory } from "./navigation.js";
+import { defaultWorkers, mapPool } from "./pool.js";
 import { runStepsPlaywright } from "./playwrightSteps.js";
 
 export interface InteractionReportEntry {
@@ -21,8 +25,53 @@ export interface InteractionTestOptions {
   root: string;
   previewUrl: string;
   manifest: Manifest;
+  /** Shared browser session (caller owns lifecycle when provided). */
+  browser?: TestBrowser;
+  /** Parallel component workers (default: min(4, CPU count)). */
+  workers?: number;
   /** Reports per-component progress as `(done, total, label)`. */
   onProgress?: (done: number, total: number, label?: string) => void;
+}
+
+interface ComponentWithTest {
+  component: ComponentEntry;
+  test: InteractionTest;
+}
+
+function loadInteractionTest(root: string, componentId: string): InteractionTest | null {
+  const testPath = getTestPath(root, componentId);
+  if (!fs.existsSync(testPath)) return null;
+  try {
+    const test = JSON.parse(fs.readFileSync(testPath, "utf-8")) as InteractionTest;
+    if (!test.steps || test.steps.length === 0) return null;
+    return test;
+  } catch {
+    return null;
+  }
+}
+
+function componentsWithTests(root: string, manifest: Manifest): ComponentWithTest[] {
+  const out: ComponentWithTest[] = [];
+  for (const component of manifest.components) {
+    const componentId = getComponentId(component);
+    const test = loadInteractionTest(root, componentId);
+    if (test) out.push({ component, test });
+  }
+  return out;
+}
+
+async function runInteractionForComponent(
+  page: Awaited<ReturnType<typeof createTestPage>>,
+  previewUrl: string,
+  componentId: string,
+  test: InteractionTest,
+): Promise<[string, InteractionReportEntry]> {
+  const argsParam = test.args ? `&args=${encodeURIComponent(JSON.stringify(test.args))}` : "";
+  const url = `${previewUrl}?story=${encodeURIComponent(componentId)}${argsParam}`;
+  await gotoStory(page, url);
+  const steps = await runStepsPlaywright(page, test.steps);
+  const ok = steps.length === test.steps.length && steps.every((s) => s.ok);
+  return [componentId, { ok, steps }];
 }
 
 /**
@@ -32,47 +81,46 @@ export interface InteractionTestOptions {
 export async function runInteractionTests(
   options: InteractionTestOptions,
 ): Promise<InteractionReport> {
-  const { chromium } = await import("playwright");
-
   const reportsDir = getReportsDir(options.root);
   fs.mkdirSync(reportsDir, { recursive: true });
 
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-  const report: InteractionReport = {};
+  const owned = !options.browser;
+  const testBrowser = options.browser ?? (await createTestBrowser());
+  const workers = defaultWorkers(options.workers);
+  const withTests = componentsWithTests(options.root, options.manifest);
+  let done = 0;
 
-  const components = options.manifest.components;
-  for (let i = 0; i < components.length; i++) {
-    const component = components[i]!;
-    const componentId = getComponentId(component);
-    options.onProgress?.(i, components.length, component.name);
-    const testPath = getTestPath(options.root, componentId);
-    if (!fs.existsSync(testPath)) continue;
+  try {
+    const entries = await mapPool(withTests, workers, async ({ component, test }) => {
+      const page = await createTestPage(testBrowser);
+      const componentId = getComponentId(component);
+      try {
+        const entry = await runInteractionForComponent(
+          page,
+          options.previewUrl,
+          componentId,
+          test,
+        );
+        done++;
+        options.onProgress?.(done, withTests.length, component.name);
+        return entry;
+      } finally {
+        await page.close();
+      }
+    });
 
-    let test: InteractionTest;
-    try {
-      test = JSON.parse(fs.readFileSync(testPath, "utf-8")) as InteractionTest;
-    } catch {
-      continue;
+    options.onProgress?.(withTests.length, withTests.length);
+
+    const report: InteractionReport = {};
+    for (const [id, entry] of entries) report[id] = entry;
+
+    fs.writeFileSync(path.join(reportsDir, "interactions.json"), JSON.stringify(report, null, 2));
+    return report;
+  } finally {
+    if (owned && "close" in testBrowser) {
+      await (testBrowser as Awaited<ReturnType<typeof createTestBrowser>>).close();
     }
-    if (!test.steps || test.steps.length === 0) continue;
-
-    const argsParam = test.args ? `&args=${encodeURIComponent(JSON.stringify(test.args))}` : "";
-    const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}${argsParam}`;
-    await page.goto(url, { waitUntil: "networkidle" });
-    await page.waitForTimeout(300);
-
-    const steps = await runStepsPlaywright(page, test.steps);
-    const ok = steps.length === test.steps.length && steps.every((s) => s.ok);
-    report[componentId] = { ok, steps };
   }
-  options.onProgress?.(components.length, components.length);
-
-  await browser.close();
-
-  fs.writeFileSync(path.join(reportsDir, "interactions.json"), JSON.stringify(report, null, 2));
-
-  return report;
 }
 
 export function hasInteractionFailures(report: InteractionReport): boolean {

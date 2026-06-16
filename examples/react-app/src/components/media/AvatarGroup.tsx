@@ -14,6 +14,16 @@ export interface AvatarGroupProps {
 
 const PX = { sm: 28, md: 36, lg: 48 } as const;
 
+function memberFill(color: string | undefined): { background: string; color: string } {
+  if (!color) {
+    return { background: ui.colors.primarySoft, color: ui.colors.primaryStrong };
+  }
+  return {
+    background: `color-mix(in srgb, ${color} 70%, #0f172a)`,
+    color: "#fff",
+  };
+}
+
 export function AvatarGroup({ members, max, size }: AvatarGroupProps) {
   const list = Array.isArray(members) ? members : [];
   const limit = Math.max(1, Math.min(8, Math.round(max)));
@@ -23,7 +33,9 @@ export function AvatarGroup({ members, max, size }: AvatarGroupProps) {
 
   return (
     <div style={{ display: "inline-flex", alignItems: "center", padding: 16, fontFamily: ui.font }}>
-      {shown.map((m, i) => (
+      {shown.map((m, i) => {
+        const fill = memberFill(m.color);
+        return (
         <span
           key={i}
           style={{
@@ -31,8 +43,8 @@ export function AvatarGroup({ members, max, size }: AvatarGroupProps) {
             height: dim,
             marginLeft: i === 0 ? 0 : -dim / 3,
             borderRadius: 999,
-            background: m.color || ui.colors.primarySoft,
-            color: m.color ? "#fff" : ui.colors.primaryStrong,
+            background: fill.background,
+            color: fill.color,
             border: `2px solid ${ui.colors.bg}`,
             display: "flex",
             alignItems: "center",
@@ -43,7 +55,8 @@ export function AvatarGroup({ members, max, size }: AvatarGroupProps) {
         >
           {initials(m.name)}
         </span>
-      ))}
+        );
+      })}
       {overflow > 0 ? (
         <span
           style={{

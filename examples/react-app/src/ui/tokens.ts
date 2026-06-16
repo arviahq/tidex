@@ -14,8 +14,8 @@ const TOKENS_CSS = `
   --ui-border: #e2e8f0;
   --ui-border-strong: #cbd5e1;
   --ui-text: #0f172a;
-  --ui-text-muted: #64748b;
-  --ui-text-soft: #94a3b8;
+  --ui-text-muted: #475569;
+  --ui-text-soft: #64748b;
   --ui-primary: #4f46e5;
   --ui-primary-soft: #eef2ff;
   --ui-primary-strong: #4338ca;

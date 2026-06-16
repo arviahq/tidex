@@ -355,13 +355,20 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   }
 }
 
-export async function runTest(cwd?: string): Promise<number> {
+export async function runTest(
+  cwd?: string,
+  options: { skipGenerate?: boolean; workers?: number } = {},
+): Promise<number> {
   const root = cwd ?? process.cwd();
   const config = await loadConfig(root);
-  await generateArtifacts(config);
+  if (!options.skipGenerate) {
+    await generateArtifacts(config);
+  }
   const { readManifest } = await import("./config.js");
   const manifest = readManifest(root);
   const {
+    createTestBrowser,
+    defaultWorkers,
     runA11yTests,
     hasA11yViolations,
     formatA11ySummary,
@@ -395,43 +402,57 @@ export async function runTest(cwd?: string): Promise<number> {
   await previewServer.listen();
   const port = previewServer.config.server.port;
   const previewUrl = `http://localhost:${port}`;
+  const workers = defaultWorkers(options.workers ?? config.test?.workers);
+  const suiteBase = { root, previewUrl, manifest, workers };
 
-  // Run each suite independently so a failure in one doesn't mask the other.
   let failed = false;
+  const testBrowser = await createTestBrowser();
   try {
     const a11yProgress = startProgress("Accessibility");
-    try {
-      const a11yReport = await runA11yTests({
-        root,
-        previewUrl,
-        manifest,
-        onProgress: (done, total, label) => a11yProgress.update(done, total, label),
-      });
-      a11yProgress.stop();
-      console.log(formatA11ySummary(a11yReport));
-      if (hasA11yViolations(a11yReport)) failed = true;
-    } catch (err) {
-      a11yProgress.stop();
-      console.error("Accessibility tests failed to run:", err instanceof Error ? err.message : err);
-      failed = true;
-    }
-
     const interactionProgress = startProgress("Interactions");
-    try {
-      const interactionReport = await runInteractionTests({
-        root,
-        previewUrl,
-        manifest,
-        onProgress: (done, total, label) => interactionProgress.update(done, total, label),
-      });
-      interactionProgress.stop();
-      console.log(formatInteractionSummary(interactionReport));
-      if (hasInteractionFailures(interactionReport)) failed = true;
-    } catch (err) {
-      interactionProgress.stop();
-      console.error("Interaction tests failed to run:", err instanceof Error ? err.message : err);
-      failed = true;
-    }
+
+    const [a11yOk, interactionOk] = await Promise.all([
+      (async () => {
+        try {
+          const a11yReport = await runA11yTests({
+            ...suiteBase,
+            browser: testBrowser,
+            onProgress: (done, total, label) => a11yProgress.update(done, total, label),
+          });
+          a11yProgress.stop();
+          console.log(formatA11ySummary(a11yReport));
+          return !hasA11yViolations(a11yReport);
+        } catch (err) {
+          a11yProgress.stop();
+          console.error(
+            "Accessibility tests failed to run:",
+            err instanceof Error ? err.message : err,
+          );
+          return false;
+        }
+      })(),
+      (async () => {
+        try {
+          const interactionReport = await runInteractionTests({
+            ...suiteBase,
+            browser: testBrowser,
+            onProgress: (done, total, label) => interactionProgress.update(done, total, label),
+          });
+          interactionProgress.stop();
+          console.log(formatInteractionSummary(interactionReport));
+          return !hasInteractionFailures(interactionReport);
+        } catch (err) {
+          interactionProgress.stop();
+          console.error(
+            "Interaction tests failed to run:",
+            err instanceof Error ? err.message : err,
+          );
+          return false;
+        }
+      })(),
+    ]);
+
+    if (!a11yOk || !interactionOk) failed = true;
 
     // Verify inferred interaction bindings and capture their generated states.
     // Advisory: it tunes binding confidence but never fails the suite.
@@ -441,9 +462,8 @@ export async function runTest(cwd?: string): Promise<number> {
       try {
         const props = readJson<PropsMap>(getPropsPath(root)) ?? {};
         const { report, bindings: tuned } = await verifyInteractions({
-          root,
-          previewUrl,
-          manifest,
+          ...suiteBase,
+          browser: testBrowser,
           bindings,
           props,
           onProgress: (done, total, label) => verifyProgress.update(done, total, label),
@@ -462,6 +482,7 @@ export async function runTest(cwd?: string): Promise<number> {
 
     return failed ? 1 : 0;
   } finally {
+    await testBrowser.close();
     await previewServer.close();
   }
 }

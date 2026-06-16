@@ -43,7 +43,7 @@ export function SelectMenu({ label, options, value, placeholder, open }: SelectM
           background: ui.colors.bg,
           border: `1px solid ${open ? ui.colors.primary : ui.colors.border}`,
           borderRadius: ui.radius.sm,
-          color: selected ? ui.colors.text : ui.colors.textSoft,
+          color: selected ? ui.colors.text : ui.colors.textMuted,
           fontSize: 13,
           cursor: "pointer",
           boxShadow: open
@@ -71,10 +71,10 @@ export function SelectMenu({ label, options, value, placeholder, open }: SelectM
               style={{
                 padding: "8px 12px",
                 fontSize: 13,
-                color: opt.disabled ? ui.colors.textSoft : ui.colors.text,
+                color: opt.disabled ? ui.colors.textMuted : ui.colors.text,
                 background: opt.value === value ? ui.colors.primarySoft : "transparent",
-                opacity: opt.disabled ? 0.6 : 1,
                 cursor: opt.disabled ? "not-allowed" : "pointer",
+                fontStyle: opt.disabled ? "italic" : undefined,
               }}
             >
               {opt.label}

@@ -42,7 +42,7 @@ export function StatRow({ stats }: StatRowProps) {
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: ui.colors.textSoft,
+                color: ui.colors.textMuted,
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
               }}
@@ -68,7 +68,7 @@ export function StatRow({ stats }: StatRowProps) {
                 gap: 4,
                 fontSize: 12,
                 fontWeight: 700,
-                color: up ? ui.colors.success : ui.colors.danger,
+                color: up ? "#047857" : "#b91c1c",
               }}
             >
               <span>{up ? "▲" : "▼"}</span>

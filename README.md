@@ -97,7 +97,11 @@ pnpm exec playwright install chromium
 
 ```bash
 pnpm exec tidex test
+pnpm exec tidex test --skip-generate   # CI: skip re-scan when generate already ran
+pnpm exec tidex test --workers 8       # override parallel workers (default: min(4, CPUs))
 ```
+
+Set a default in `tidex.config.ts` with `test: { workers: 8 }`.
 
 **Visual regression** — capture baselines in the Visual tab. Commit `.tidex/baselines/` to git (`tidex init` gitignores `.tidex/*` but tracks baselines and interaction wiring):
 

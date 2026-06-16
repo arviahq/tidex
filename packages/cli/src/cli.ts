@@ -59,8 +59,13 @@ program
 program
   .command("test")
   .description("Run accessibility and interaction tests")
-  .action(async () => {
-    const code = await runTest();
+  .option("--skip-generate", "Skip scanning; use existing .tidex/ artifacts")
+  .option("--workers <n>", "Parallel component workers", (v) => parseInt(v, 10))
+  .action(async (opts: { skipGenerate?: boolean; workers?: number }) => {
+    const code = await runTest(undefined, {
+      skipGenerate: opts.skipGenerate,
+      workers: opts.workers,
+    });
     process.exit(code);
   });
 

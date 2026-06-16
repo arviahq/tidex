@@ -36,6 +36,7 @@ export function Checkbox({
       <span
         role="checkbox"
         aria-checked={indeterminate ? "mixed" : checked}
+        aria-label={text(label, "Accept terms")}
         onClick={() => !disabled && onCheckedChange?.(!checked)}
         style={{
           display: "inline-flex",

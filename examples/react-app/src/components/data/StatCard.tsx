@@ -9,8 +9,8 @@ export type StatCardProps = {
 };
 
 const trendStyles = {
-  up: { color: ui.colors.success, prefix: "↑" },
-  down: { color: ui.colors.danger, prefix: "↓" },
+  up: { color: "#047857", prefix: "↑" },
+  down: { color: "#b91c1c", prefix: "↓" },
   neutral: { color: ui.colors.textMuted, prefix: "→" },
 };
 
@@ -67,7 +67,7 @@ export function StatCard({ label, value, change, trend, emphasis = false }: Stat
       >
         <span aria-hidden="true">{trendStyle.prefix}</span>
         <span>{text(change, "+12.4%")}</span>
-        <span style={{ color: ui.colors.textSoft, fontWeight: 500 }}>vs last period</span>
+        <span style={{ color: ui.colors.textMuted, fontWeight: 500 }}>vs last period</span>
       </div>
     </div>
   );

@@ -9,7 +9,8 @@ export type BadgeProps = {
 const tones = {
   info: { bg: ui.colors.info, soft: ui.colors.infoSoft, text: ui.colors.info },
   success: { bg: ui.colors.success, soft: ui.colors.successSoft, text: ui.colors.success },
-  warning: { bg: ui.colors.warning, soft: ui.colors.warningSoft, text: ui.colors.warning },
+  // Darker amber keeps white label text at WCAG AA on the solid variant.
+  warning: { bg: "#b45309", soft: ui.colors.warningSoft, text: "#b45309" },
 };
 
 export function Badge({ tone, outlined, children }: BadgeProps) {

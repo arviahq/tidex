@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getReportsDir, getComponentId, type Manifest } from "@tidex/core";
+import { getReportsDir, getComponentId, type ComponentEntry, type Manifest } from "@tidex/core";
+import { createTestBrowser, createTestPage, type TestBrowser } from "./browser.js";
+import { gotoStory, ROOT_SELECTOR } from "./navigation.js";
+import { defaultWorkers, mapPool } from "./pool.js";
 
 export {
   runInteractionTests,
@@ -18,6 +21,9 @@ export {
   type VerifyInteractionsOptions,
   type VerifyInteractionsResult,
 } from "./verify-interactions.js";
+
+export { createTestBrowser, createTestPage, type TestBrowser, type TestBrowserHandle } from "./browser.js";
+export { defaultWorkers } from "./pool.js";
 
 export interface A11yViolation {
   id: string;
@@ -37,56 +43,85 @@ export interface A11yTestOptions {
   root: string;
   previewUrl: string;
   manifest: Manifest;
+  /** Shared browser session (caller owns lifecycle when provided). */
+  browser?: TestBrowser;
+  /** Parallel component workers (default: min(4, CPU count)). */
+  workers?: number;
   /** Reports per-component progress as `(done, total, label)`. */
   onProgress?: (done: number, total: number, label?: string) => void;
 }
 
-export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport> {
-  const { chromium } = await import("playwright");
-  const AxeBuilder = (await import("@axe-core/playwright")).default;
+/** Page-level rules that don't apply when testing an isolated component canvas. */
+const PREVIEW_ONLY_A11Y_RULES = [
+  "landmark-one-main",
+  "page-has-heading-one",
+  "region",
+] as const;
 
+async function runA11yForComponent(
+  page: Awaited<ReturnType<typeof createTestPage>>,
+  previewUrl: string,
+  component: ComponentEntry,
+): Promise<[string, A11yReportEntry]> {
+  const AxeBuilder = (await import("@axe-core/playwright")).default;
+  const componentId = getComponentId(component);
+  const url = `${previewUrl}?story=${encodeURIComponent(componentId)}`;
+  await gotoStory(page, url);
+
+  const results = await new AxeBuilder({ page })
+    .include(ROOT_SELECTOR)
+    .disableRules([...PREVIEW_ONLY_A11Y_RULES])
+    .analyze();
+  return [
+    componentId,
+    {
+      violations: results.violations.map((v) => ({
+        id: v.id,
+        impact: v.impact,
+        description: v.description,
+        nodes: v.nodes.length,
+      })),
+      passes: results.passes.length,
+    },
+  ];
+}
+
+export async function runA11yTests(options: A11yTestOptions): Promise<A11yReport> {
   const reportsDir = getReportsDir(options.root);
   fs.mkdirSync(reportsDir, { recursive: true });
 
-  const browser = await chromium.launch();
-  // axe-core/playwright requires a page created from an explicit browser
-  // context (a bare `browser.newPage()` throws "Please use browser.newContext()").
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  const report: A11yReport = {};
+  const owned = !options.browser;
+  const testBrowser = options.browser ?? (await createTestBrowser());
+  const workers = defaultWorkers(options.workers);
+  const components = options.manifest.components;
+  let done = 0;
 
   try {
-    const components = options.manifest.components;
-    for (let i = 0; i < components.length; i++) {
-      const component = components[i]!;
-      const componentId = getComponentId(component);
-      options.onProgress?.(i, components.length, component.name);
-      const url = `${options.previewUrl}?story=${encodeURIComponent(componentId)}`;
-      await page.goto(url, { waitUntil: "networkidle" });
-      await page.waitForTimeout(300);
+    const entries = await mapPool(components, workers, async (component) => {
+      const page = await createTestPage(testBrowser);
+      try {
+        const entry = await runA11yForComponent(page, options.previewUrl, component);
+        done++;
+        options.onProgress?.(done, components.length, component.name);
+        return entry;
+      } finally {
+        await page.close();
+      }
+    });
 
-      const results = await new AxeBuilder({ page }).analyze();
-
-      report[componentId] = {
-        violations: results.violations.map((v) => ({
-          id: v.id,
-          impact: v.impact,
-          description: v.description,
-          nodes: v.nodes.length,
-        })),
-        passes: results.passes.length,
-      };
-    }
     options.onProgress?.(components.length, components.length);
+
+    const report: A11yReport = {};
+    for (const [id, entry] of entries) report[id] = entry;
+
+    const reportPath = path.join(reportsDir, "a11y.json");
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+    return report;
   } finally {
-    await context.close();
-    await browser.close();
+    if (owned && "close" in testBrowser) {
+      await (testBrowser as Awaited<ReturnType<typeof createTestBrowser>>).close();
+    }
   }
-
-  const reportPath = path.join(reportsDir, "a11y.json");
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-
-  return report;
 }
 
 export function hasA11yViolations(report: A11yReport): boolean {

@@ -39,6 +39,7 @@ export function Avatar({ name, size, shape, status, imageUrl }: AvatarProps) {
         />
       ) : (
         <div
+          role="img"
           aria-label={displayName}
           style={{
             width: px,
@@ -61,7 +62,8 @@ export function Avatar({ name, size, shape, status, imageUrl }: AvatarProps) {
       )}
       {status ? (
         <span
-          aria-label={status}
+          role="status"
+          aria-label={`Status: ${status}`}
           style={{
             position: "absolute",
             right: 1,

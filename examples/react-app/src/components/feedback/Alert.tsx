@@ -8,10 +8,15 @@ export type AlertProps = {
 };
 
 const styles = {
-  info: { soft: ui.colors.infoSoft, border: "#bfdbfe", accent: ui.colors.info },
-  success: { soft: ui.colors.successSoft, border: "#bbf7d0", accent: ui.colors.success },
-  warning: { soft: ui.colors.warningSoft, border: "#fde68a", accent: ui.colors.warning },
-  error: { soft: ui.colors.dangerSoft, border: "#fecaca", accent: ui.colors.danger },
+  info: { soft: ui.colors.infoSoft, border: "#bfdbfe", accent: ui.colors.info, message: "#1e3a8a" },
+  success: {
+    soft: ui.colors.successSoft,
+    border: "#bbf7d0",
+    accent: ui.colors.success,
+    message: "#065f46",
+  },
+  warning: { soft: ui.colors.warningSoft, border: "#fde68a", accent: "#b45309", message: "#92400e" },
+  error: { soft: ui.colors.dangerSoft, border: "#fecaca", accent: ui.colors.danger, message: "#991b1b" },
 };
 
 function AlertIcon({ color }: { color: string }) {
@@ -61,7 +66,7 @@ export function Alert({ variant, title, message, dismissible = false }: AlertPro
       </span>
       <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: ui.colors.text }}>{heading}</div>
-        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.55, color: ui.colors.textMuted }}>
+        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.55, color: tone.message }}>
           {body}
         </div>
       </div>

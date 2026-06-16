@@ -14,9 +14,10 @@ import {
   type PropsMap,
 } from "@tidex/core";
 import type { Page } from "playwright";
+import { createTestBrowser, createTestPage, type TestBrowser } from "./browser.js";
+import { gotoStory, ROOT_SELECTOR } from "./navigation.js";
+import { defaultWorkers, mapPool } from "./pool.js";
 
-/** The preview's rendered component root (always present on the canvas). */
-const ROOT_SELECTOR = "[data-tidex-visual]";
 const ACTION_TIMEOUT = 3000;
 
 /** Canonical state-prop → display name; falls back to a capitalized prop. */
@@ -81,18 +82,6 @@ function buildUrl(
   if (args && Object.keys(args).length > 0) params.set("args", JSON.stringify(args));
   if (bindings) params.set("bindings", "1");
   return `${previewUrl}?${params.toString()}`;
-}
-
-/** Load a story and wait for the component root to render and settle. */
-async function gotoStory(page: Page, url: string): Promise<boolean> {
-  await page.goto(url, { waitUntil: "networkidle" });
-  try {
-    await page.locator(ROOT_SELECTOR).first().waitFor({ state: "visible", timeout: 8000 });
-  } catch {
-    return false;
-  }
-  await page.waitForTimeout(250);
-  return true;
 }
 
 async function ariaSnapshot(page: Page): Promise<string> {
@@ -180,6 +169,10 @@ export interface VerifyInteractionsOptions {
   manifest: Manifest;
   bindings: BindingsMap;
   props: PropsMap;
+  /** Shared browser session (caller owns lifecycle when provided). */
+  browser?: TestBrowser;
+  /** Parallel component workers (default: min(4, CPU count)). */
+  workers?: number;
   /** Reports per-component progress as `(done, total, label)`. */
   onProgress?: (done: number, total: number, label?: string) => void;
 }
@@ -188,6 +181,71 @@ export interface VerifyInteractionsResult {
   report: InteractionVerifyReport;
   /** Bindings with confidence tuned by verification (medium↑high / medium↓low). */
   bindings: BindingsMap;
+}
+
+async function verifyComponent(
+  page: Page,
+  previewUrl: string,
+  id: string,
+  bindings: BindingsMap,
+  props: PropsMap,
+): Promise<[string, InteractionVerifyEntry, InteractionBinding[]]> {
+  const list = bindings[id]!;
+  const localTuned = list.map((b) => ({ ...b }));
+  const componentProps = props[id] ?? {};
+  const entry: InteractionVerifyEntry = { bindings: [], states: [] };
+  const seenStates = new Set<string>();
+
+  for (const binding of list) {
+    // --- generated state (args-based) ---
+    const state = stateArgsFor(binding, componentProps[binding.stateProp]);
+    if (state && !seenStates.has(state.name)) {
+      seenStates.add(state.name);
+      const ok = await gotoStory(page, buildUrl(previewUrl, id, state.args));
+      entry.states.push({
+        name: state.name,
+        args: state.args,
+        ariaSnapshot: ok ? await ariaSnapshot(page) : undefined,
+      });
+    }
+
+    // --- verification (interaction-based, preview self-wires) ---
+    const verification: BindingVerification = {
+      stateProp: binding.stateProp,
+      handler: binding.handler,
+      verified: null,
+    };
+    const loaded = await gotoStory(page, buildUrl(previewUrl, id, undefined, true));
+    if (loaded) {
+      const before = await ariaSnapshot(page);
+      let trigger: string | null = null;
+      try {
+        trigger = await driveTrigger(page, binding, componentProps[binding.stateProp]);
+      } catch {
+        trigger = null;
+      }
+      if (trigger) {
+        verification.trigger = trigger;
+        await page.waitForTimeout(200);
+        const after = await ariaSnapshot(page);
+        const changed = ariaDelta(before, after);
+        verification.verified = changed > 0;
+        verification.delta = `${changed} a11y line(s) changed`;
+      }
+    }
+    entry.bindings.push(verification);
+
+    // --- tune confidence (only medium bindings; never demote high) ---
+    const target = localTuned.find(
+      (b) => b.handler === binding.handler && b.stateProp === binding.stateProp,
+    );
+    if (target && target.confidence === "medium" && verification.verified !== null) {
+      target.confidence = verification.verified ? "high" : "low";
+      target.source = "runtime";
+    }
+  }
+
+  return [id, entry, localTuned];
 }
 
 /**
@@ -207,7 +265,6 @@ export async function verifyInteractions(
   options: VerifyInteractionsOptions,
 ): Promise<VerifyInteractionsResult> {
   const { root, previewUrl, manifest, bindings, props } = options;
-  const { chromium } = await import("playwright");
 
   const tuned: BindingsMap = {};
   for (const [id, list] of Object.entries(bindings)) tuned[id] = list.map((b) => ({ ...b }));
@@ -216,80 +273,42 @@ export async function verifyInteractions(
     .map((c) => getComponentId(c))
     .filter((id) => (bindings[id] ?? []).length > 0);
 
-  const report: InteractionVerifyReport = {};
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
+  const owned = !options.browser;
+  const testBrowser = options.browser ?? (await createTestBrowser());
+  const workers = defaultWorkers(options.workers);
+  let done = 0;
 
   try {
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i]!;
-      options.onProgress?.(i, ids.length, id);
-      const list = bindings[id]!;
-      const componentProps = props[id] ?? {};
-      const entry: InteractionVerifyEntry = { bindings: [], states: [] };
-      const seenStates = new Set<string>();
-
-      for (const binding of list) {
-        // --- generated state (args-based) ---
-        const state = stateArgsFor(binding, componentProps[binding.stateProp]);
-        if (state && !seenStates.has(state.name)) {
-          seenStates.add(state.name);
-          const ok = await gotoStory(page, buildUrl(previewUrl, id, state.args));
-          entry.states.push({
-            name: state.name,
-            args: state.args,
-            ariaSnapshot: ok ? await ariaSnapshot(page) : undefined,
-          });
-        }
-
-        // --- verification (interaction-based, preview self-wires) ---
-        const verification: BindingVerification = {
-          stateProp: binding.stateProp,
-          handler: binding.handler,
-          verified: null,
-        };
-        const loaded = await gotoStory(page, buildUrl(previewUrl, id, undefined, true));
-        if (loaded) {
-          const before = await ariaSnapshot(page);
-          let trigger: string | null = null;
-          try {
-            trigger = await driveTrigger(page, binding, componentProps[binding.stateProp]);
-          } catch {
-            trigger = null;
-          }
-          if (trigger) {
-            verification.trigger = trigger;
-            await page.waitForTimeout(200);
-            const after = await ariaSnapshot(page);
-            const changed = ariaDelta(before, after);
-            verification.verified = changed > 0;
-            verification.delta = `${changed} a11y line(s) changed`;
-          }
-        }
-        entry.bindings.push(verification);
-
-        // --- tune confidence (only medium bindings; never demote high) ---
-        const target = (tuned[id] ?? []).find(
-          (b) => b.handler === binding.handler && b.stateProp === binding.stateProp,
-        );
-        if (target && target.confidence === "medium" && verification.verified !== null) {
-          target.confidence = verification.verified ? "high" : "low";
-          target.source = "runtime";
-        }
+    const entries = await mapPool(ids, workers, async (id) => {
+      const page = await createTestPage(testBrowser);
+      try {
+        const entry = await verifyComponent(page, previewUrl, id, bindings, props);
+        done++;
+        options.onProgress?.(done, ids.length, id);
+        return entry;
+      } finally {
+        await page.close();
       }
+    });
 
-      report[id] = entry;
-    }
     options.onProgress?.(ids.length, ids.length);
+
+    const report: InteractionVerifyReport = {};
+    for (const [id, entry, localTuned] of entries) {
+      report[id] = entry;
+      tuned[id] = localTuned;
+    }
+
+    const reportPath = getVerifyReportPath(root);
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+
+    return { report, bindings: tuned };
   } finally {
-    await browser.close();
+    if (owned && "close" in testBrowser) {
+      await (testBrowser as Awaited<ReturnType<typeof createTestBrowser>>).close();
+    }
   }
-
-  const reportPath = getVerifyReportPath(root);
-  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-
-  return { report, bindings: tuned };
 }
 
 export function formatVerifySummary(report: InteractionVerifyReport): string {

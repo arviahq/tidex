@@ -18,6 +18,8 @@ export interface TidexConfig {
   managerPort?: number;
   previewPort?: number;
   visual?: { threshold?: number };
+  /** Headless test runner options (`tidex test`). */
+  test?: { workers?: number };
   /**
    * Preview rendering options.
    * - `wrapper`: path (relative to the project root) to a module whose default

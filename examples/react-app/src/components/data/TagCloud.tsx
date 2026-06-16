@@ -49,8 +49,8 @@ export function TagCloud({ tags, selected, max, interactive }: TagCloudProps) {
               fontSize: 13,
               fontWeight: 500,
               cursor: interactive ? "pointer" : "default",
-              background: on ? ui.colors.primary : ui.colors.bgSubtle,
-              color: on ? "#fff" : ui.colors.textMuted,
+              background: on ? ui.colors.primary : ui.colors.bg,
+              color: on ? "#fff" : ui.colors.text,
               border: `1px solid ${on ? ui.colors.primary : ui.colors.border}`,
             }}
           >
@@ -59,7 +59,7 @@ export function TagCloud({ tags, selected, max, interactive }: TagCloudProps) {
         );
       })}
       {all.length > limit ? (
-        <span style={{ padding: "5px 12px", fontSize: 13, color: ui.colors.textSoft }}>
+        <span style={{ padding: "5px 12px", fontSize: 13, color: ui.colors.textMuted }}>
           +{all.length - limit} more
         </span>
       ) : null}
