@@ -221,6 +221,8 @@ export function generateJsxSnippet(componentName: string, args: Record<string, u
       attrs.push(`${key}={${JSON.stringify(value)}}`);
     }
   }
-  const attrStr = attrs.length ? " " + attrs.join(" ") : "";
-  return `<${componentName}${attrStr} />`;
+  if (attrs.length === 0) {
+    return `<${componentName} />`;
+  }
+  return `<${componentName}\n${attrs.map((attr) => `  ${attr}`).join("\n")}\n/>`;
 }

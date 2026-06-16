@@ -19,7 +19,8 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .hljs-comment,

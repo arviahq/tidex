@@ -4,13 +4,13 @@ import { generateJsxSnippet } from "../src/index.js";
 describe("generateJsxSnippet", () => {
   it("renders primitives in their natural JSX form", () => {
     expect(generateJsxSnippet("Button", { variant: "primary", size: 12, disabled: true })).toBe(
-      '<Button variant="primary" size={12} disabled />',
+      '<Button\n  variant="primary"\n  size={12}\n  disabled\n/>',
     );
   });
 
   it("omits empty/false/undefined/null args", () => {
     expect(generateJsxSnippet("Button", { a: "", b: false, c: undefined, d: null, e: "x" })).toBe(
-      '<Button e="x" />',
+      '<Button\n  e="x"\n/>',
     );
   });
 
@@ -21,13 +21,15 @@ describe("generateJsxSnippet", () => {
         { label: "B", value: "b" },
       ],
     });
-    expect(out).toBe('<Picklist items={[{"label":"A","value":"a"},{"label":"B","value":"b"}]} />');
+    expect(out).toBe(
+      '<Picklist\n  items={[{"label":"A","value":"a"},{"label":"B","value":"b"}]}\n/>',
+    );
     expect(out).not.toContain("[object Object]");
   });
 
   it("escapes strings containing double quotes", () => {
     expect(generateJsxSnippet("Text", { title: 'a "quote"' })).toBe(
-      '<Text title={"a \\"quote\\""} />',
+      '<Text\n  title={"a \\"quote\\""}\n/>',
     );
   });
 });
