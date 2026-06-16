@@ -116,6 +116,35 @@ export function jsDocDescription(file: ParsedFile, nodeStart: number): string | 
   return desc || undefined;
 }
 
+/**
+ * Parse `@tag` lines out of the leading JSDoc block. Supports `@tag(value)`,
+ * `@tag value`, and bare `@tag` (→ `true`). Used to read control metadata like
+ * `@min(0)`, `@color`, `@multiline`.
+ */
+export function jsDocTags(file: ParsedFile, nodeStart: number): Record<string, string | true> {
+  const c = leadingComment(file, nodeStart);
+  if (!c || c.type !== "Block") return {};
+  const tags: Record<string, string | true> = {};
+  for (const raw of c.value.split("\n")) {
+    const line = raw.replace(/^\s*\*?\s?/, "").trim();
+    if (!line.startsWith("@")) continue;
+    const matches = [...line.matchAll(/@(\w+)(?:\(([^)]*)\))?/g)];
+    // A lone tag with no parens takes the rest of the line as its value
+    // (`@pattern ^\d+$`); multiple tags on a line must use the `@tag(value)`
+    // form so they don't swallow each other.
+    if (matches.length === 1 && matches[0]![2] === undefined) {
+      const m = matches[0]!;
+      const rest = line.slice((m.index ?? 0) + m[0].length).trim();
+      tags[m[1]!] = rest !== "" ? rest : true;
+    } else {
+      for (const m of matches) {
+        tags[m[1]!] = m[2] != null && m[2].trim() !== "" ? m[2].trim() : true;
+      }
+    }
+  }
+  return tags;
+}
+
 /** A file parser with a per-run cache (avoids re-parsing shared type modules). */
 export interface FileParser {
   parse(absPath: string): ParsedFile | null;

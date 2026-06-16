@@ -87,10 +87,36 @@ export interface Manifest {
   components: ComponentEntry[];
 }
 
+/**
+ * Editor-influencing metadata, sourced from JSDoc tags on a prop (e.g.
+ * `@min(0)`, `@color`, `@multiline`). Steers control selection and validation
+ * beyond what the bare TypeScript type conveys.
+ */
+export interface PropMeta {
+  /** Numeric lower bound (`@min`). */
+  min?: number;
+  /** Numeric upper bound (`@max`). */
+  max?: number;
+  /** Numeric step / slider granularity (`@step`). */
+  step?: number;
+  /** Render the number as a slider rather than a stepper (`@slider`). */
+  slider?: boolean;
+  /** String input variant (`@multiline`, `@url`, `@email`, `@password`, `@color`). */
+  format?: "multiline" | "url" | "email" | "password" | "color";
+  /** Mask the value (`@secret`). */
+  secret?: boolean;
+  /** Regex source the string must match (`@pattern <re>`). */
+  pattern?: string;
+  /** Minimum string length (`@minLength`). */
+  minLength?: number;
+  /** Maximum string length (`@maxLength`). */
+  maxLength?: number;
+}
+
 export type PropSchema =
-  | { type: "boolean"; required?: boolean; description?: string }
-  | { type: "string"; required?: boolean; description?: string }
-  | { type: "number"; required?: boolean; description?: string }
+  | { type: "boolean"; required?: boolean; description?: string; meta?: PropMeta }
+  | { type: "string"; required?: boolean; description?: string; meta?: PropMeta }
+  | { type: "number"; required?: boolean; description?: string; meta?: PropMeta }
   | {
       type: "union";
       values: string[];
@@ -98,21 +124,67 @@ export type PropSchema =
       valueType?: "string" | "number" | "boolean";
       required?: boolean;
       description?: string;
+      meta?: PropMeta;
     }
   | {
       type: "object";
       properties: Record<string, PropSchema>;
       required?: boolean;
       description?: string;
+      meta?: PropMeta;
     }
-  | { type: "array"; element?: PropSchema; required?: boolean; description?: string }
-  | { type: "date"; required?: boolean; description?: string }
-  | { type: "set"; element?: PropSchema; required?: boolean; description?: string }
-  | { type: "callback"; required?: boolean; description?: string }
+  | {
+      type: "array";
+      element?: PropSchema;
+      required?: boolean;
+      description?: string;
+      meta?: PropMeta;
+    }
+  | { type: "date"; required?: boolean; description?: string; meta?: PropMeta }
+  | { type: "set"; element?: PropSchema; required?: boolean; description?: string; meta?: PropMeta }
+  | {
+      type: "tuple";
+      elements: PropSchema[];
+      /** Optional per-slot labels (e.g. `x`, `y` for a named tuple). */
+      labels?: string[];
+      required?: boolean;
+      description?: string;
+      meta?: PropMeta;
+    }
+  | {
+      /** `Map<K, V>` — edited as live entries, materialized as a real Map. */
+      type: "map";
+      key?: PropSchema;
+      value?: PropSchema;
+      required?: boolean;
+      description?: string;
+      meta?: PropMeta;
+    }
+  | {
+      /** `Record<K, V>` — same editor as `map`, materialized as a plain object. */
+      type: "record";
+      key?: PropSchema;
+      value?: PropSchema;
+      required?: boolean;
+      description?: string;
+      meta?: PropMeta;
+    }
+  | {
+      /** Discriminated union of object shapes — edited via a variant picker. */
+      type: "variant";
+      /** The literal property that selects the variant (e.g. `type`, `kind`). */
+      discriminant: string;
+      variants: Array<{ label: string; schema: PropSchema }>;
+      required?: boolean;
+      description?: string;
+      meta?: PropMeta;
+    }
+  | { type: "callback"; required?: boolean; description?: string; meta?: PropMeta }
   | {
       type: "unknown";
       required?: boolean;
       description?: string;
+      meta?: PropMeta;
       /** The source type text Tide couldn't resolve (e.g. an imported type). */
       typeText?: string;
     };
@@ -443,12 +515,28 @@ export function defaultArgsForProp(schema: PropSchema, propName?: string): unkno
       return new Date();
     case "set":
       return new Set();
+    case "map":
+      return new Map();
+    case "record":
+      return {};
+    case "tuple":
+      return schema.elements.map((el, i) => defaultArgsForProp(el, schema.labels?.[i]));
     case "object": {
       const obj: Record<string, unknown> = {};
       for (const [key, prop] of Object.entries(schema.properties)) {
         obj[key] = defaultArgsForProp(prop, key);
       }
       return obj;
+    }
+    case "variant": {
+      const first = schema.variants[0];
+      if (!first) return undefined;
+      const inner = defaultArgsForProp(first.schema, propName);
+      // Pin the discriminant so the picker opens on a concrete variant.
+      if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+        (inner as Record<string, unknown>)[schema.discriminant] ??= first.label;
+      }
+      return inner;
     }
     default:
       return undefined;

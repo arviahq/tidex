@@ -2,6 +2,108 @@ import { coerceUnionValue, type PropSchema } from "@tide/core";
 
 export { coerceUnionValue };
 
+/** A path into a nested value: object keys and array indices. */
+export type ControlPath = ReadonlyArray<string | number>;
+
+/** Read the value at `path` inside `root` (objects, arrays, Maps, Sets-by-index). */
+export function getAtPath(root: unknown, path: ControlPath): unknown {
+  let current: unknown = root;
+  for (const key of path) {
+    if (current == null) return undefined;
+    if (current instanceof Map) {
+      current = current.get(key);
+    } else if (current instanceof Set) {
+      current = [...current][key as number];
+    } else {
+      current = (current as Record<string | number, unknown>)[key];
+    }
+  }
+  return current;
+}
+
+/** Shallow-clone a container, preserving Map/Set/Array/object identity kind. */
+function cloneContainer(value: unknown): unknown {
+  if (value instanceof Map) return new Map(value);
+  if (value instanceof Set) return new Set(value);
+  if (Array.isArray(value)) return [...value];
+  if (value && typeof value === "object") return { ...(value as Record<string, unknown>) };
+  return value;
+}
+
+/**
+ * Immutably set `value` at `path` inside `root`, cloning every container along
+ * the way so React sees new references. Creates intermediate objects/arrays as
+ * needed (numeric path segment → array). Map/Set containers are preserved.
+ */
+export function setAtPath(root: unknown, path: ControlPath, value: unknown): unknown {
+  if (path.length === 0) return value;
+  const [head, ...rest] = path;
+  const key = head!;
+
+  if (root instanceof Map) {
+    const next = new Map(root);
+    next.set(key, setAtPath(next.get(key), rest, value));
+    return next;
+  }
+
+  const base =
+    root && typeof root === "object" ? cloneContainer(root) : typeof key === "number" ? [] : {};
+  (base as Record<string | number, unknown>)[key] = setAtPath(
+    (base as Record<string | number, unknown>)[key],
+    rest,
+    value,
+  );
+  return base;
+}
+
+/** Outcome of validating a single value against its schema. */
+export type ValidationError = { message: string } | null;
+
+/**
+ * Validate a primitive `value` against its `schema` (required + metadata
+ * constraints). Returns `null` when valid. Containers are validated per-leaf by
+ * their controls, so this focuses on the directly-editable scalar shapes.
+ */
+export function validateValue(schema: PropSchema, value: unknown): ValidationError {
+  const required = "required" in schema && schema.required === true;
+  const empty = value === undefined || value === null || value === "";
+  if (required && empty) return { message: "Required" };
+  if (empty) return null;
+
+  const meta = "meta" in schema ? schema.meta : undefined;
+
+  if (schema.type === "string" && typeof value === "string") {
+    if (meta?.minLength != null && value.length < meta.minLength)
+      return { message: `Min ${meta.minLength} characters` };
+    if (meta?.maxLength != null && value.length > meta.maxLength)
+      return { message: `Max ${meta.maxLength} characters` };
+    if (meta?.pattern) {
+      try {
+        if (!new RegExp(meta.pattern).test(value)) return { message: "Does not match pattern" };
+      } catch {
+        // An unparseable pattern is the author's bug, not the user's — ignore.
+      }
+    }
+    if (meta?.format === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+      return { message: "Invalid email" };
+    if (meta?.format === "url") {
+      try {
+        new URL(value);
+      } catch {
+        return { message: "Invalid URL" };
+      }
+    }
+  }
+
+  if (schema.type === "number" && typeof value === "number") {
+    if (Number.isNaN(value)) return { message: "Not a number" };
+    if (meta?.min != null && value < meta.min) return { message: `Min ${meta.min}` };
+    if (meta?.max != null && value > meta.max) return { message: `Max ${meta.max}` };
+  }
+
+  return null;
+}
+
 export type ControlKind =
   | "boolean"
   | "string"
@@ -10,7 +112,11 @@ export type ControlKind =
   | "object"
   | "array"
   | "date"
-  | "set";
+  | "set"
+  | "tuple"
+  | "map"
+  | "record"
+  | "variant";
 
 export interface ControlDef {
   name: string;
@@ -41,6 +147,14 @@ export function propToControl(name: string, schema: PropSchema): ControlDef | nu
       return { name, kind: "date", schema };
     case "set":
       return { name, kind: "set", schema };
+    case "tuple":
+      return { name, kind: "tuple", schema };
+    case "map":
+      return { name, kind: "map", schema };
+    case "record":
+      return { name, kind: "record", schema };
+    case "variant":
+      return { name, kind: "variant", options: schema.variants.map((v) => v.label), schema };
     default:
       return null;
   }
@@ -91,6 +205,8 @@ export function generateJsxSnippet(componentName: string, args: Record<string, u
       attrs.push(`${key}={new Date(${JSON.stringify(value.toISOString())})}`);
     } else if (value instanceof Set) {
       attrs.push(`${key}={new Set(${JSON.stringify([...value])})}`);
+    } else if (value instanceof Map) {
+      attrs.push(`${key}={new Map(${JSON.stringify([...value])})}`);
     } else if (typeof value === "boolean") {
       attrs.push(key);
     } else if (typeof value === "number") {
