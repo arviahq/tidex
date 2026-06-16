@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 const COMMANDS = [
+  { prompt: "$", text: "pnpm add -D @tidex/cli" },
   { prompt: "$", text: "pnpm exec tidex init" },
   { prompt: "$", text: "pnpm exec tidex generate" },
   { prompt: "$", text: "pnpm exec tidex dev" },
