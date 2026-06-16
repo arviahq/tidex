@@ -5,28 +5,7 @@ import { ManagerDemo } from "./ManagerDemo";
 export function Hero() {
   return (
     <section className="hero">
-      <div className="hero__mesh" aria-hidden="true">
-        <svg className="hero__waves" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path
-            className="hero__wave hero__wave--1"
-            d="M0,160 C240,80 480,240 720,160 C960,80 1200,240 1440,160 L1440,320 L0,320 Z"
-            fill="url(#wave-gradient)"
-            opacity="0.15"
-          />
-          <path
-            className="hero__wave hero__wave--2"
-            d="M0,200 C360,120 540,280 900,200 C1080,140 1260,260 1440,200 L1440,320 L0,320 Z"
-            fill="url(#wave-gradient)"
-            opacity="0.08"
-          />
-          <defs>
-            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="var(--brand-from)" />
-              <stop offset="100%" stopColor="var(--brand-to)" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+      <div className="hero__mesh" aria-hidden="true" />
 
       <div className="hero__inner">
         <div className="hero__copy">

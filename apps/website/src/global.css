@@ -104,6 +104,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: clip;
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
