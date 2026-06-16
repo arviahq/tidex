@@ -33,6 +33,11 @@ export const PREVIEW_MESSAGE = {
   // manager -> preview: explicit callback→state wiring for the current story.
   SET_CALLBACKS: "TIDE_SET_CALLBACKS",
   INTERACTION: "TIDE_INTERACTION",
+  // manager -> preview: canvas view state (zoom, forced pseudo-states, element
+  // outlines, background grid) from the preview toolbar.
+  SET_VIEW: "TIDE_SET_VIEW",
+  // manager -> preview: re-mount the current story from scratch (resets state).
+  RELOAD: "TIDE_RELOAD",
 } as const;
 
 export interface Manifest {

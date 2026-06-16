@@ -30,6 +30,11 @@ import { InteractionsPanel } from "./components/InteractionsPanel";
 import { PanelSplitter } from "./components/PanelSplitter";
 import { SidebarSplitter } from "./components/SidebarSplitter";
 import { ThemeToggle } from "./components/ThemeToggle";
+import {
+  PreviewToolbar,
+  DEFAULT_PREVIEW_VIEW,
+  type PreviewView,
+} from "./components/PreviewToolbar";
 import { Tabs } from "./components/Tabs";
 import { SidebarTree } from "./components/SidebarTree";
 import { CommandPalette } from "./components/CommandPalette";
@@ -147,6 +152,7 @@ export function App() {
   const [visualNotice, setVisualNotice] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { theme: previewTheme, toggle: togglePreviewTheme } = usePreviewTheme();
+  const [previewView, setPreviewView] = useState<PreviewView>(DEFAULT_PREVIEW_VIEW);
 
   const sidebar = useResize({
     initial: 260,
@@ -349,6 +355,39 @@ export function App() {
     });
   }, []);
 
+  const viewRef = useRef(previewView);
+  viewRef.current = previewView;
+
+  // Push the canvas view state (zoom / forced states / outline / grid). Sent on
+  // every change and re-sent on READY so a reloaded iframe restores it.
+  const syncPreviewView = useCallback(() => {
+    postToPreview(iframeRef.current, {
+      type: PREVIEW_MESSAGE.SET_VIEW,
+      payload: viewRef.current,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (previewReadyRef.current) syncPreviewView();
+  }, [previewView, syncPreviewView]);
+
+  const reloadStory = useCallback(() => {
+    postToPreview(iframeRef.current, { type: PREVIEW_MESSAGE.RELOAD });
+  }, []);
+
+  const enterFullscreen = useCallback(() => {
+    void iframeRef.current?.requestFullscreen?.();
+  }, []);
+
+  // Open the current story in a standalone preview tab (no manager chrome). The
+  // preview reads ?story/?theme from the URL; complex live args (Map/Set/Date)
+  // aren't URL-serializable, so the standalone view uses the story defaults.
+  const openStandalone = useCallback(() => {
+    if (!selected) return;
+    const params = new URLSearchParams({ story: selected, theme: previewTheme });
+    window.open(`${PREVIEW_URL}?${params.toString()}`, "_blank", "noopener");
+  }, [selected, previewTheme]);
+
   useEffect(() => {
     if (!selected) return;
     if (previewReadyRef.current) {
@@ -390,6 +429,7 @@ export function App() {
         previewReadyRef.current = true;
         syncPreview();
         syncPreviewTheme();
+        syncPreviewView();
         // A test run was queued while the iframe was unmounted (e.g. on the
         // Variants tab) — fire it now that the preview is ready.
         if (pendingRunRef.current) {
@@ -403,7 +443,7 @@ export function App() {
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [syncPreview, syncPreviewTheme]);
+  }, [syncPreview, syncPreviewTheme, syncPreviewView]);
 
   // Load a saved interaction test the first time a component is selected.
   useEffect(() => {
@@ -736,7 +776,18 @@ export function App() {
                   onChange={setPreviewTab}
                   ariaLabel="Preview"
                 />
-                <ThemeToggle theme={previewTheme} onToggle={togglePreviewTheme} />
+                <div className="bb-layout__preview-actions">
+                  {previewTab === "preview" && components.length > 0 ? (
+                    <PreviewToolbar
+                      view={previewView}
+                      onChange={setPreviewView}
+                      onReload={reloadStory}
+                      onFullscreen={enterFullscreen}
+                      onOpenStandalone={openStandalone}
+                    />
+                  ) : null}
+                  <ThemeToggle theme={previewTheme} onToggle={togglePreviewTheme} />
+                </div>
               </nav>
             ) : foundationView !== "tokens" ? (
               <header className="bb-layout__foundation-header">
@@ -763,6 +814,7 @@ export function App() {
                     previewReadyRef.current = true;
                     syncPreview();
                     syncPreviewTheme();
+                    syncPreviewView();
                   }}
                 />
               ) : selected && selectedComponent ? (

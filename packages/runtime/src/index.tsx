@@ -87,4 +87,9 @@ export const PREVIEW_MESSAGE = {
   // preview -> manager: a wired callback fired. Drives the interaction log and
   // two-way controls sync (the manager applies the new controlled value).
   INTERACTION: "TIDE_INTERACTION",
+  // manager -> preview: canvas view state from the preview toolbar — zoom level,
+  // forced pseudo-states (:hover/:focus/:active), element outlines, background grid.
+  SET_VIEW: "TIDE_SET_VIEW",
+  // manager -> preview: re-mount the current story from scratch (resets state).
+  RELOAD: "TIDE_RELOAD",
 } as const;

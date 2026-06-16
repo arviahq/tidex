@@ -1,0 +1,119 @@
+.bb-ptoolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bb-ptoolbar__sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 4px;
+  background: var(--bb-border);
+}
+
+.bb-ptoolbar__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--bb-radius-md);
+  background: transparent;
+  color: var(--bb-muted);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.bb-ptoolbar__btn:hover:not(:disabled) {
+  color: var(--bb-text);
+  background: var(--bb-background);
+}
+
+.bb-ptoolbar__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bb-ptoolbar__btn[data-active="true"] {
+  color: var(--bb-accent);
+  background: color-mix(in srgb, var(--bb-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--bb-accent) 35%, transparent);
+}
+
+.bb-ptoolbar__btn:focus-visible {
+  outline: 2px solid var(--bb-accent);
+  outline-offset: 1px;
+}
+
+.bb-ptoolbar__zoom {
+  display: inline-flex;
+  align-items: center;
+}
+
+.bb-ptoolbar__zoom-value {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--bb-text);
+  min-width: 38px;
+  text-align: center;
+  padding: 4px 2px;
+  border-radius: var(--bb-radius-md);
+}
+
+.bb-ptoolbar__zoom-value:hover {
+  background: var(--bb-background);
+}
+
+.bb-ptoolbar__menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.bb-ptoolbar__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
+  box-shadow: var(--bb-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+
+.bb-ptoolbar__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bb-ptoolbar__check:hover {
+  background: var(--bb-background);
+}
+
+.bb-ptoolbar__check code {
+  font-family: var(--bb-font);
+  font-size: 12px;
+  color: var(--bb-text);
+}
+
+.bb-ptoolbar__check input {
+  accent-color: var(--bb-accent);
+}

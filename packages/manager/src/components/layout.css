@@ -497,6 +497,13 @@
   gap: 12px;
 }
 
+.bb-layout__preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .bb-layout__preview-tabs .bb-tabs,
 .bb-layout__tabs .bb-tabs {
   flex: 1;

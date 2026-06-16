@@ -12,8 +12,24 @@ import { createRoot, type Root } from "react-dom/client";
 import { PREVIEW_MESSAGE, type StoryModule } from "@tide/runtime";
 import { bindingsToCallbacks, type BindingsMap, type InteractionStep } from "@tide/core";
 import { applyPreviewTheme, type PreviewTheme } from "./theme";
+import { applyForcedStates, type ForcedStates } from "./forcePseudo";
 import { isCompactMode } from "./isCompactMode";
 import { runSteps } from "./runSteps";
+
+/** Canvas view state driven by the manager's preview toolbar. */
+interface PreviewView {
+  zoom: number;
+  force: ForcedStates;
+  outline: boolean;
+  grid: boolean;
+}
+
+const DEFAULT_VIEW: PreviewView = {
+  zoom: 1,
+  force: { hover: false, focus: false, active: false },
+  outline: false,
+  grid: false,
+};
 import {
   buildWiredArgs,
   useWiredArgs,
@@ -213,6 +229,9 @@ export function PreviewApp() {
   const [error, setError] = useState<string | null>(null);
   const [storyName, setStoryName] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(true);
+  const [view, setView] = useState<PreviewView>(DEFAULT_VIEW);
+  // Bumped by RELOAD to force a fresh unmount/remount of the current story.
+  const [reloadNonce, setReloadNonce] = useState(0);
   const compact = isCompactMode();
   const scale = useScaleToFit(containerRef, compact, [story, args]);
 
@@ -381,6 +400,14 @@ export function PreviewApp() {
       if (event.data?.type === PREVIEW_MESSAGE.SET_CALLBACKS) {
         setCallbacks((event.data.payload as CallbackMap) ?? {});
       }
+      if (event.data?.type === PREVIEW_MESSAGE.SET_VIEW) {
+        setView({ ...DEFAULT_VIEW, ...(event.data.payload as Partial<PreviewView>) });
+      }
+      if (event.data?.type === PREVIEW_MESSAGE.RELOAD) {
+        rootRef.current?.unmount();
+        rootRef.current = null;
+        setReloadNonce((n) => n + 1);
+      }
       if (event.data?.type === PREVIEW_MESSAGE.SELECT_STORY) {
         handshakeDoneRef.current = true;
         const payload = event.data.payload as
@@ -502,7 +529,7 @@ export function PreviewApp() {
     return () => {
       cancelled = true;
     };
-  }, [story, wiredArgs, Wrapper]);
+  }, [story, wiredArgs, Wrapper, reloadNonce]);
 
   useEffect(() => {
     return () => {
@@ -510,6 +537,19 @@ export function PreviewApp() {
       rootRef.current = null;
     };
   }, []);
+
+  // Element outlines + background grid are plain html classes (see preview.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("tide-outline", view.outline);
+    root.classList.toggle("tide-grid", view.grid);
+  }, [view.outline, view.grid]);
+
+  // Re-pin forced pseudo-states after each (re)mount, since a freshly loaded
+  // component may have injected new stylesheets to clone rules from.
+  useEffect(() => {
+    applyForcedStates(view.force);
+  }, [view.force, story, wiredArgs, reloadNonce]);
 
   if (error) {
     return (
@@ -525,12 +565,22 @@ export function PreviewApp() {
     return <div className="bb-preview-loading">Loading preview...</div>;
   }
 
+  // Compact (variant) tiles scale-to-fit; the full preview applies the toolbar
+  // zoom. The two never combine — zoom is a no-op in compact mode.
+  const transform = compact
+    ? scale !== 1
+      ? `scale(${scale})`
+      : undefined
+    : view.zoom !== 1
+      ? `scale(${view.zoom})`
+      : undefined;
+
   return (
     <div
       ref={containerRef}
       className={compact ? "bb-preview-canvas" : undefined}
       data-tide-visual=""
-      style={compact && scale !== 1 ? { transform: `scale(${scale})` } : undefined}
+      style={transform ? { transform } : undefined}
     />
   );
 }
