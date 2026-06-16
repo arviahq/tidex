@@ -1,11 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { TideLogo } from "./TideLogo";
-
-const DOC_LINKS = [
-  { href: "https://github.com/arviahq/tide#quick-start", label: "Quick start" },
-  { href: "https://github.com/arviahq/tide/blob/main/docs/config-reference.md", label: "Config reference" },
-  { href: "https://github.com/arviahq/tide/blob/main/docs/monorepo.md", label: "Monorepo guide" },
-  { href: "https://github.com/arviahq/tide/blob/main/docs/component-authoring.md", label: "Component authoring" },
-];
+import { DOC_NAV } from "../docs/nav";
 
 export function Footer() {
   return (
@@ -22,10 +17,10 @@ export function Footer() {
         </div>
 
         <nav className="footer__nav" aria-label="Documentation">
-          {DOC_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="footer__link" target="_blank" rel="noreferrer">
+          {DOC_NAV.map((link) => (
+            <Link key={link.to} to={link.to} className="footer__link">
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 

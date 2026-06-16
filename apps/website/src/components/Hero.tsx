@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { TerminalDemo } from "./TerminalDemo";
 import { ManagerDemo } from "./ManagerDemo";
 
@@ -40,9 +41,9 @@ export function Hero() {
             accessibility, interaction, and visual testing built in.
           </p>
           <div className="hero__actions">
-            <a href="#start" className="btn btn--primary">
+            <Link to="/docs/quick-start" className="btn btn--primary">
               Start in 60 seconds
-            </a>
+            </Link>
             <a
               href="https://github.com/arviahq/tide"
               className="btn btn--ghost"

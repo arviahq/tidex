@@ -1,0 +1,57 @@
+/* Shiki dual-theme — color on tokens, background on <pre> only */
+
+.doc-code__highlight .shiki,
+.doc-code__highlight .shiki span {
+  color: var(--shiki-light);
+  background-color: transparent;
+}
+
+[data-theme="dark"] .doc-code__highlight .shiki,
+[data-theme="dark"] .doc-code__highlight .shiki span {
+  color: var(--shiki-dark);
+}
+
+.doc-code__highlight .shiki {
+  margin: 0;
+  padding: 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+  background-color: var(--code-bg);
+  white-space: pre;
+}
+
+/* Shiki inserts newline text nodes between block .line spans inside <pre>,
+   which doubles line spacing — zero out code font-size, restore on .line */
+.doc-code__highlight .shiki code {
+  display: block;
+  font-size: 0;
+  line-height: 0;
+  background: transparent;
+}
+
+.doc-code__highlight .shiki .line {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 1.5em;
+}
+
+/* Plain-text blocks (directory trees, etc.) skip Shiki .line wrappers */
+.doc-code__highlight .shiki-plain code {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.doc-code__highlight--loading .doc-code__fallback {
+  margin: 0;
+  padding: 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--code-text);
+}

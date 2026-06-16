@@ -163,6 +163,10 @@
   color: var(--text);
 }
 
+.header__link--active {
+  color: var(--brand);
+}
+
 .header__actions {
   display: flex;
   align-items: center;
@@ -994,64 +998,6 @@
   border: 1px solid var(--border);
   font-size: 13px;
   color: var(--brand);
-}
-
-.code-block {
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--code-border);
-  background: var(--code-bg);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-}
-
-.code-block__chrome {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--code-border);
-}
-
-.code-block__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--code-border);
-}
-
-.code-block__filename {
-  margin-left: 8px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--hl-comment);
-}
-
-.code-block__pre {
-  margin: 0;
-  padding: 20px;
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--code-text);
-}
-
-.hl-keyword {
-  color: var(--hl-keyword);
-}
-.hl-string {
-  color: var(--hl-string);
-}
-.hl-number {
-  color: var(--hl-number);
-}
-.hl-title {
-  color: var(--hl-title);
-}
-.hl-attr {
-  color: var(--hl-attr);
-}
-.hl-punct {
-  color: var(--hl-punct);
 }
 
 /* ── CTA ──────────────────────────────────────────────────────────────────── */

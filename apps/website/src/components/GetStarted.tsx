@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 export function GetStarted() {
   return (
     <section id="start" className="section cta">
@@ -24,10 +26,15 @@ export function GetStarted() {
         </div>
 
         <div className="cta__actions">
-          <a href="https://github.com/arviahq/tide" className="btn btn--primary btn--lg" target="_blank" rel="noreferrer">
+          <Link to="/docs/quick-start" className="btn btn--primary btn--lg">
             Read the docs
-          </a>
-          <a href="https://github.com/arviahq/tide" className="btn btn--ghost btn--lg" target="_blank" rel="noreferrer">
+          </Link>
+          <a
+            href="https://github.com/arviahq/tide"
+            className="btn btn--ghost btn--lg"
+            target="_blank"
+            rel="noreferrer"
+          >
             Star on GitHub
           </a>
         </div>
