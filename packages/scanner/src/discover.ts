@@ -99,18 +99,36 @@ function calleeName(file: ParsedFile, callExpr: AstNode): string {
   return text(file, callee);
 }
 
-/** Unwrap `forwardRef(fn)` / `memo(fn)` to the inner component function. */
-function unwrapComponentInit(file: ParsedFile, node: AstNode | undefined): AstNode | undefined {
+/**
+ * Unwrap an initializer to the inner component function, seeing through:
+ *  - `forwardRef(fn)` / `memo(fn)` wrappers,
+ *  - `Object.assign(Root, { Sub })` compound components (the root is the first arg),
+ *  - bare identifier references (e.g. `Object.assign(TabsRoot, …)` where `TabsRoot`
+ *    is a local `const`/`function` declaration), resolved to their local declaration.
+ * `seen` guards against cyclic references (`const A = A`).
+ */
+function unwrapComponentInit(
+  file: ParsedFile,
+  node: AstNode | undefined,
+  seen: Set<string> = new Set(),
+): AstNode | undefined {
   if (!node) return undefined;
+  if (node.type === "Identifier") {
+    const name = str(node, "name");
+    if (!name || seen.has(name)) return undefined;
+    seen.add(name);
+    return unwrapComponentInit(file, findLocalDecl(file, name), seen);
+  }
   if (node.type === "CallExpression") {
     const callee = calleeName(file, node);
     if (
       callee === "forwardRef" ||
       callee.endsWith(".forwardRef") ||
       callee === "memo" ||
-      callee.endsWith(".memo")
+      callee.endsWith(".memo") ||
+      callee === "Object.assign"
     ) {
-      return unwrapComponentInit(file, children(node, "arguments")[0]);
+      return unwrapComponentInit(file, children(node, "arguments")[0], seen);
     }
   }
   return node;
@@ -130,12 +148,21 @@ function isComponentInitializer(file: ParsedFile, node: AstNode | undefined): bo
   return false;
 }
 
-function findVariableInit(file: ParsedFile, name: string): AstNode | undefined {
+/**
+ * Resolve a local top-level binding to the node worth testing as a component:
+ * the variable's initializer for `const X = …`, or the declaration itself for
+ * `function X() {}`. Used to follow identifier references (default-export
+ * aliases and `Object.assign` roots) back to their definition.
+ */
+function findLocalDecl(file: ParsedFile, name: string): AstNode | undefined {
   for (const stmt of file.body) {
     const decl = stmt.type === "ExportNamedDeclaration" ? child(stmt, "declaration") : stmt;
-    if (decl?.type !== "VariableDeclaration") continue;
-    for (const d of children(decl, "declarations")) {
-      if (str(child(d, "id"), "name") === name) return child(d, "init");
+    if (decl?.type === "VariableDeclaration") {
+      for (const d of children(decl, "declarations")) {
+        if (str(child(d, "id"), "name") === name) return child(d, "init");
+      }
+    } else if (decl?.type === "FunctionDeclaration" && str(child(decl, "id"), "name") === name) {
+      return decl;
     }
   }
   return undefined;
@@ -179,7 +206,7 @@ export function discoverComponents(
         if (!decl) continue;
         if (decl.type === "Identifier") {
           const refName = str(decl, "name");
-          if (refName && isComponentInitializer(parsed, findVariableInit(parsed, refName))) {
+          if (refName && isComponentInitializer(parsed, findLocalDecl(parsed, refName))) {
             add(isPascalCase(refName) ? refName : path.basename(absPath, ".tsx"), "default", true);
           }
         } else if (decl.type === "FunctionDeclaration") {
@@ -275,7 +302,11 @@ export function getComponentParameterType(
       for (const d of children(decl, "declarations")) {
         if (str(child(d, "id"), "name") !== componentName) continue;
         const init = unwrapComponentInit(file, child(d, "init"));
-        if (init?.type === "ArrowFunctionExpression" || init?.type === "FunctionExpression") {
+        if (
+          init?.type === "ArrowFunctionExpression" ||
+          init?.type === "FunctionExpression" ||
+          init?.type === "FunctionDeclaration"
+        ) {
           return firstParamType(init);
         }
       }
