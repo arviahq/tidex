@@ -1,6 +1,8 @@
-import { defineConfig } from "@tidex/core";
+import { defineConfig } from "@tidex/cli/config";
 
 export default defineConfig({
+  managerPort: 6216,
+  previewPort: 6217,
   scan: {
     include: ["src/**/*.tsx"],
     exclude: ["**/preview/**"],

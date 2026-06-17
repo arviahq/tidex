@@ -1,8 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import chokidar from "chokidar";
-import { createServer, mergeConfig, type ViteDevServer, type PluginOption } from "vite";
+import {
+  createServer,
+  mergeConfig,
+  loadConfigFromFile,
+  searchForWorkspaceRoot,
+  normalizePath,
+  type ViteDevServer,
+  type PluginOption,
+  type InlineConfig,
+  type Plugin,
+} from "vite";
+import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import {
   applyPlugins,
@@ -19,6 +31,49 @@ import { loadConfig } from "./config.js";
 import { startProgress } from "./progress.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+
+// Locate the manager/preview UI packages. `require.resolve` works both in the
+// monorepo (workspace symlink) and in a published install where they're CLI
+// dependencies; the `../../<pkg>` fallback keeps a bare source checkout working.
+// The CLI builds these servers' Vite configs programmatically (configFile:
+// false), so the packages only need to ship their source + index.html — not a
+// vite.config.ts.
+function resolveUiRoot(pkg: string, fallbackRelative: string): string {
+  try {
+    return path.dirname(require.resolve(`${pkg}/package.json`));
+  } catch {
+    return path.resolve(__dirname, fallbackRelative);
+  }
+}
+
+const resolveManagerRoot = () => resolveUiRoot("@tidex/manager", "../../manager");
+const resolvePreviewRoot = () => resolveUiRoot("@tidex/preview", "../../preview");
+
+// Base plugins for the preview/visual/test servers: the user project's own Vite
+// plugins so components compile exactly as the project builds them (custom
+// transforms like design-system DSLs, vanilla-extract, MDX, etc.). Vite
+// evaluates the project's config rooted at the project, so plugin paths resolve
+// correctly. Falls back to the bundled React plugin when the project has no Vite
+// config. The project's React plugin (if any) is reused, so we don't add ours.
+async function loadProjectBasePlugins(projectRoot: string): Promise<PluginOption[]> {
+  try {
+    const loaded = await loadConfigFromFile(
+      { command: "serve", mode: "development" },
+      undefined,
+      projectRoot,
+    );
+    const plugins = (loaded?.config.plugins ?? []) as PluginOption[];
+    if (plugins.length > 0) return plugins;
+  } catch (err) {
+    console.warn(
+      `  [tidex] Could not load the project's Vite plugins; falling back to the React plugin. ${
+        err instanceof Error ? err.message : err
+      }`,
+    );
+  }
+  return [react()];
+}
 
 /** Read and parse a JSON artifact, returning null when missing or invalid. */
 function readJson<T>(file: string): T | null {
@@ -50,6 +105,120 @@ function userPathsPlugin(projectRoot: string): PluginOption {
   return tsconfigPaths({ root: projectRoot, loose: true });
 }
 
+// Serve the Tidex preview harness HTML at `/` even though the Vite `root` is the
+// user's project (so the project's own plugins resolve paths relative to the
+// project, exactly as `vite dev` would). With `appType: "custom"` Vite no longer
+// auto-serves an index.html, so this post-middleware does it: it reads the
+// harness `index.html` from `@tidex/preview`, rewrites the relative entry to an
+// absolute `/@fs/` URL (resolved against the harness, not the project), and runs
+// it through `transformIndexHtml` so plugin-react injects the refresh preamble +
+// HMR client. All consumers navigate to `/?story=...`, so only `/` needs serving.
+function previewHostPlugin(previewRoot: string): Plugin {
+  const htmlPath = path.join(previewRoot, "index.html");
+  const entryFsUrl = "/@fs/" + normalizePath(path.join(previewRoot, "src/main.tsx"));
+  return {
+    name: "tidex:preview-host",
+    configureServer(server) {
+      // Returning a function registers a POST-middleware: it runs after Vite's
+      // own middlewares (transform, /@fs, /@vite, /@id, /node_modules), so real
+      // module/asset requests are already handled and only HTML navigations fall
+      // through to us.
+      return () => {
+        server.middlewares.use(async (req, res, next) => {
+          if (req.method !== "GET" && req.method !== "HEAD") return next();
+          const pathname = (req.url ?? "/").split("?")[0] ?? "/";
+          if (
+            pathname.startsWith("/@") ||
+            pathname.startsWith("/node_modules/") ||
+            pathname.startsWith("/__tidex/") ||
+            pathname.startsWith("/src/") ||
+            path.extname(pathname) !== ""
+          ) {
+            return next();
+          }
+          if (!(req.headers.accept ?? "").includes("text/html")) return next();
+          try {
+            let html = fs.readFileSync(htmlPath, "utf-8");
+            html = html.replace(
+              /<script\s+type="module"\s+src="\/src\/main\.tsx"><\/script>/,
+              `<script type="module" src="${entryFsUrl}"></script>`,
+            );
+            html = await server.transformIndexHtml(req.url ?? "/", html, req.originalUrl);
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "text/html");
+            res.setHeader("Cache-Control", "no-store");
+            res.end(html);
+          } catch (err) {
+            next(err as Error);
+          }
+        });
+      };
+    },
+  };
+}
+
+interface PreviewConfigOptions {
+  cwd: string;
+  projectRoot: string;
+  tidexDir: string;
+  previewRoot: string;
+  previewBasePlugins: PluginOption[];
+  port: number;
+  strictPort: boolean;
+  cors?: boolean;
+}
+
+// Shared Vite config for the three preview servers (live dev, visual, test).
+// Rooted at the user project so the project's own plugins resolve paths the same
+// way the project's build does; the harness is served by `previewHostPlugin`.
+function buildPreviewConfig(opts: PreviewConfigOptions): InlineConfig {
+  return {
+    root: opts.cwd,
+    appType: "custom",
+    configFile: false,
+    server: {
+      port: opts.port,
+      strictPort: opts.strictPort,
+      cors: opts.cors ?? true,
+      fs: {
+        allow: [
+          searchForWorkspaceRoot(opts.cwd),
+          opts.previewRoot,
+          opts.cwd,
+          opts.tidexDir,
+          opts.projectRoot,
+        ],
+      },
+    },
+    define: {
+      __TIDEX_ROOT__: JSON.stringify(opts.cwd),
+    },
+    plugins: [
+      ...opts.previewBasePlugins,
+      tidexVitePlugin({ root: opts.cwd, tidexDir: opts.tidexDir }),
+      userPathsPlugin(opts.projectRoot),
+      previewHostPlugin(opts.previewRoot),
+    ],
+    optimizeDeps: {
+      entries: [path.join(opts.previewRoot, "src/main.tsx")],
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "@testing-library/dom",
+        "@testing-library/user-event",
+      ],
+    },
+    resolve: {
+      // `virtual:tidex-stories` is resolved by tidexVitePlugin (resolveId/load),
+      // so no alias for it is needed. `dedupe` keeps a single React instance
+      // resolved from the project, shared by the harness and user components.
+      alias: { "@user": opts.cwd },
+      dedupe: ["react", "react-dom"],
+    },
+  };
+}
+
 export interface DevServerOptions {
   cwd?: string;
 }
@@ -64,8 +233,8 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
   await generateArtifacts(config);
   await pluginCtx.runGenerateHooks();
 
-  const managerRoot = path.resolve(__dirname, "../../manager");
-  const previewRoot = path.resolve(__dirname, "../../preview");
+  const managerRoot = resolveManagerRoot();
+  const previewRoot = resolvePreviewRoot();
 
   const previewUrl = `http://localhost:${config.previewPort ?? 6007}`;
 
@@ -85,7 +254,7 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
 
   managerServer = await createServer({
     root: managerRoot,
-    configFile: path.join(managerRoot, "vite.config.ts"),
+    configFile: false,
     server: {
       port: config.managerPort ?? 6006,
       strictPort: true,
@@ -94,34 +263,26 @@ export async function startDevServer(options: DevServerOptions = {}): Promise<vo
       __TIDEX_ROOT__: JSON.stringify(cwd),
       __TIDEX_PREVIEW_URL__: JSON.stringify(`http://localhost:${config.previewPort ?? 6007}`),
     },
-    plugins: [tidexVitePlugin(sharedPluginOptions), tidexVisualPlugin(visualPluginOptions)],
+    plugins: [
+      react(),
+      tidexVitePlugin(sharedPluginOptions),
+      tidexVisualPlugin(visualPluginOptions),
+    ],
   });
 
+  const previewBasePlugins = await loadProjectBasePlugins(projectRoot);
   previewServer = await createServer(
     mergeConfig(
-      {
-        root: previewRoot,
-        configFile: path.join(previewRoot, "vite.config.ts"),
-        server: {
-          port: config.previewPort ?? 6007,
-          strictPort: true,
-          cors: true,
-          fs: {
-            allow: [previewRoot, cwd, tidexDir, projectRoot],
-          },
-        },
-        define: {
-          __TIDEX_ROOT__: JSON.stringify(cwd),
-        },
-        plugins: [tidexVitePlugin(sharedPluginOptions), userPathsPlugin(projectRoot)],
-        resolve: {
-          alias: {
-            "@user": cwd,
-            "virtual:tidex-stories": path.join(tidexDir, "stories.generated.ts"),
-          },
-          dedupe: ["react", "react-dom"],
-        },
-      },
+      buildPreviewConfig({
+        cwd,
+        projectRoot,
+        tidexDir,
+        previewRoot,
+        previewBasePlugins,
+        port: config.previewPort ?? 6007,
+        strictPort: true,
+        cors: true,
+      }),
       config.preview?.vite ?? {},
     ),
   );
@@ -204,7 +365,7 @@ export async function runInit(cwd?: string): Promise<void> {
   if (!fs.existsSync(configPath)) {
     fs.writeFileSync(
       configPath,
-      `import { defineConfig } from "@tidex/core";
+      `import { defineConfig } from "@tidex/cli/config";
 
 export default defineConfig({
   scan: {
@@ -226,6 +387,10 @@ export default defineConfig({
     {
       file: "src/preview/TidexWrapper.tsx",
       content: `import type { ReactNode } from "react";
+// Tidex's equivalent of \`.storybook/preview\`: import your design system's
+// global styles/theme here and wrap components in any required providers, so
+// the preview renders them exactly as your app does.
+//   import "../styles/global.css";
 
 export default function TidexWrapper({ children }: { children: ReactNode }) {
   return <>{children}</>;
@@ -311,23 +476,22 @@ export async function runVisual(cwd?: string, update?: boolean): Promise<number>
   const { runVisualTests, hasVisualDiffs, formatVisualSummary } = await import("@tidex/visual");
 
   // Start preview server temporarily for visual tests
-  const previewRoot = path.resolve(__dirname, "../../preview");
+  const previewRoot = resolvePreviewRoot();
   const tidexDir = getTidexDir(root);
   const previewPort = config.previewPort ?? 6007;
   const projectRoot = findProjectRoot(root);
+  const previewBasePlugins = await loadProjectBasePlugins(projectRoot);
   const previewServer = await createServer(
     mergeConfig(
-      {
-        root: previewRoot,
-        configFile: path.join(previewRoot, "vite.config.ts"),
-        server: {
-          port: previewPort,
-          strictPort: false,
-          fs: { allow: [previewRoot, root, projectRoot] },
-        },
-        define: { __TIDEX_ROOT__: JSON.stringify(root) },
-        plugins: [tidexVitePlugin({ root, tidexDir }), userPathsPlugin(projectRoot)],
-      },
+      buildPreviewConfig({
+        cwd: root,
+        projectRoot,
+        tidexDir,
+        previewRoot,
+        previewBasePlugins,
+        port: previewPort,
+        strictPort: false,
+      }),
       config.preview?.vite ?? {},
     ),
   );
@@ -379,23 +543,22 @@ export async function runTest(
     formatVerifySummary,
   } = await import("@tidex/testing");
 
-  const previewRoot = path.resolve(__dirname, "../../preview");
+  const previewRoot = resolvePreviewRoot();
   const tidexDir = getTidexDir(root);
   const previewPort = config.previewPort ?? 6007;
   const projectRoot = findProjectRoot(root);
+  const previewBasePlugins = await loadProjectBasePlugins(projectRoot);
   const previewServer = await createServer(
     mergeConfig(
-      {
-        root: previewRoot,
-        configFile: path.join(previewRoot, "vite.config.ts"),
-        server: {
-          port: previewPort,
-          strictPort: false,
-          fs: { allow: [previewRoot, root, projectRoot] },
-        },
-        define: { __TIDEX_ROOT__: JSON.stringify(root) },
-        plugins: [tidexVitePlugin({ root, tidexDir }), userPathsPlugin(projectRoot)],
-      },
+      buildPreviewConfig({
+        cwd: root,
+        projectRoot,
+        tidexDir,
+        previewRoot,
+        previewBasePlugins,
+        port: previewPort,
+        strictPort: false,
+      }),
       config.preview?.vite ?? {},
     ),
   );

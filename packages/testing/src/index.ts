@@ -22,7 +22,12 @@ export {
   type VerifyInteractionsResult,
 } from "./verify-interactions.js";
 
-export { createTestBrowser, createTestPage, type TestBrowser, type TestBrowserHandle } from "./browser.js";
+export {
+  createTestBrowser,
+  createTestPage,
+  type TestBrowser,
+  type TestBrowserHandle,
+} from "./browser.js";
 export { defaultWorkers } from "./pool.js";
 
 export interface A11yViolation {
@@ -52,11 +57,7 @@ export interface A11yTestOptions {
 }
 
 /** Page-level rules that don't apply when testing an isolated component canvas. */
-const PREVIEW_ONLY_A11Y_RULES = [
-  "landmark-one-main",
-  "page-has-heading-one",
-  "region",
-] as const;
+const PREVIEW_ONLY_A11Y_RULES = ["landmark-one-main", "page-has-heading-one", "region"] as const;
 
 async function runA11yForComponent(
   page: Awaited<ReturnType<typeof createTestPage>>,

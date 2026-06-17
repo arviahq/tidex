@@ -36,25 +36,25 @@ export function AvatarGroup({ members, max, size }: AvatarGroupProps) {
       {shown.map((m, i) => {
         const fill = memberFill(m.color);
         return (
-        <span
-          key={i}
-          style={{
-            width: dim,
-            height: dim,
-            marginLeft: i === 0 ? 0 : -dim / 3,
-            borderRadius: 999,
-            background: fill.background,
-            color: fill.color,
-            border: `2px solid ${ui.colors.bg}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: dim / 2.8,
-            fontWeight: 700,
-          }}
-        >
-          {initials(m.name)}
-        </span>
+          <span
+            key={i}
+            style={{
+              width: dim,
+              height: dim,
+              marginLeft: i === 0 ? 0 : -dim / 3,
+              borderRadius: 999,
+              background: fill.background,
+              color: fill.color,
+              border: `2px solid ${ui.colors.bg}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: dim / 2.8,
+              fontWeight: 700,
+            }}
+          >
+            {initials(m.name)}
+          </span>
         );
       })}
       {overflow > 0 ? (

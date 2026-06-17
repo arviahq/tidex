@@ -95,12 +95,7 @@ export async function runInteractionTests(
       const page = await createTestPage(testBrowser);
       const componentId = getComponentId(component);
       try {
-        const entry = await runInteractionForComponent(
-          page,
-          options.previewUrl,
-          componentId,
-          test,
-        );
+        const entry = await runInteractionForComponent(page, options.previewUrl, componentId, test);
         done++;
         options.onProgress?.(done, withTests.length, component.name);
         return entry;

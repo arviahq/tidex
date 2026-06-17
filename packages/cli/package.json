@@ -8,9 +8,6 @@
     "url": "git+https://github.com/arviahq/tidex.git",
     "directory": "packages/cli"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "bin": {
     "tidex": "./bin/tidex.js"
   },
@@ -27,9 +24,13 @@
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     },
-    "./core": {
-      "import": "@tidex/core"
+    "./config": {
+      "import": "./dist/config-api.js",
+      "types": "./dist/config-api.d.ts"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
@@ -39,9 +40,12 @@
   "dependencies": {
     "@tidex/core": "workspace:*",
     "@tidex/docs": "workspace:*",
+    "@tidex/manager": "workspace:*",
+    "@tidex/preview": "workspace:*",
     "@tidex/scanner": "workspace:*",
     "@tidex/testing": "workspace:*",
     "@tidex/visual": "workspace:*",
+    "@vitejs/plugin-react": "^4.3.4",
     "chokidar": "^4.0.0",
     "commander": "^12.1.0",
     "ink": "^7.0.0",

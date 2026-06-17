@@ -15,8 +15,18 @@ const styles = {
     accent: ui.colors.success,
     message: "#065f46",
   },
-  warning: { soft: ui.colors.warningSoft, border: "#fde68a", accent: "#b45309", message: "#92400e" },
-  error: { soft: ui.colors.dangerSoft, border: "#fecaca", accent: ui.colors.danger, message: "#991b1b" },
+  warning: {
+    soft: ui.colors.warningSoft,
+    border: "#fde68a",
+    accent: "#b45309",
+    message: "#92400e",
+  },
+  error: {
+    soft: ui.colors.dangerSoft,
+    border: "#fecaca",
+    accent: ui.colors.danger,
+    message: "#991b1b",
+  },
 };
 
 function AlertIcon({ color }: { color: string }) {

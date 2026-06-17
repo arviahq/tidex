@@ -1,4 +1,4 @@
-import type { TidexPlugin } from "@tidex/core";
+import type { TidexPlugin } from "@tidex/cli/config";
 
 const examplePlugin: TidexPlugin = {
   name: "example-plugin",

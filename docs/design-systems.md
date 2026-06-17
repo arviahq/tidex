@@ -4,6 +4,25 @@ Tidex is convention-driven: it scans `.tsx` files, discovers exported React comp
 
 See also: [examples/react-app](../examples/react-app) for a working reference.
 
+## Install
+
+`@tidex/cli` is the only dependency you need — it pulls in everything else:
+
+```
+pnpm add -D @tidex/cli
+pnpm exec tidex init
+pnpm exec tidex generate
+pnpm exec tidex dev
+```
+
+Author `tidex.config.ts` against `@tidex/cli/config`:
+
+```ts
+import { defineConfig } from "@tidex/cli/config";
+```
+
+> **Upgrading from an earlier version?** Older `tidex init` scaffolded `import { defineConfig } from "@tidex/core"`, which fails under pnpm with `ERR_MODULE_NOT_FOUND: @tidex/core` (core is a transitive dep, not resolvable from your project root). Change that single import to `@tidex/cli/config` and drop `@tidex/core` from your `devDependencies` — `@tidex/cli` is all you need.
+
 ## Recommended layout
 
 ```
@@ -133,7 +152,7 @@ Tidex scans `.tsx` only (per `scan.include`), so barrel files won’t create dup
 ### Minimal `tidex.config.ts`
 
 ```ts
-import { defineConfig } from "@tidex/core";
+import { defineConfig } from "@tidex/cli/config";
 
 export default defineConfig({
   scan: {

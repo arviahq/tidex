@@ -1,8 +1,15 @@
 {
   "name": "@tidex/manager",
   "version": "0.0.1",
-  "private": true,
+  "license": "MIT",
+  "files": [
+    "src",
+    "index.html"
+  ],
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit",
