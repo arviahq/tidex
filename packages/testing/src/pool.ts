@@ -11,7 +11,7 @@ export async function mapPool<T, R>(
 ): Promise<R[]> {
   if (items.length === 0) return [];
 
-  const results = new Array<R>(items.length);
+  const results: R[] = Array.from({ length: items.length });
   let nextIndex = 0;
 
   async function worker(): Promise<void> {
