@@ -1,6 +1,6 @@
 {
   "name": "@tidex/cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Zero-boilerplate component explorer for React design systems",
   "license": "MIT",
   "repository": {
