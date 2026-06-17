@@ -18,5 +18,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["website", "react-app", "@tidex/manager", "@tidex/preview"]
+  "ignore": ["website", "react-app"]
 }
