@@ -1,5 +1,18 @@
 # @tidex/cli
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [e5d065d]
+  - @tidex/scanner@0.0.5
+  - @tidex/core@0.0.5
+  - @tidex/testing@0.0.5
+  - @tidex/visual@0.0.5
+  - @tidex/docs@0.0.5
+  - @tidex/manager@0.0.4
+  - @tidex/preview@0.0.4
+
 ## 0.0.4
 
 ### Patch Changes
