@@ -1,0 +1,7 @@
+# Non-TS codegen source. A build step emits the matching declaration to
+# ../types/widget.schema.graphql.d.ts; tsconfig `rootDirs` unifies the two
+# directories so the import type-checks. The resolver lands on this file, then
+# mirrors to the generated declaration.
+type Widget {
+  variant: WidgetVariant
+}

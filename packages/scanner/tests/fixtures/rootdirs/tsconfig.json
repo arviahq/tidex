@@ -1,0 +1,7 @@
+{
+  // Mirrors a codegen setup: a non-TS source in `src/` and its generated
+  // `.d.ts` in `types/`, unified for the type-checker via rootDirs.
+  "compilerOptions": {
+    "rootDirs": ["src", "types"]
+  }
+}
