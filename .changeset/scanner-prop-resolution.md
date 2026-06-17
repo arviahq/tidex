@@ -20,3 +20,9 @@ TypeScript patterns those props use:
   a string control for unresolvable lib types like `CSSProperties["borderRadius"]`.
 - **Primitive unions** — `number | string` (ignoring `undefined`/`null`)
   collapses to the widest control instead of `unknown`.
+- **Bounded `node_modules` resolution** — types imported from packages now
+  resolve too, so a small imported union/enum becomes a control. Large external
+  objects (`HTMLAttributes`, `CSSProperties`, …) are capped: anything over ~25
+  members stays `unknown` rather than flooding the Props tab, and the TS lib
+  globals (`lib.dom`) are skipped. The cap short-circuits before walking the big
+  declarations, so there's no parse-time cost.

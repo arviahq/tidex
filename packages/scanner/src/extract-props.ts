@@ -102,12 +102,27 @@ function addMember(
   };
 }
 
+// A node_modules-declared type is "external". We resolve these so small imported
+// unions/enums become controls, but cap large external objects: surfacing the
+// ~250 members of `HTMLAttributes` (or all of `CSSProperties`) would flood the
+// Props tab. Local component types are never capped.
+const MAX_EXTERNAL_PROPS = 25;
+
+function isExternal(file: ParsedFile): boolean {
+  return file.path.includes("node_modules");
+}
+
 function schemaFromInterface(
   iface: AstNode,
   file: ParsedFile,
   resolver: ProjectTypeResolver,
   depth = 0,
 ): PropSchema {
+  // Bail before walking a big external interface's members (perf + explosion).
+  if (isExternal(file) && children(child(iface, "body"), "body").length > MAX_EXTERNAL_PROPS) {
+    return { type: "unknown" };
+  }
+
   const properties: Record<string, PropSchema> = {};
 
   for (const base of children(iface, "extends")) {
@@ -124,6 +139,10 @@ function schemaFromInterface(
     addMember(properties, member, file, resolver, depth);
   }
 
+  // Members merged from base interfaces can still push an external type over.
+  if (isExternal(file) && Object.keys(properties).length > MAX_EXTERNAL_PROPS) {
+    return { type: "unknown" };
+  }
   return { type: "object", properties };
 }
 
@@ -207,8 +226,13 @@ function objectMembers(
   if (typeNode.type === "TSTypeLiteral") return { members: children(typeNode, "members"), file };
   if (typeNode.type === "TSTypeReference") {
     const resolved = resolver.resolveTypeReference(typeNode, file, depth);
-    if (resolved?.kind === "interface")
-      return { members: children(child(resolved.node, "body"), "body"), file: resolved.file };
+    if (resolved?.kind === "interface") {
+      const members = children(child(resolved.node, "body"), "body");
+      // Don't open a large external object (e.g. `CSSProperties`) — callers fall
+      // back (indexed access → string, variant detection → no match).
+      if (isExternal(resolved.file) && members.length > MAX_EXTERNAL_PROPS) return null;
+      return { members, file: resolved.file };
+    }
     if (resolved?.kind === "type")
       return objectMembers(resolved.node, resolved.file, resolver, depth + 1);
   }
@@ -275,8 +299,10 @@ function schemaFromTypeNode(
 
   switch (typeNode.type) {
     case "TSTypeLiteral": {
+      const members = children(typeNode, "members");
+      if (isExternal(file) && members.length > MAX_EXTERNAL_PROPS) return { type: "unknown" };
       const properties: Record<string, PropSchema> = {};
-      for (const member of children(typeNode, "members")) {
+      for (const member of members) {
         addMember(properties, member, file, resolver, depth);
       }
       return { type: "object", properties };

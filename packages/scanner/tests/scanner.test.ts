@@ -1,6 +1,8 @@
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { getComponentId } from "@tidex/core";
 import { discoverComponents, deriveComponentId } from "../src/discover.js";
 import { extractProps } from "../src/extract-props.js";
@@ -116,6 +118,47 @@ describe("extractProps", () => {
       required: false,
     });
     expect(props[id]?.label).toEqual({ type: "string", required: false });
+  });
+
+  const tmpDirs: string[] = [];
+  afterEach(() => {
+    for (const d of tmpDirs.splice(0)) fs.rmSync(d, { recursive: true, force: true });
+  });
+
+  it("resolves small node_modules types but caps large external objects", async () => {
+    // A throwaway project with an installed `@acme/tokens` package, so the
+    // resolver crosses into node_modules.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tidex-ext-"));
+    tmpDirs.push(dir);
+    const pkg = path.join(dir, "node_modules", "@acme", "tokens");
+    fs.mkdirSync(pkg, { recursive: true });
+    fs.writeFileSync(path.join(pkg, "package.json"), JSON.stringify({ name: "@acme/tokens" }));
+    const huge = Array.from({ length: 40 }, (_, i) => `p${i}?: string;`).join(" ");
+    fs.writeFileSync(
+      path.join(pkg, "index.ts"),
+      `export type Tone = "brand" | "neutral" | "danger";\nexport interface HugeProps { ${huge} }\n`,
+    );
+    const src = path.join(dir, "src");
+    fs.mkdirSync(src, { recursive: true });
+    fs.writeFileSync(
+      path.join(src, "Widget.tsx"),
+      `import type { Tone, HugeProps } from "@acme/tokens";\n` +
+        `export type WidgetProps = { tone: Tone; huge: HugeProps };\n` +
+        `export const Widget = (p: WidgetProps) => <div>{String(p.tone)}</div>;\n`,
+    );
+
+    const components = discoverComponents(dir, [path.join(src, "Widget.tsx")]);
+    const props = await extractProps(dir, components);
+    const id = getComponentId(components[0]!);
+    // Small external union → resolved to a control.
+    expect(props[id]?.tone).toEqual({
+      type: "union",
+      values: ["brand", "neutral", "danger"],
+      valueType: "string",
+      required: true,
+    });
+    // 40-member external interface → capped to unknown rather than flooding controls.
+    expect(props[id]?.huge).toMatchObject({ type: "unknown" });
   });
 
   it("resolves primitive unions and unresolvable indexed access", async () => {

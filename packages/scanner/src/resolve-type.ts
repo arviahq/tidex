@@ -31,6 +31,9 @@ function declName(node: AstNode): string | undefined {
 }
 
 const TS_PARSEABLE = /\.(d\.ts|tsx?|jsx?|mjs|cjs)$/;
+// The TypeScript standard library declarations (`lib.dom.d.ts`, `lib.es2020.d.ts`,
+// …). Huge, full of ambient globals, and only resolvable by the compiler itself.
+const TS_LIB_RE = /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]+\.d\.ts$/;
 
 /** Does a parsed module declare any type alias or interface we could resolve to? */
 function hasTypeDecls(file: ParsedFile): boolean {
@@ -156,7 +159,14 @@ export class ProjectTypeResolver {
     return this.parser.parse(absPath) ?? undefined;
   }
 
-  /** Resolve an import specifier to a project-local file (never node_modules). */
+  /**
+   * Resolve an import specifier to a parsed declaration file. Project-local
+   * sources are preferred (and `rootDirs`-mirrored to their generated `.d.ts`);
+   * `node_modules` package types are also resolved so small imported unions/enums
+   * surface — large external objects are bounded downstream by a member cap, and
+   * the TS lib globals (`lib.dom`, `lib.es*`) are skipped since they can't be
+   * resolved without the compiler and would only ever explode.
+   */
   resolveImport(fromAbsPath: string, specifier: string): ParsedFile | undefined {
     let resolvedPath: string | undefined;
     try {
@@ -166,8 +176,13 @@ export class ProjectTypeResolver {
       resolvedPath = undefined;
     }
     if (!resolvedPath) return undefined;
-    // Stay inside the project — external types (node_modules) are unresolved.
-    if (resolvedPath.includes("node_modules")) return undefined;
+    if (TS_LIB_RE.test(resolvedPath)) return undefined;
+
+    if (resolvedPath.includes("node_modules")) {
+      const parsed = this.parser.parse(resolvedPath);
+      return parsed && hasTypeDecls(parsed) ? parsed : undefined;
+    }
+
     if (!resolvedPath.startsWith(this.root + path.sep) && resolvedPath !== this.root)
       return undefined;
     for (const candidate of this.declCandidates(resolvedPath)) {
