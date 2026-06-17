@@ -38,6 +38,13 @@ describe("discoverComponents", () => {
     expect(components[0]?.name).toBe("Input");
   });
 
+  it("finds Object.assign compound components (forwardRef and function roots)", () => {
+    const file = path.join(fixtures, "compound-component.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const names = components.map((c) => c.name).sort();
+    expect(names).toEqual(["Dialog", "Tabs"]);
+  });
+
   it("ignores non-component exports", () => {
     const file = path.join(fixtures, "non-component.tsx");
     const components = discoverComponents(fixtures, [file]);
