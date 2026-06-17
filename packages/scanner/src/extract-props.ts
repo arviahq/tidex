@@ -159,6 +159,41 @@ function unionFromTypeNodes(nodes: AstNode[], file: ParsedFile): PropSchema | nu
   return { type: "union", values, valueType };
 }
 
+/**
+ * A union of primitive keywords (e.g. `number | string`, ignoring `undefined`/
+ * `null`) collapses to the widest controllable input: string if any string
+ * member, else number, else boolean. Returns null if any member isn't a bare
+ * primitive keyword (those are handled as literal/variant unions instead).
+ */
+function primitiveUnion(nodes: AstNode[]): PropSchema | null {
+  let hasString = false;
+  let hasNumber = false;
+  let hasBoolean = false;
+  for (const n of nodes) {
+    switch (n.type) {
+      case "TSStringKeyword":
+        hasString = true;
+        break;
+      case "TSNumberKeyword":
+        hasNumber = true;
+        break;
+      case "TSBooleanKeyword":
+        hasBoolean = true;
+        break;
+      case "TSUndefinedKeyword":
+      case "TSNullKeyword":
+      case "TSVoidKeyword":
+        break;
+      default:
+        return null;
+    }
+  }
+  if (hasString) return { type: "string" };
+  if (hasNumber) return { type: "number" };
+  if (hasBoolean) return { type: "boolean" };
+  return null;
+}
+
 const DISCRIMINANT_KEYS = ["type", "kind", "variant", "mode"];
 
 /** Resolve a type node to the property members of the object it denotes, if any. */
@@ -260,6 +295,8 @@ function schemaFromTypeNode(
       if (union) return union;
       const variant = variantFromUnion(members, file, resolver, depth);
       if (variant) return variant;
+      const primitive = primitiveUnion(members);
+      if (primitive) return primitive;
       break;
     }
     case "TSStringKeyword":
@@ -268,6 +305,25 @@ function schemaFromTypeNode(
       return { type: "number" };
     case "TSBooleanKeyword":
       return { type: "boolean" };
+    // Indexed access `T["key"]`. When `T` resolves to a project-local object,
+    // return that member's schema. When `T` is an external lib type (e.g.
+    // `CSSProperties["borderRadius"]`) it can't be resolved — CSS-style values
+    // are strings, so a text control beats an inert `unknown`.
+    case "TSIndexedAccessType": {
+      const objType = child(typeNode, "objectType");
+      const indexType = child(typeNode, "indexType");
+      const lit = indexType?.type === "TSLiteralType" ? child(indexType, "literal") : undefined;
+      const key = typeof lit?.value === "string" ? lit.value : undefined;
+      if (objType && key) {
+        const obj = objectMembers(objType, file, resolver, depth);
+        const member = obj?.members.find(
+          (m) => m.type === "TSPropertySignature" && memberName(m) === key,
+        );
+        const memberType = member ? memberTypeNode(member) : undefined;
+        if (memberType && obj) return schemaFromTypeNode(memberType, obj.file, resolver, depth + 1);
+      }
+      return { type: "string" };
+    }
     case "TSArrayType":
       return {
         type: "array",

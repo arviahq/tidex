@@ -94,6 +94,45 @@ describe("extractProps", () => {
     });
   });
 
+  it("resolves aliased imports of rootDirs-mirrored generated types", async () => {
+    const root = path.join(fixtures, "rootdirs");
+    const file = path.join(root, "src/Widget.tsx");
+    const components = discoverComponents(root, [file]);
+    const props = await extractProps(root, components);
+    const id = getComponentId(components[0]!);
+    // `variant` comes from the generated .d.ts reached via the aliased import,
+    // resolved through rootDirs (a non-TS source in src/ → its .d.ts in types/).
+    expect(props[id]?.variant).toEqual({
+      type: "union",
+      values: ["a", "b"],
+      valueType: "string",
+      required: false,
+    });
+    // `NonNullable<WidgetProps["variant"]>` unwraps the utility + indexed access.
+    expect(props[id]?.align).toEqual({
+      type: "union",
+      values: ["a", "b"],
+      valueType: "string",
+      required: false,
+    });
+    expect(props[id]?.label).toEqual({ type: "string", required: false });
+  });
+
+  it("resolves primitive unions and unresolvable indexed access", async () => {
+    const file = path.join(fixtures, "union-indexed-props.tsx");
+    const components = discoverComponents(fixtures, [file]);
+    const props = await extractProps(fixtures, components);
+    const id = getComponentId(components[0]!);
+    // `number | string` collapses to the widest control (string).
+    expect(props[id]?.width).toEqual({
+      type: "string",
+      required: true,
+      description: "Accepts a px number or any CSS length string.",
+    });
+    // `CSSProperties["borderRadius"]` can't be resolved → string fallback.
+    expect(props[id]?.radius).toMatchObject({ type: "string", required: true });
+  });
+
   it("resolves numeric literal unions and array types", async () => {
     const file = path.join(fixtures, "numeric-array-props.tsx");
     const components = discoverComponents(fixtures, [file]);
